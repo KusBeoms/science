@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>별의 일생</title>
+<title>별의 성장일기</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -11,18 +11,40 @@
 <canvas id="scene"></canvas>
 
 <div id="hud">
-  <div class="clock" id="clockDisplay">0년</div>
-  <div class="dist" id="distDisplay">0.0 광년</div>
+  <div class="row mass"><span class="ico">🪐</span><span class="lbl">질량</span><span id="massDisplay">~20.0 × 태양</span></div>
+  <div class="row clock"><span class="ico">⏳</span><span class="lbl">나이</span><span id="clockDisplay">0년</span></div>
+  <div class="row dist"><span class="ico">✦</span><span class="lbl">거리</span><span id="distDisplay">0.0 광년</span></div>
+</div>
+
+<div id="lifeGauge">
+  <span class="label">생명력</span>
+  <div class="track"><div id="lifeGaugeFill"></div></div>
 </div>
 
 <div id="startOverlay">
-  <h1>별 의 일 생</h1>
-  <p>클릭하여 성운을 응축시키기</p>
+  <h1>별 의 성 장 일 기</h1>
+  <p>성운의 유형을 골라 응축을 시작하세요</p>
+  <div class="presetRow" id="presetRow">
+    <div class="presetCard" data-preset="dense">
+      <div class="presetName">고밀도 성운</div>
+      <div class="presetDesc">무겁고 짧게 타오른다</div>
+    </div>
+    <div class="presetCard" data-preset="standard">
+      <div class="presetName">표준 성운</div>
+      <div class="presetDesc">균형 잡힌 시작</div>
+    </div>
+    <div class="presetCard" data-preset="diffuse">
+      <div class="presetName">희박한 성운</div>
+      <div class="presetDesc">가볍고 오래 살아남는다</div>
+    </div>
+  </div>
+  <p class="hint">이벤트가 뜨면 W / S 키 또는 버튼 클릭으로 선택하세요</p>
 </div>
 
 <div id="eventPopup">
   <h3 id="evTitle"></h3>
   <p class="desc" id="evDesc"></p>
+  <p class="hintSmall">제한시간 안에 선택하지 않으면 페널티가 적용됩니다</p>
   <div class="timerBar"><div id="evTimerBar"></div></div>
   <div class="choices">
     <div class="choiceBtn" id="evBtnW">
@@ -49,13 +71,60 @@
 
 <button id="muteBtn">♪</button>
 
-<!-- 의존성 순서: state → events → audio → render → ending → main -->
-<script src="js/state.js"></script>
-<script src="js/events.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/render.js"></script>
-<script src="js/choiceanim.js"></script>
-<script src="js/ending.js"></script>
-<script src="js/main.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+<!-- TypeScript(src/*.ts) → tsc → dist/*.js 로 컴파일된 결과물.
+     빌드: npm run build (tsc). 모듈 번들러 없이 전역 Game 네임스페이스 +
+     <script> 순서로 의존성을 해결하므로(파일://로도 바로 실행 가능),
+     아래 순서를 반드시 지켜야 한다: state → events → audio → render →
+     choiceanim → ending → main. -->
+<script src="dist/state/constants.js"></script>
+<script src="dist/state/physics.js"></script>
+<script src="dist/state/store.js"></script>
+
+<script src="dist/events/early.js"></script>
+<script src="dist/events/mid.js"></script>
+<script src="dist/events/late.js"></script>
+<script src="dist/events/registry.js"></script>
+
+<script src="dist/audio/synth.js"></script>
+<script src="dist/audio/music.js"></script>
+<script src="dist/audio/bootstrap.js"></script>
+
+<script src="dist/render/canvas.js"></script>
+<script src="dist/render/background.js"></script>
+<script src="dist/render/starSurface.js"></script>
+<script src="dist/render/starActors.js"></script>
+<script src="dist/render/endingAnim/blackhole.js"></script>
+<script src="dist/render/endingAnim/supernova.js"></script>
+<script src="dist/render/endingAnim/whitedwarf.js"></script>
+<script src="dist/render/endingAnim/friends.js"></script>
+<script src="dist/render/endingAnim/merge.js"></script>
+<script src="dist/render/endingAnim/collision.js"></script>
+<script src="dist/render/endingAnim/spider.js"></script>
+<script src="dist/render/endingAnim/dispatch.js"></script>
+<script src="dist/render/bootstrap.js"></script>
+
+<script src="dist/choiceanim/badges.js"></script>
+<script src="dist/choiceanim/core.js"></script>
+<script src="dist/choiceanim/volumeFuel.js"></script>
+<script src="dist/choiceanim/specials.js"></script>
+<script src="dist/choiceanim/bootstrap.js"></script>
+
+<script src="dist/ending/data.js"></script>
+<script src="dist/ending/personality.js"></script>
+<script src="dist/ending/branching.js"></script>
+<script src="dist/ending/timeline.js"></script>
+<script src="dist/ending/credits.js"></script>
+<script src="dist/ending/bootstrap.js"></script>
+
+<script src="dist/main/runtime.js"></script>
+<script src="dist/main/popup.js"></script>
+<script src="dist/main/companion.js"></script>
+<script src="dist/main/endingTrigger.js"></script>
+<script src="dist/main/intro.js"></script>
+<script src="dist/main/hud.js"></script>
+<script src="dist/main/loop.js"></script>
+<script src="dist/main/debug.js"></script>
+<script src="dist/main/bootstrap.js"></script>
 </body>
 </html>
