@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>별의 일생</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+
+<div id="hud">
+  <div class="clock" id="clockDisplay">0년</div>
+  <div class="dist" id="distDisplay">0.0 광년</div>
+</div>
+
+<div id="startOverlay">
+  <h1>별 의 일 생</h1>
+  <p>클릭하여 성운을 응축시키기</p>
+</div>
+
+<div id="eventPopup">
+  <h3 id="evTitle"></h3>
+  <p class="desc" id="evDesc"></p>
+  <div class="timerBar"><div id="evTimerBar"></div></div>
+  <div class="choices">
+    <div class="choiceBtn" id="evBtnW">
+      <canvas class="choiceAnim" id="animW"></canvas>
+      <div class="badgeRow" id="badgeW"></div>
+      <div class="pickRow"><div class="keyBox">W</div><div class="caption" id="captionW"></div></div>
+    </div>
+    <div class="choiceBtn" id="evBtnS">
+      <canvas class="choiceAnim" id="animS"></canvas>
+      <div class="badgeRow" id="badgeS"></div>
+      <div class="pickRow"><div class="keyBox">S</div><div class="caption" id="captionS"></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="timeskip">
+  <div class="msg" id="timeskipMsg">동반성이 펄서가 되었다...</div>
+  <div class="odometer" id="odometer">0년</div>
+</div>
+
+<div id="credits">
+  <div id="creditsScroll"></div>
+</div>
+
+<button id="muteBtn">♪</button>
+
+<!-- 의존성 순서: state → events → audio → render → ending → main -->
+<script src="js/state.js"></script>
+<script src="js/events.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/render.js"></script>
+<script src="js/choiceanim.js"></script>
+<script src="js/ending.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
