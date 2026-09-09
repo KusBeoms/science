@@ -5,8 +5,8 @@
     const Gp = G;
     const MUSIC_FADE_MS = 1500;
     const MUSIC_TRACKS = {
-        ingame: { src: 'src/music/ingame.mp3', volume: 0.638, loop: true },
-        end: { src: 'src/music/end.mp3', volume: 0.741, loop: false },
+        ingame: { src: 'src/music/ingame.mp3', volume: 0.507, loop: true },
+        end: { src: 'src/music/end.mp3', volume: 0.589, loop: false },
     };
     Gp._audioGetMusicHowl = function (name) {
         if (this.musicHowls[name])

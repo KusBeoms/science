@@ -1,34 +1,98 @@
 * { margin:0; padding:0; box-sizing:border-box; }
+html {
+  /* UI 전체가 창 크기에 비례해 스케일되는 기준 폰트 크기.
+     아래의 모든 font-size/padding/gap 등은 px 대신 rem으로 정의해
+     이 값 하나에 맞춰 커지고 작아진다. vmin 기준이라 가로/세로 중
+     더 작은 쪽에 맞춰 스케일해, 세로로 좁은 창에서도 글자가 과도하게
+     커지지 않는다. (900x600 안팎 창에서 기존 고정 16px과 거의 같아지도록 보정) */
+  font-size: clamp(15px, 10px + 1vmin, 20px);
+}
 html, body { width:100%; height:100%; overflow:hidden; background:#02030a; font-family: "Malgun Gothic","Apple SD Gothic Neo",sans-serif; }
 #scene { position:fixed; top:0; left:0; width:100%; height:100%; display:block; }
 
+#stageBadge {
+  position:fixed; top:1rem; left:1.25rem; color:#dfe6ff;
+  text-shadow:0 0 12px rgba(120,160,255,.7); z-index:20; user-select:none;
+  font-size:1.625rem; font-weight:bold; letter-spacing:.045em;
+}
+
 #hud {
-  position:fixed; top:16px; right:20px; text-align:right; color:#dfe6ff;
+  position:fixed; top:1rem; right:1.25rem; text-align:right; color:#dfe6ff;
   text-shadow:0 0 8px rgba(120,160,255,.6); z-index:20; user-select:none;
   font-variant-numeric: tabular-nums;
 }
-#hud .row { display:flex; align-items:baseline; justify-content:flex-end; gap:5px; }
-#hud .ico { font-size:12px; opacity:.8; }
-#hud .lbl { font-size:11px; font-weight:normal; color:rgba(223,230,255,.55); letter-spacing:.5px; }
-#hud .mass { font-size:13px; opacity:.8; margin-bottom:2px; }
-#hud .clock { font-size:22px; font-weight:bold; letter-spacing:1px; }
-#hud .clock .lbl { font-size:11px; font-weight:normal; }
-#hud .dist { font-size:14px; opacity:.85; margin-top:2px; }
+#hud .row { display:flex; align-items:baseline; justify-content:flex-end; gap:0.3125rem; }
+#hud .ico { font-size:0.8125rem; opacity:.8; }
+/* 라벨·캡션 계열 글자는 0.8125rem을 가독성 하한으로 삼는다 — 그 아래로는
+   창이 작을 때(루트 15px) 12px 미만으로 떨어져 읽기 어려워진다. */
+#hud .lbl { font-size:0.8125rem; font-weight:normal; color:rgba(223,230,255,.55); letter-spacing:.045em; }
+#hud .mass { font-size:0.875rem; opacity:.8; margin-bottom:0.125rem; }
+#hud .clock { font-size:1.375rem; font-weight:bold; letter-spacing:.045em; }
+#hud .dist { font-size:0.875rem; opacity:.85; margin-top:0.125rem; }
+#hud .fuel { font-size:0.875rem; opacity:.85; margin-top:0.125rem; }
+/* 연료 경고색은 배지 화살표(.arrow.down)가 이미 쓰는 주황을 그대로 이어 쓴다. */
+#hud .fuel .warn { color:#ff9a6b; }
+#hud .fuel .critical { color:#ff6b6b; animation:pulse 1.4s infinite; }
 
-#lifeGauge {
-  position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:20;
-  width:min(260px, 40vw); display:flex; flex-direction:column; align-items:center; gap:3px;
+/* 상단 중앙: (좌)내부 단면도 + (우)단계 진행 트랙. 예전 생명력 막대를
+   완전히 대체한다 — 연료가 얼마나 남았는지 대신, 지금 어떤 몸체/연소
+   단계인지를 보여준다. */
+#vitalsPanel {
+  position:fixed; top:0.6rem; left:50%; transform:translateX(-50%); z-index:20;
+  display:flex; align-items:center; gap:0.75rem;
   color:#dfe6ff; user-select:none;
 }
-#lifeGauge .label { font-size:10px; opacity:.6; letter-spacing:1px; }
-#lifeGauge .track {
-  width:100%; height:8px; border-radius:5px;
-  background:rgba(255,255,255,.12); border:1px solid rgba(140,170,255,.35);
-  overflow:hidden; box-shadow:0 0 12px rgba(60,90,200,.2);
+#crossSectionCanvas {
+  width:3.5rem; height:3.5rem;
+  border-radius:50%;
+  background:rgba(255,255,255,.05);
+  filter:drop-shadow(0 0 0.375rem rgba(60,90,200,.35));
 }
-#lifeGauge .track > div { height:100%; width:100%; background:#7fa0ff; transition:background .3s ease; }
-#lifeGaugeFill.danger { animation:gaugePulse 1s ease-in-out infinite; }
-@keyframes gaugePulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+/* 단계 진행 트랙: 전체 단계를 세로로 늘어놓고, 뷰포트 창(고정 높이 +
+   위아래가 옅어지는 mask)으로 현재 위치 근처만 보여준다. 목록 자체는
+   GSAP로 부드럽게 위아래로 스크롤되어, 다음 단계로 넘어갈 때 툭 끊기지
+   않고 이어진다. */
+#stageTrack { display:flex; flex-direction:column; align-items:center; gap:0.2rem; }
+/* 트랙은 길게 잡고 양끝 페이드도 얕게 둬서, 이미 지나온 단계와 앞으로 올
+   단계가 현재 위치 좌우로 함께 보이도록 한다. */
+#stageTrackViewport {
+  position:relative; width:14.5rem; height:1.35rem; overflow:hidden;
+  -webkit-mask-image:linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+  mask-image:linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}
+#stageTrackViewport::before {
+  content:''; position:absolute; top:50%; left:0; right:0; height:1px;
+  background:rgba(255,255,255,.18); transform:translateY(-50%);
+}
+#stageTrackList {
+  position:relative; display:flex; flex-direction:row; align-items:center; gap:0.5rem;
+  padding:0 0.35rem; width:max-content;
+}
+/* 칸의 배경(그 단계의 외형)은 stageTrack.ts가 인라인으로 넣는다. 여기서는
+   크기·선명도로만 지나감/현재/예정을 구분해, 외형이 가려지지 않게 한다. */
+.stageTick {
+  position:relative; width:0.72rem; height:0.72rem; border-radius:50%;
+  background:rgba(255,255,255,.25); flex-shrink:0; overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.3);
+  transition:width .35s ease, height .35s ease, box-shadow .35s ease, opacity .35s ease, filter .35s ease;
+}
+/* 지나온 단계는 그 단계의 외형 그대로 또렷하게 남겨 "여기까지 왔다"가 보이게,
+   아직 오지 않은 단계는 contrast(0)으로 내부 무늬까지 완전히 뭉개 균일한
+   회색 실루엣으로만 남긴다 — 앞으로 무엇이 될지는 미리 알 수 없어야 한다. */
+.stageTick.reached { opacity:1; }
+.stageTick.current {
+  width:1.15rem; height:1.15rem;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.5), 0 0 12px rgba(160,190,255,.95);
+}
+.stageTick.upcoming {
+  opacity:.5;
+  filter:grayscale(1) contrast(0) brightness(.42);
+}
+/* 현재 단계 이름은 트랙 바로 위, 가운데(= 현재 칸 위)에 작게 뜬다. */
+#stageTrackLabel {
+  font-size:0.8125rem; opacity:.9; letter-spacing:.03em; white-space:nowrap;
+  text-shadow:0 0 8px rgba(120,160,255,.6);
+}
 
 
 #startOverlay {
@@ -36,66 +100,98 @@ html, body { width:100%; height:100%; overflow:hidden; background:#02030a; font-
   background:radial-gradient(circle at 50% 50%, #0a0f24 0%, #020308 70%); z-index:50;
   color:#eaf0ff; text-align:center;
 }
-#startOverlay h1 { font-size:34px; letter-spacing:4px; font-weight:300; margin-bottom:14px; text-shadow:0 0 20px rgba(140,170,255,.8); }
-#startOverlay p { font-size:14px; opacity:.7; letter-spacing:2px; animation:pulse 2s infinite ease-in-out; }
+#startOverlay h1 { font-size:2.125rem; letter-spacing:.118em; font-weight:300; margin-bottom:0.625rem; text-shadow:0 0 20px rgba(140,170,255,.8); }
+#startOverlay p { font-size:0.875rem; opacity:.7; letter-spacing:.143em; animation:pulse 2s infinite ease-in-out; }
 @keyframes pulse { 0%,100%{opacity:.35} 50%{opacity:.85} }
-#startOverlay .hint { font-size:12px; opacity:.5; letter-spacing:1px; margin-top:12px; animation:none; }
+#startOverlay .hint { font-size:0.8125rem; opacity:.45; letter-spacing:.083em; margin-top:1.75rem; animation:none; }
 
-.presetRow { display:flex; gap:14px; margin:22px 0 4px; animation:none; }
+.presetRow { display:flex; flex-wrap:wrap; justify-content:center; gap:1rem; margin:2rem 0 0.25rem; animation:none; }
 .presetCard {
-  width:150px; background:rgba(120,150,255,.08); border:1px solid rgba(140,170,255,.4);
-  border-radius:10px; padding:16px 10px; cursor:pointer;
-  transition:background .2s, transform .1s, border-color .2s;
+  width:9.75rem; background:linear-gradient(160deg, rgba(120,150,255,.12), rgba(120,150,255,.03));
+  border:1px solid rgba(140,170,255,.3); border-radius:0.875rem; padding:1.375rem 1rem;
+  cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:0.5rem;
+  box-shadow:0 4px 18px rgba(0,0,0,.25);
+  transition:background .2s, transform .15s ease, border-color .2s, box-shadow .2s;
 }
-.presetCard:hover { background:rgba(120,150,255,.22); border-color:rgba(180,200,255,.8); }
-.presetCard:active { transform:scale(.96); }
-.presetName { font-size:14px; color:#cddaff; margin-bottom:6px; letter-spacing:.5px; }
-.presetDesc { font-size:11.5px; opacity:.65; line-height:1.4; }
+.presetCard:hover {
+  background:linear-gradient(160deg, rgba(140,170,255,.26), rgba(120,150,255,.06));
+  border-color:rgba(190,205,255,.85); transform:translateY(-0.1875rem);
+  box-shadow:0 8px 26px rgba(80,110,220,.35);
+}
+.presetCard:active { transform:translateY(-0.0625rem) scale(.97); }
+.presetIcon { font-size:1.5rem; line-height:1; filter:drop-shadow(0 0 6px rgba(140,170,255,.5)); }
+.presetName { font-size:0.9375rem; font-weight:600; color:#dbe4ff; letter-spacing:.036em; }
+.presetDesc { font-size:0.71875rem; opacity:.65; line-height:1.45; }
 
+/* 이벤트 선택 팝업: 화면 오른쪽에 도킹시켜, 왼쪽(약 화면의 28% 지점)에 있는
+   별과 절대 겹치지 않게 한다. 창이 좁아지면(모바일 등) 별 옆에 세로로 긴
+   패널을 둘 공간이 부족해지므로 기존처럼 화면 하단 전체 폭 시트로 되돌아간다. */
 #eventPopup {
-  position:fixed; left:50%; bottom:70px; transform:translateX(-50%) translateY(20px);
-  width:min(560px, 90vw); background:rgba(8,10,26,.88); border:1px solid rgba(140,170,255,.35);
-  border-radius:10px; padding:18px 22px; color:#eef1ff; z-index:30;
+  position:fixed; right:4vw; top:50%; transform:translateY(-50%) translateX(1.25rem);
+  width:min(24rem, 38vw); background:rgba(8,10,26,.88); border:1px solid rgba(140,170,255,.35);
+  border-radius:0.625rem; padding:1.125rem 1.375rem; color:#eef1ff; z-index:30;
   opacity:0; pointer-events:none; transition:opacity .35s ease, transform .35s ease;
   box-shadow:0 0 30px rgba(60,90,200,.25);
 }
-#eventPopup.show { opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
-#eventPopup h3 { font-size:17px; margin-bottom:6px; color:#bcd0ff; letter-spacing:1px; }
-#eventPopup p.desc { font-size:13px; line-height:1.5; opacity:.85; margin-bottom:8px; }
-#eventPopup .hintSmall { font-size:11px; opacity:.55; margin:0 0 12px; letter-spacing:.3px; }
-#eventPopup .timerBar { height:3px; background:rgba(255,255,255,.15); border-radius:2px; margin-bottom:14px; overflow:hidden; }
+#eventPopup.show { opacity:1; transform:translateY(-50%) translateX(0); pointer-events:auto; }
+#eventPopup h3 { font-size:1.0625rem; margin-bottom:0.375rem; color:#bcd0ff; letter-spacing:.059em; }
+#eventPopup p.desc { font-size:0.8125rem; line-height:1.5; opacity:.85; margin-bottom:0.5rem; }
+#eventPopup .hintSmall { font-size:0.8125rem; opacity:.55; margin:0 0 0.75rem; letter-spacing:.027em; }
+#eventPopup .timerBar { height:0.1875rem; background:rgba(255,255,255,.15); border-radius:0.125rem; margin-bottom:0.875rem; overflow:hidden; }
 #eventPopup .timerBar > div { height:100%; width:100%; background:#7fa0ff; transform-origin:left; }
-.choices { display:flex; gap:12px; }
+.choices { display:flex; gap:0.75rem; }
 .choiceBtn {
   flex:1; background:rgba(120,150,255,.08); border:1px solid rgba(140,170,255,.4);
-  border-radius:8px; padding:8px; cursor:pointer;
-  display:flex; flex-direction:column; align-items:center; gap:6px;
+  border-radius:0.5rem; padding:0.5rem; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:0.375rem;
   transition:background .2s, transform .1s;
 }
 .choiceBtn:hover { background:rgba(120,150,255,.22); }
 .choiceBtn:active { transform:scale(.97); }
-.choiceAnim { width:100%; height:70px; display:block; }
-.badgeRow { display:flex; gap:8px; align-items:center; justify-content:center; min-height:16px; }
-.badgeRow .badge { display:inline-flex; align-items:center; gap:1px; font-size:13px; line-height:1; }
+.choiceAnim { width:100%; height:4.375rem; display:block; }
+.badgeRow { display:flex; gap:0.5rem; align-items:center; justify-content:center; min-height:1rem; }
+.badgeRow .badge { display:inline-flex; align-items:center; gap:0.1875rem; font-size:0.8125rem; line-height:1; }
 .badgeRow .badge .glyph { color:#cddaff; }
+.badgeRow .badge .name { font-size:0.8125rem; color:#aebbe6; opacity:.85; letter-spacing:.019em; }
 .badgeRow .badge .arrow.up { color:#7fc8ff; }
 .badgeRow .badge .arrow.down { color:#ff9a6b; }
-.pickRow { display:flex; align-items:center; gap:7px; }
+.pickRow { display:flex; align-items:center; gap:0.4375rem; }
 .keyBox {
-  width:26px; height:22px; border-radius:5px; background:rgba(169,194,255,.15);
+  width:1.625rem; height:1.375rem; border-radius:0.3125rem; background:rgba(169,194,255,.15);
   border:1px solid rgba(169,194,255,.5); color:#cddaff;
   display:flex; align-items:center; justify-content:center;
-  font-size:12px; font-weight:bold; letter-spacing:.5px; flex-shrink:0;
+  font-size:0.8125rem; font-weight:bold; letter-spacing:.042em; flex-shrink:0;
 }
-.caption { font-size:12.5px; color:#dfe6ff; opacity:.9; }
+.caption { font-size:0.875rem; color:#dfe6ff; opacity:.9; }
+
+@media (max-width: 720px) {
+  #eventPopup {
+    right:auto; left:50%; top:auto; bottom:4.375rem;
+    transform:translateX(-50%) translateY(1.25rem);
+    width:min(35rem, 90vw);
+  }
+  #eventPopup.show { transform:translateX(-50%) translateY(0); }
+
+  /* 좁은 화면에서는 상단의 세 정보 덩어리(좌:단계 배지, 중앙:단면도/트랙,
+     우:HUD)가 같은 가로 띠를 두고 다투게 된다. 좌우를 먼저 좁히고, 그래도
+     겹칠 수 있는 중앙 패널은 아래층으로 내려 물리적으로 분리한다. */
+  #stageBadge { top:0.5rem; left:0.75rem; font-size:1.25rem; }
+  #hud { top:0.5rem; right:0.75rem; }
+  #hud .clock { font-size:1.125rem; }
+  /* 좁은 화면에선 HUD가 4줄이라 세로로 길어져, 중앙 패널을 같은 높이에 두면
+     가로로 겹친다. 아예 HUD 블록 아래로 내려 겹칠 여지를 없앤다. */
+  #vitalsPanel { top:7rem; gap:0.5rem; }
+  #crossSectionCanvas { width:2.75rem; height:2.75rem; }
+  #stageTrackViewport { width:6.5rem; }
+}
 
 #timeskip {
   position:fixed; inset:0; background:#000; z-index:40; display:none; align-items:center; justify-content:center;
   flex-direction:column; color:#dfe6ff; text-align:center;
 }
 #timeskip.show { display:flex; }
-#timeskip .msg { font-size:15px; opacity:.75; margin-bottom:18px; letter-spacing:1px; }
-#timeskip .odometer { font-size:42px; font-weight:bold; letter-spacing:2px; text-shadow:0 0 20px rgba(140,170,255,.7); }
+#timeskip .msg { font-size:0.9375rem; opacity:.75; margin-bottom:1.125rem; letter-spacing:.067em; }
+#timeskip .odometer { font-size:2.625rem; font-weight:bold; letter-spacing:.048em; text-shadow:0 0 20px rgba(140,170,255,.7); }
 
 #credits {
   position:fixed; inset:0; background:#000; z-index:60; display:none; overflow:hidden;
@@ -103,44 +199,69 @@ html, body { width:100%; height:100%; overflow:hidden; background:#02030a; font-
 #credits.show { display:block; }
 #creditsScroll {
   position:absolute; left:50%; top:100%; transform:translateX(-50%);
-  width:min(640px,88vw); color:#e8ecff; text-align:center;
+  width:min(40rem,88vw); color:#e8ecff; text-align:center;
   animation:credits-scroll 46s linear forwards;
 }
 @keyframes credits-scroll { from { top:100%; } to { top:-220%; } }
-#creditsScroll h1 { font-size:30px; letter-spacing:3px; font-weight:300; margin-bottom:6px; color:#cdd8ff; text-shadow:0 0 20px rgba(140,170,255,.6); }
-#creditsScroll .sub { font-size:12px; opacity:.55; letter-spacing:2px; margin-bottom:46px; }
-#creditsScroll .statBlock { font-size:13px; line-height:2.1; opacity:.85; margin-bottom:46px; }
+#creditsScroll h1 { font-size:1.875rem; letter-spacing:.1em; font-weight:300; margin-bottom:0.375rem; color:#cdd8ff; text-shadow:0 0 20px rgba(140,170,255,.6); }
+#creditsScroll .sub { font-size:0.8125rem; opacity:.55; letter-spacing:.167em; margin-bottom:2.875rem; }
+#creditsScroll .statBlock { font-size:0.8125rem; line-height:2.1; opacity:.85; margin-bottom:2.875rem; }
 #creditsScroll .statBlock span { color:#a9c2ff; }
-#creditsScroll .sectionTitle { font-size:12px; letter-spacing:3px; opacity:.5; margin-bottom:10px; text-transform:uppercase; }
-#creditsScroll .flavor { font-size:14.5px; line-height:1.9; opacity:.9; margin-bottom:46px; padding:0 10px; }
-#creditsScroll .archTitle { font-size:19px; color:#cdd8ff; margin-bottom:6px; }
-#creditsScroll .archDesc { font-size:12.5px; opacity:.7; margin-bottom:46px; line-height:1.7; }
+#creditsScroll .sectionTitle { font-size:0.8125rem; letter-spacing:.25em; opacity:.5; margin-bottom:0.625rem; text-transform:uppercase; }
+#creditsScroll .flavor { font-size:0.90625rem; line-height:1.9; opacity:.9; margin-bottom:2.875rem; padding:0 0.625rem; }
+#creditsScroll .archTitle { font-size:1.1875rem; color:#cdd8ff; margin-bottom:0.375rem; }
+#creditsScroll .archDesc { font-size:0.8125rem; opacity:.7; margin-bottom:2.875rem; line-height:1.7; }
+/* 도달한 핵융합 사슬: 태운 단계는 그 단계의 색으로 또렷하게, 갈 수 있었지만
+   닿지 못한 단계는 흐리게 남겨 "어디서 멈췄는지"가 한눈에 보이게 한다. */
+.fusionChain {
+  display:flex; flex-wrap:wrap; justify-content:center; align-items:center;
+  gap:0.35rem; margin-bottom:0.75rem;
+}
+.fusionStep {
+  font-size:0.8125rem; padding:0.25rem 0.55rem; border-radius:0.75rem;
+  border:1px solid rgba(160,180,255,.25); color:rgba(200,212,255,.45);
+  white-space:nowrap;
+}
+.fusionStep.done { font-weight:600; box-shadow:0 0 0.5rem rgba(140,175,255,.18); }
+.fusionStep.none { border-style:dashed; }
+.fusionArrow { color:rgba(160,180,255,.35); font-size:0.8125rem; }
+.fusionNote { font-size:0.8125rem; opacity:.6; margin-bottom:2.875rem; }
+
 #creditsScroll .timelineRow {
-  display:flex; gap:8px; overflow-x:auto; padding:2px 10px 12px; margin-bottom:46px;
+  display:flex; gap:0.5rem; overflow-x:auto; padding:0.125rem 0.625rem 0.75rem; margin-bottom:2.875rem;
   justify-content:flex-start; -webkit-overflow-scrolling:touch;
 }
 #creditsScroll .timelineRow::-webkit-scrollbar { height:4px; }
 #creditsScroll .timelineRow::-webkit-scrollbar-thumb { background:rgba(169,194,255,.3); border-radius:2px; }
 .timelineChip {
-  flex-shrink:0; width:64px; background:rgba(120,150,255,.08); border:1px solid rgba(140,170,255,.35);
-  border-radius:8px; padding:6px 4px; display:flex; flex-direction:column; align-items:center; gap:4px;
+  flex-shrink:0; width:4rem; background:rgba(120,150,255,.08); border:1px solid rgba(140,170,255,.35);
+  border-radius:0.5rem; padding:0.375rem 0.25rem; display:flex; flex-direction:column; align-items:center; gap:0.25rem;
 }
 .timelineChip.timeout { opacity:.55; border-style:dashed; }
-.timelineChip .badgeRow { min-height:auto; gap:4px; }
-.timelineChip .badgeRow .badge { font-size:11px; }
-.timelineChip .keyBox { width:20px; height:18px; font-size:10px; }
-.timelineChip .caption { font-size:10.5px; }
-#creditsScroll .finalLine { font-size:16px; line-height:1.8; margin-bottom:60px; font-style:italic; color:#f0e9d2; }
-#creditsScroll .theEnd { font-size:26px; letter-spacing:8px; margin-bottom:30px; opacity:.9; }
+.timelineChip .badgeRow { min-height:auto; gap:0.25rem; }
+.timelineChip .badgeRow .badge { font-size:0.8125rem; }
+.timelineChip .keyBox { width:1.25rem; height:1.125rem; font-size:0.625rem; }
+.timelineChip .caption { font-size:0.8125rem; }
+#creditsScroll .finalLine { font-size:1rem; line-height:1.8; margin-bottom:3.75rem; font-style:italic; color:#f0e9d2; }
+
+/* 스크롤되는 본문과 분리된 고정 마무리 — 화면 정중앙에 멈춰 서서
+   다시 시작 버튼이 언제나 눌리는 자리에 있게 한다. */
+#creditsEnd {
+  position:absolute; left:50%; top:50%; transform:translate(-50%, -50%);
+  display:flex; flex-direction:column; align-items:center; text-align:center;
+  color:#e8ecff; opacity:0; pointer-events:none; transition:opacity 1.2s ease;
+}
+#creditsEnd.show { opacity:1; pointer-events:auto; }
+#creditsEnd .theEnd { font-size:1.625rem; letter-spacing:.308em; margin-bottom:1.875rem; opacity:.9; }
 #restartBtn {
-  pointer-events:auto; background:none; border:1px solid rgba(200,210,255,.4); color:#dfe6ff;
-  padding:10px 26px; border-radius:20px; font-size:12.5px; letter-spacing:2px; cursor:pointer;
+  pointer-events:auto; border:1px solid rgba(200,210,255,.4); color:#dfe6ff;
+  padding:0.625rem 1.625rem; border-radius:1.25rem; font-size:0.875rem; letter-spacing:.16em; cursor:pointer;
   background:rgba(255,255,255,.04);
 }
 #restartBtn:hover { background:rgba(255,255,255,.12); }
 
 #muteBtn {
-  position:fixed; right:18px; bottom:16px; z-index:25; width:34px; height:34px; border-radius:50%;
+  position:fixed; right:1.125rem; bottom:1rem; z-index:25; width:2.125rem; height:2.125rem; border-radius:50%;
   background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.2); color:#dfe6ff;
-  font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  font-size:0.9375rem; cursor:pointer; display:flex; align-items:center; justify-content:center;
 }

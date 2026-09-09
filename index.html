@@ -10,15 +10,21 @@
 
 <canvas id="scene"></canvas>
 
+<div id="stageBadge"><span id="stageDisplay">지구형행성</span></div>
+
 <div id="hud">
-  <div class="row mass"><span class="ico">🪐</span><span class="lbl">질량</span><span id="massDisplay">~20.0 × 태양</span></div>
+  <div class="row mass"><span class="ico">🪐</span><span class="lbl">질량</span><span id="massDisplay">~1.0 × 지구</span></div>
   <div class="row clock"><span class="ico">⏳</span><span class="lbl">나이</span><span id="clockDisplay">0년</span></div>
   <div class="row dist"><span class="ico">✦</span><span class="lbl">거리</span><span id="distDisplay">0.0 광년</span></div>
+  <div class="row fuel"><span class="ico">🔥</span><span class="lbl">연료</span><span id="fuelDisplay">—</span></div>
 </div>
 
-<div id="lifeGauge">
-  <span class="label">생명력</span>
-  <div class="track"><div id="lifeGaugeFill"></div></div>
+<div id="vitalsPanel">
+  <canvas id="crossSectionCanvas"></canvas>
+  <div id="stageTrack">
+    <span id="stageTrackLabel">지구형행성</span>
+    <div id="stageTrackViewport"><div id="stageTrackList"></div></div>
+  </div>
 </div>
 
 <div id="startOverlay">
@@ -26,19 +32,22 @@
   <p>성운의 유형을 골라 응축을 시작하세요</p>
   <div class="presetRow" id="presetRow">
     <div class="presetCard" data-preset="dense">
+      <div class="presetIcon">☀️</div>
       <div class="presetName">고밀도 성운</div>
-      <div class="presetDesc">무겁고 짧게 타오른다</div>
+      <div class="presetDesc">태양과 같은 항성으로 태어난다</div>
     </div>
     <div class="presetCard" data-preset="standard">
+      <div class="presetIcon">🪐</div>
       <div class="presetName">표준 성운</div>
-      <div class="presetDesc">균형 잡힌 시작</div>
+      <div class="presetDesc">목성형 행성에서 시작한다</div>
     </div>
     <div class="presetCard" data-preset="diffuse">
+      <div class="presetIcon">🌍</div>
       <div class="presetName">희박한 성운</div>
-      <div class="presetDesc">가볍고 오래 살아남는다</div>
+      <div class="presetDesc">지구형 행성에서 시작한다</div>
     </div>
   </div>
-  <p class="hint">이벤트가 뜨면 W / S 키 또는 버튼 클릭으로 선택하세요</p>
+  <p class="hint">이벤트가 뜨면 A / D 키 또는 버튼 클릭으로 선택하세요</p>
 </div>
 
 <div id="eventPopup">
@@ -50,12 +59,12 @@
     <div class="choiceBtn" id="evBtnW">
       <canvas class="choiceAnim" id="animW"></canvas>
       <div class="badgeRow" id="badgeW"></div>
-      <div class="pickRow"><div class="keyBox">W</div><div class="caption" id="captionW"></div></div>
+      <div class="pickRow"><div class="keyBox">A</div><div class="caption" id="captionW"></div></div>
     </div>
     <div class="choiceBtn" id="evBtnS">
       <canvas class="choiceAnim" id="animS"></canvas>
       <div class="badgeRow" id="badgeS"></div>
-      <div class="pickRow"><div class="keyBox">S</div><div class="caption" id="captionS"></div></div>
+      <div class="pickRow"><div class="keyBox">D</div><div class="caption" id="captionS"></div></div>
     </div>
   </div>
 </div>
@@ -67,11 +76,16 @@
 
 <div id="credits">
   <div id="creditsScroll"></div>
+  <div id="creditsEnd"></div>
 </div>
 
 <button id="muteBtn">♪</button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+<!-- 상단 UI(단면도/단계 트랙)와 점화 순간을 부드럽게(organic) 전환시키는 트위닝
+     라이브러리. 번들러 없이 전역 gsap 객체만 노출하는 UMD 빌드 — Howler와
+     동일한 방식으로 로드한다. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <!-- TypeScript(src/*.ts) → tsc → dist/*.js 로 컴파일된 결과물.
      빌드: npm run build (tsc). 모듈 번들러 없이 전역 Game 네임스페이스 +
      <script> 순서로 의존성을 해결하므로(파일://로도 바로 실행 가능),
@@ -103,6 +117,8 @@
 <script src="dist/render/endingAnim/spider.js"></script>
 <script src="dist/render/endingAnim/dispatch.js"></script>
 <script src="dist/render/bootstrap.js"></script>
+<script src="dist/render/stageTrack.js"></script>
+<script src="dist/render/vitalsPanel.js"></script>
 
 <script src="dist/choiceanim/badges.js"></script>
 <script src="dist/choiceanim/core.js"></script>
@@ -118,9 +134,11 @@
 <script src="dist/ending/bootstrap.js"></script>
 
 <script src="dist/main/runtime.js"></script>
+<script src="dist/main/stageModel.js"></script>
 <script src="dist/main/popup.js"></script>
 <script src="dist/main/companion.js"></script>
 <script src="dist/main/endingTrigger.js"></script>
+<script src="dist/main/ignition.js"></script>
 <script src="dist/main/intro.js"></script>
 <script src="dist/main/hud.js"></script>
 <script src="dist/main/loop.js"></script>

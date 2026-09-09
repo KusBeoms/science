@@ -8,7 +8,15 @@
     Gp._renderCanvas = canvas;
     Gp._renderCtx = ctx;
     Gp._renderResize = function () {
-        this.W = canvas.width = window.innerWidth;
-        this.H = canvas.height = window.innerHeight;
+        const oldW = this.W, oldH = this.H;
+        const dpr = window.devicePixelRatio || 1;
+        this.W = window.innerWidth;
+        this.H = window.innerHeight;
+        canvas.width = Math.round(this.W * dpr);
+        canvas.height = Math.round(this.H * dpr);
+        canvas.style.width = this.W + 'px';
+        canvas.style.height = this.H + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        Gp._renderResyncStars.call(this, oldW, oldH);
     };
 })();

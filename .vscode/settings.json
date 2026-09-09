@@ -1,0 +1,9 @@
+{
+  "liveServer.settings.ignoreFiles": [
+    ".vscode/**",
+    ".omc/**",
+    ".claude/**",
+    ".git/**",
+    ".DS_Store"
+  ]
+}

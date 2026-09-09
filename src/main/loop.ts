@@ -12,6 +12,14 @@
 
   const evTimerBar = document.getElementById('evTimerBar') as HTMLElement;
 
+  // 사망 연출 단계별 지속시간(초)
+  const ENDING_MOVE_DUR = 1.0;  // 별이 화면 중앙으로 미끄러져 오는 시간
+  const ENDING_HOLD_DUR = 1.6;  // 엔딩 모양이 다 형성된 뒤 정지해서 보여주는 시간
+  const ENDING_FADE_DUR = 1.4;  // 암전 시간
+
+  // 점화 직후 나이 진행 속도를 형성기 속도에서 항성 속도로 끌어올리는 시간(초)
+  const IGNITION_RAMP_DUR = 4.0;
+
   function loop(now: number) {
     const dt = clamp((now - RT.lastT) / 1000, 0, 0.05);
     RT.lastT = now;
@@ -47,29 +55,83 @@
     if (RT.introPlaying) {
       Gp._introTick(dt);
     } else if (state.started && !state.gameOver) {
-      R.starAngle += dt * (0.6 + state.mass / 120);
+      R.starAngle += dt * (0.6 + state.mass / 30);
       R.drawPlayerStar(dt);
       if (state.hasCompanion && state.companionAlive) R.drawCompanionStar(dt);
 
       // simulation updates
-      state.ageYears += dt * G.yearsPerSecond(state.mass);
-      state.distanceLy += G.SPEED * dt;
-      if (!RT.timeSkipping) {
-        state.fuel -= G.fuelBurnRate(state.mass) * dt;
-        state.mass += state.volume * 0.0009 * dt * 60; // passive ambient absorption tied to volume
+      // 팝업이 열려 있는 동안에는 이동거리를 멈춘다 — distanceLy가 다음 이벤트
+      // 예약 시점과 중·후반 이벤트 개방 시점을 동시에 결정하기 때문에, 고민하는
+      // 시간이 그대로 진행도로 흘러가면 총 플레이타임이 "얼마나 빨리 눌렀나"에
+      // 좌우돼 편차가 커진다. 결정 시간과 이동 시간을 분리한다.
+      if (!state.eventOpen) {
+        if (state.hasFusion) state.postIgnitionDistanceLy += G.SPEED * dt;
+        state.distanceLy += G.SPEED * dt;
+      }
+      // 나이는 점화 전에도 흐른다. 예전엔 점화 후에만 흘러서, 형성기 내내
+      // 화면에 "0년"이 박힌 채로 거리만 몇 광년씩 쌓였다 — 0년 만에 1광년을
+      // 가는 초광속이었다. 형성기에는 원시행성계원반의 실제 수명 규모로,
+      // 점화 후에는 그 별의 실제 주계열 수명 규모로 흐른다(physics.ts).
+      //
+      // 다만 그 둘은 규모가 60만 배 가까이 차이나서, 점화하는 순간 카운터가
+      // 한 프레임 만에 폭주하듯 튄다. 점화 직후 몇 초에 걸쳐 기하적으로
+      // (비율을 일정하게) 가속시켜 "서서히 빨라진다"로 만든다.
+      if (state.hasFusion) {
+        RT.ignitionAgeRampT = Math.min(RT.ignitionAgeRampT + dt, IGNITION_RAMP_DUR);
+        const t = clamp(RT.ignitionAgeRampT / IGNITION_RAMP_DUR, 0, 1);
+        const eased = t * t * (3 - 2 * t); // smoothstep
+        const stellar = G.yearsPerSecond(state.mass);
+        const rate = Math.pow(G.FORMATION_YEARS_PER_SEC, 1 - eased) * Math.pow(stellar, eased);
+        state.ageYears += dt * rate;
+      } else {
+        state.ageYears += dt * G.FORMATION_YEARS_PER_SEC;
+      }
+      if (!RT.timeSkipping && !state.eventOpen) {
+        // 핵융합이 붙기 전(아직 "별"이 아닌 원시체) 상태에서는 생명력(fuel)이라는
+        // 개념 자체가 없다 — 태울 연료가 없으니 소모될 것도 없다.
+        if (state.hasFusion) state.fuel -= G.fuelBurnRate(state.mass) * dt;
+
+        if (!state.hasFusion) {
+          // 지구질량급 암석체~가스행성 성장은 실제로도 가스를 매끄럽게 계속
+          // 빨아들이는 게 아니라, 미행성체·원시행성 간의 "거대 충돌(giant
+          // impact)"이라는 불연속적 사건으로 일어난다 — 그래서 배경(수동)
+          // 성장은 아예 두지 않는다. 화면 숫자는 이벤트를 고를 때만, 그
+          // 순간에만 뛰어오른다(이벤트 배율은 events/early.ts 참고).
+        } else {
+          // 항성풍 질량 손실. 문헌상 O형 별은 주계열 기간 동안 누적으로 초기
+          // 질량의 대략 10~50%를 항성풍으로 잃는다(연간 손실률 10^-6~10^-5 M☉,
+          // Björklund+ 2012 등). 백색왜성 경계(8 M☉) 근처에서는 사실상 0%,
+          // 80 M☉ 안팎에서 상한 50%가 되도록 "생애 손실 비율" f(mass)를 정하고,
+          // f(mass)*mass를 남은 수명(FUEL_MAX/연료소모율) 동안 나눠 잃는
+          // 속도로 역산한다 — 그러면 실제 별이 정확히 그 비율만큼만 잃고
+          // 죽도록 자동으로 맞춰진다.
+          const lifeFrac = G.clamp((state.mass - G.WHITE_DWARF_MAX) / 72, 0, 0.5);
+          const windLoss = lifeFrac * state.mass * G.fuelBurnRate(state.mass) / G.FUEL_MAX;
+          state.mass = Math.max(0.05, state.mass - windLoss * dt);
+        }
         Gp._companionUpdate(dt);
       }
+
+      // 이번 판에서 실제로 어디까지 태웠는지 기록해 둔다. 질량이 이벤트로
+      // 오르내리므로 죽는 순간의 질량만으로는 알 수 없다 — 한때 15 M☉까지
+      // 올라가 탄소를 태웠다면, 나중에 질량을 잃어도 그 핵은 이미 만들어졌다.
+      if (state.hasFusion) {
+        state.maxFusionIndex = Math.max(state.maxFusionIndex, G.Stage.fusionStageIndex(state));
+      }
+
+      // 점화 판정: 질량이 수소연소한계를 넘는 순간 단 한 번 발생.
+      if (!state.hasFusion && state.mass >= G.IGNITION_MASS) Gp._triggerIgnition();
 
       // ending triggers
       if (state.collisionFlag) Gp._triggerEnding('collision');
       else if (state.mergeFlag) Gp._triggerEnding('merge');
-      else if (state.fuel <= 0) Gp._triggerEnding(G.Ending.naturalEndingKind());
+      else if (state.hasFusion && state.fuel <= 0) Gp._triggerEnding(G.Ending.naturalEndingKind());
 
       // event scheduling
-      if (!state.eventOpen && !RT.timeSkipping && !state.gameOver && state.ageYears >= state.nextEventAt) {
+      if (!state.eventOpen && !RT.timeSkipping && !state.gameOver && state.distanceLy >= state.nextEventAt) {
         const e = G.pickEvent();
         if (e) Gp._popupOpenEvent(e);
-        else state.nextEventAt = state.ageYears + 3;
+        else state.nextEventAt = state.distanceLy + 0.3;
       }
       if (state.eventOpen) {
         RT.evTimeLeft -= dt;
@@ -79,13 +141,46 @@
         if (RT.evTimeLeft <= 0) Gp._popupResolveEvent(null);
       }
 
-      Gp._hudUpdate();
+      Gp._hudUpdate(dt);
     } else if (state.gameOver) {
-      R.drawPlayerStar(dt);
-      R.endingAnimT += dt;
-      R.drawEndingAnim();
-      if (R.endingAnimT >= R.endingAnimDur && document.getElementById('credits')!.classList.contains('show') === false) {
-        G.Ending.buildCredits();
+      // move → form → hold → fadeOut → done 순서로 진행되는 사망 연출.
+      // 화면 이동(별밭 스크롤)은 이미 위에서 !state.gameOver 조건으로 멈춰 있다.
+      if (RT.endingPhase === 'move') {
+        RT.endingMoveT += dt;
+        const p = clamp(RT.endingMoveT / ENDING_MOVE_DUR, 0, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        R.drawPlayerStar(dt, eased);
+        if (p >= 1) {
+          RT.endingPhase = 'form';
+          R.setupEndingAnim(state.endingType!);
+        }
+      } else if (RT.endingPhase === 'form') {
+        // 별이 중앙에 도착한 뒤로는 엔딩 모양이 별을 대신한다 — 별을 계속 그리면
+        // (특히 항성풍/플레어의 흰 섬광 때문에) 엔딩 모양 뒤에서 별이 그대로
+        // 비쳐 보이거나, 초신성처럼 번쩍이는 것처럼 착각하게 만드는 버그가 있었다.
+        R.endingAnimT += dt;
+        R.drawEndingAnim();
+        if (R.endingAnimT >= R.endingAnimDur) {
+          RT.endingPhase = 'hold';
+          RT.endingHoldT = 0;
+        }
+      } else if (RT.endingPhase === 'hold') {
+        R.drawEndingAnim(); // endingAnimT를 더 늘리지 않아 완성된 형태로 정지
+        RT.endingHoldT += dt;
+        if (RT.endingHoldT >= ENDING_HOLD_DUR) {
+          RT.endingPhase = 'fadeOut';
+          RT.endingFadeT = 0;
+        }
+      } else if (RT.endingPhase === 'fadeOut') {
+        R.drawEndingAnim();
+        RT.endingFadeT += dt;
+        const fp = clamp(RT.endingFadeT / ENDING_FADE_DUR, 0, 1);
+        ctx.fillStyle = `rgba(0,0,0,${fp})`;
+        ctx.fillRect(0, 0, W, H);
+        if (fp >= 1) {
+          RT.endingPhase = 'done';
+          G.Ending.buildCredits();
+        }
       }
     }
   }

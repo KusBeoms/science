@@ -5,14 +5,15 @@
   const Gp = G as any;
 
   const MUSIC_FADE_MS = 1500;
-  // 볼륨은 유튜브/애플뮤직이 쓰는 -14 LUFS 표준에 맞춘 선형 게인(10^(dB/20))이다.
-  // ffmpeg -i <파일> -af loudnorm=I=-14:TP=-1:LRA=11:print_format=json -f null - 로 측정한
+  // 볼륨은 애플뮤직(Sound Check)이 쓰는 -16 LUFS 표준에 맞춘 선형 게인(10^(dB/20))이다.
+  // 유튜브 표준(-14 LUFS)보다 더 낮아, 이 값이 애플뮤직 대비 체감 음량을 맞춘다.
+  // ffmpeg -i <파일> -af loudnorm=I=-16:TP=-1:LRA=11:print_format=json -f null - 로 측정한
   // input_i(통합 라우드니스)를 기준으로 재계산한다.
   const MUSIC_TRACKS: Record<string, MusicTrackConfig> = {
-    // ingame.mp3 측정치 -10.10 LUFS → -14 LUFS까지 -3.9dB 감쇠 필요: 10^(-3.9/20)≈0.638
-    ingame: { src: 'src/music/ingame.mp3', volume: 0.638, loop: true },
-    // end.mp3 측정치 -11.40 LUFS → -14 LUFS까지 -2.6dB 감쇠 필요: 10^(-2.6/20)≈0.741
-    end: { src: 'src/music/end.mp3', volume: 0.741, loop: false },
+    // ingame.mp3 측정치 -10.10 LUFS → -16 LUFS까지 -5.9dB 감쇠 필요: 10^(-5.9/20)≈0.507
+    ingame: { src: 'src/music/ingame.mp3', volume: 0.507, loop: true },
+    // end.mp3 측정치 -11.40 LUFS → -16 LUFS까지 -4.6dB 감쇠 필요: 10^(-4.6/20)≈0.589
+    end: { src: 'src/music/end.mp3', volume: 0.589, loop: false },
   };
 
   Gp._audioGetMusicHowl = function (this: AudioAPI, name: string): any {

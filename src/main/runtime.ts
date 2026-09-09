@@ -11,17 +11,27 @@
   Gp._runtime = {
     currentEvent: null as EventDef | null,
     evTimeLeft: 0,
-    evDuration: 4,
+    evDuration: 4.5, // 읽고 고르기엔 충분하되, 한 판 2분 목표에 맞춘 제한시간
     choiceAnimRAF: null as number | null,
     choiceAnimStartT: 0,
 
     timeSkipping: false,
+
+    // 점화 후 나이 가속 램프의 경과 시간(초). ignition.ts가 0으로 되돌린다.
+    ignitionAgeRampT: 0,
 
     introParticles: [] as IntroParticle[],
     introT: 0,
     introPlaying: false,
     introDur: 2.2,
     introSpinDir: 1,
+    introPanT: 0, // 응축 완료 후 카메라가 오른쪽으로 팬하는 진행 시간
+
+    // 사망 연출 단계: move(중앙으로 이동) → form(엔딩 모양 형성) → hold(2초 정지) → fadeOut(암전) → done
+    endingPhase: 'idle' as 'idle' | 'move' | 'form' | 'hold' | 'fadeOut' | 'done',
+    endingMoveT: 0,
+    endingHoldT: 0,
+    endingFadeT: 0,
 
     lastT: performance.now(),
   };

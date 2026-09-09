@@ -10,6 +10,7 @@
     W: 0, H: 0,
     stars: [],
     starAngle: 0,
+    companionOrbitAngle: 0,
     endingAnimT: 0, endingAnimDur: 3.2, endingParticles: [],
 
     resize() { Gp._renderResize.call(this); },
@@ -18,12 +19,13 @@
     bgDarkness() { return Gp._renderBgDarkness.call(this); },
     massColor(m) { return Gp._renderMassColor(m); },
     starClass(m) { return Gp._renderStarClass(m); },
+    starRadius(volume) { return Gp._renderStarRadius(volume); },
     getSurface(id) { return Gp._renderGetSurface(id); },
     resetSurfaces() { Gp._renderResetSurfaces(); },
-    drawStarBody(x, y, mass, volume, fuelFrac, angle, id, dt) {
-      return Gp._renderDrawStarBody(x, y, mass, volume, fuelFrac, angle, id, dt);
+    drawStarBody(x, y, mass, volume, fuelFrac, angle, id, dt, ignitionBlend) {
+      return Gp._renderDrawStarBody(x, y, mass, volume, fuelFrac, angle, id, dt, ignitionBlend);
     },
-    drawPlayerStar(dt) { return Gp._renderDrawPlayerStar.call(this, dt); },
+    drawPlayerStar(dt, centerT, panT) { return Gp._renderDrawPlayerStar.call(this, dt, centerT, panT); },
     drawCompanionStar(dt) { return Gp._renderDrawCompanionStar.call(this, dt); },
     setupEndingAnim(type) { Gp._renderSetupEndingAnim.call(this, type); },
     playEndingSound(type) { Gp._renderPlayEndingSound.call(this, type); },

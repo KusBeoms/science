@@ -13,15 +13,31 @@
 
   G.pickEvent = function (): EventDef | null {
     const state = G.state;
-    const pool: EventDef[] = [];
+    const eligible: EventDef[] = [];
     for (const e of G.EVENTS) {
       if (e.once && state.usedOnce.has(e.id)) continue;
       if (!e.once && e.id === state.lastEventId) continue;
       if (!e.condition(state)) continue;
-      pool.push(e);
-      if (e.once) { for (let k = 0; k < 4; k++) pool.push(e); } // weight specials higher
+      eligible.push(e);
     }
-    if (pool.length === 0) return null;
+    if (eligible.length === 0) return null;
+
+    // 등장 확률이 명시된 이벤트를 먼저 굴린다. 후보 수와 무관하게 정확히
+    // 그 확률로만 나오므로, 드물게 나와야 할 사건을 의도대로 억제할 수 있다.
+    const chanced = eligible.filter((e) => typeof e.chance === 'number');
+    const plain = eligible.filter((e) => typeof e.chance !== 'number');
+    for (const e of chanced) {
+      if (Math.random() < (e.chance as number)) return e;
+    }
+    // 확률 이벤트가 모두 빗나갔는데 다른 후보가 없다면, 그 판은 이벤트 없이 넘긴다.
+    if (plain.length === 0) return null;
+
+    const pool: EventDef[] = [];
+    for (const e of plain) {
+      pool.push(e);
+      // 한 번뿐인 서사 이벤트는 조금 더 자주 나오게 둔다(2배).
+      if (e.once) pool.push(e);
+    }
     return pool[Math.floor(Math.random() * pool.length)];
   };
 })();

@@ -3,6 +3,7 @@
     "use strict";
     const G = (window.Game = window.Game || {});
     const Gp = G;
+    const RT = Gp._runtime;
     const state = G.state;
     Gp._triggerEnding = function (type) {
         if (state.gameOver)
@@ -12,7 +13,7 @@
         if (state.eventOpen)
             Gp._popupCloseEvent();
         G.Audio.stopMusic();
-        document.getElementById('lifeGaugeFill').classList.remove('danger');
-        G.Render.setupEndingAnim(type);
+        RT.endingPhase = 'move';
+        RT.endingMoveT = 0;
     };
 })();

@@ -6,7 +6,7 @@
     G.EVENTS = [].concat(Gp._EARLY_EVENTS || [], Gp._MID_EVENTS || [], Gp._LATE_EVENTS || []);
     G.pickEvent = function () {
         const state = G.state;
-        const pool = [];
+        const eligible = [];
         for (const e of G.EVENTS) {
             if (e.once && state.usedOnce.has(e.id))
                 continue;
@@ -14,14 +14,24 @@
                 continue;
             if (!e.condition(state))
                 continue;
-            pool.push(e);
-            if (e.once) {
-                for (let k = 0; k < 4; k++)
-                    pool.push(e);
-            }
+            eligible.push(e);
         }
-        if (pool.length === 0)
+        if (eligible.length === 0)
             return null;
+        const chanced = eligible.filter((e) => typeof e.chance === 'number');
+        const plain = eligible.filter((e) => typeof e.chance !== 'number');
+        for (const e of chanced) {
+            if (Math.random() < e.chance)
+                return e;
+        }
+        if (plain.length === 0)
+            return null;
+        const pool = [];
+        for (const e of plain) {
+            pool.push(e);
+            if (e.once)
+                pool.push(e);
+        }
         return pool[Math.floor(Math.random() * pool.length)];
     };
 })();

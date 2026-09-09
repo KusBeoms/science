@@ -19,7 +19,7 @@
             return ARCH.CP;
         let wCount = 0, riskCount = 0;
         for (const c of state.choiceLog) {
-            if (c.key === 'W')
+            if (c.key === 'A')
                 wCount++;
             if (c.riskTier >= 2)
                 riskCount++;

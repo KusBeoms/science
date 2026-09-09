@@ -10,7 +10,7 @@
     Gp._companionUpdate = function (dt) {
         if (!state.hasCompanion || !state.companionAlive || state.gameOver)
             return;
-        const burn = state.companionTier === 'low' ? 0.01 : G.fuelBurnRate(state.companionMass);
+        const burn = G.fuelBurnRate(state.companionMass);
         state.companionFuel -= burn * dt;
         if (state.companionFuel <= 0) {
             state.companionAlive = false;
@@ -32,14 +32,14 @@
         const od = document.getElementById('odometer');
         el.classList.add('show');
         A.playSweep(300, 60, 2.4);
-        const target = 100000000;
+        const target = Math.round(1e10 * Math.pow(Math.max(0.08, state.companionMass), -2.5));
         const dur = 2400;
         const t0 = performance.now();
         function step(now) {
             const p = clamp((now - t0) / dur, 0, 1);
             const eased = 1 - Math.pow(1 - p, 3);
             const val = Math.floor(eased * target);
-            od.textContent = val.toLocaleString('ko-KR') + '년';
+            od.textContent = G.formatYears(val);
             if (p < 1)
                 requestAnimationFrame(step);
             else {

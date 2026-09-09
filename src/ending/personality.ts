@@ -19,7 +19,7 @@
     const total = state.choiceLog.length;
     if (total === 0) return ARCH.CP;
     let wCount = 0, riskCount = 0;
-    for (const c of state.choiceLog) { if (c.key === 'W') wCount++; if (c.riskTier >= 2) riskCount++; }
+    for (const c of state.choiceLog) { if (c.key === 'A') wCount++; if (c.riskTier >= 2) riskCount++; }
     const wRatio = wCount / total, riskRatio = riskCount / total;
     const axisA = wRatio >= 0.5 ? 'E' : 'C';
     const axisB = riskRatio >= 0.28 ? 'B' : 'P';

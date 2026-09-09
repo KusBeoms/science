@@ -23,23 +23,33 @@ interface ChoiceVis {
 interface Badge {
   glyph: string;
   dir: -1 | 0 | 1;
+  name: string;
 }
 
 interface ChoiceLogEntry {
   id: number;
-  key: 'W' | 'S' | null;
+  key: 'A' | 'D' | null;
   riskTier: number;
 }
 
 interface GameState {
   started: boolean;
   gameOver: boolean;
+  hasFusion: boolean;
+  // 이번 판에서 실제로 도달한 최대 핵융합 단계(FUSION_STAGES 인덱스, -1이면 미점화).
+  // 질량은 이벤트로 오르내리므로 "죽는 순간의 질량"만으로는 어디까지 태웠는지
+  // 알 수 없다 — 엔딩 분기와 크레딧 표시가 이 값을 쓴다.
+  maxFusionIndex: number;
   endingType: EndingKind | null;
   mass: number;
   volume: number;
   fuel: number;
   ageYears: number;
   distanceLy: number;
+  postIgnitionDistanceLy: number;
+  accretionBoost: number;
+  /* 이번 판에 동반성 조우 이벤트가 등장할 수 있는지 — 판 시작 때 한 번만 굴린다. */
+  companionOffered: boolean;
   hasCompanion: boolean;
   companionTier: CompanionTier | null;
   companionMass: number;
@@ -71,6 +81,10 @@ interface EventChoice {
 interface EventDef {
   id: number;
   once: boolean;
+  /* 자격을 갖췄을 때 이 이벤트가 뽑힐 확률(0~1). 지정하면 가중치 방식 대신
+     이 값이 그대로 등장 확률이 된다 — 후보 수에 따라 확률이 출렁이지 않는다.
+     생략하면 기존 방식(일반 1배, once 2배 가중치)을 따른다. */
+  chance?: number;
   title: string;
   desc: string;
   condition: (s: GameState) => boolean;
@@ -84,6 +98,28 @@ interface NebulaPreset {
   desc: string;
   mass: number;
   volume: number;
+  accretionBoost: number;
+}
+
+type FusionStageKey = 'H' | 'He' | 'C' | 'Ne' | 'O' | 'Si' | 'Fe';
+
+interface FusionStageInfo {
+  key: FusionStageKey;
+  index: number;
+  name: string;
+  color: string;
+}
+
+type BodyStageKey = 'rocky' | 'gasGiant' | FusionStageKey;
+
+interface StageSequenceEntry {
+  key: BodyStageKey;
+  label: string;
+}
+
+interface StageSequenceInfo {
+  entries: StageSequenceEntry[];
+  index: number;
 }
 
 interface ArchetypeInfo {
@@ -98,6 +134,7 @@ interface StarActorPoint {
 }
 
 interface StarTier {
+  spectral: string;
   max: number;
   color: [number, number, number];
   granules: number;
@@ -163,6 +200,7 @@ interface RenderAPI {
   H: number;
   stars: BackgroundStar[];
   starAngle: number;
+  companionOrbitAngle: number;
   endingAnimT: number;
   endingAnimDur: number;
   endingParticles: EndingParticle[];
@@ -172,10 +210,11 @@ interface RenderAPI {
   bgDarkness(): number;
   massColor(m: number): string;
   starClass(m: number): StarTier;
+  starRadius(volume: number): number;
   getSurface(id: string): any;
   resetSurfaces(): void;
-  drawStarBody(x: number, y: number, mass: number, volume: number, fuelFrac: number, angle: number, id?: string, dt?: number): StarActorPoint;
-  drawPlayerStar(dt?: number): StarActorPoint;
+  drawStarBody(x: number, y: number, mass: number, volume: number, fuelFrac: number, angle: number, id?: string, dt?: number, ignitionBlend?: number): StarActorPoint;
+  drawPlayerStar(dt?: number, centerT?: number, panT?: number): StarActorPoint;
   drawCompanionStar(dt?: number): StarActorPoint;
   setupEndingAnim(type: EndingKind): void;
   playEndingSound(type: EndingKind): void;
@@ -207,15 +246,38 @@ interface EndingAPI {
   restart(): void;
 }
 
+interface StageAPI {
+  FUSION_STAGES: FusionStageInfo[];
+  bodyStageKey(state: GameState): BodyStageKey;
+  bodyStageLabel(state: GameState): string;
+  coarseLabel(state: GameState): string;
+  fusionStageIndex(state: GameState): number;
+  fusionStageCount(mass: number): number;
+  sequence(state: GameState): StageSequenceInfo;
+}
+
 interface GameNamespace {
   state: GameState;
   SPEED: number;
   FUEL_MAX: number;
   BASE_BURN: number;
   MASS_REF: number;
+  EARTH_MASS: number;
+  GAS_GIANT_MIN_MASS: number;
+  JUPITER_MASS: number;
+  COMPANION_ENCOUNTER_CHANCE: number;
+  IGNITION_MASS: number;
+  WHITE_DWARF_MAX: number;
+  BLACK_HOLE_MIN: number;
+  HELIUM_IGNITION_MIN: number;
+  CARBON_IGNITION_MIN: number;
+  IRON_CORE_MIN: number;
+  STAR_REST_X_FRACTION: number;
+  FORMATION_YEARS_PER_SEC: number;
   clamp(v: number, a: number, b: number): number;
   fuelBurnRate(m: number): number;
   yearsPerSecond(m: number): number;
+  formatYears(y: number): string;
   resetState(): void;
   NEBULA_PRESETS: NebulaPreset[];
   applyPreset(id: string): void;
@@ -225,6 +287,7 @@ interface GameNamespace {
   Render: RenderAPI;
   ChoiceAnim: ChoiceAnimAPI;
   Ending: EndingAPI;
+  Stage: StageAPI;
 }
 
 interface Window {
@@ -235,3 +298,4 @@ interface Window {
 
 declare var Game: GameNamespace;
 declare var Howl: any;
+declare var gsap: any;

@@ -3,16 +3,22 @@
     "use strict";
     const G = (window.Game = window.Game || {});
     const Gp = G;
+    const CARBON_INDEX = 2;
     Gp._endingNaturalType = function () {
         const state = G.state;
-        if (state.hasCompanion && state.companionAlive && state.mass < 50)
-            return 'friends';
+        const burned = state.maxFusionIndex;
+        const coreCollapses = burned >= CARBON_INDEX;
+        if (!coreCollapses) {
+            if (state.hasCompanion && state.companionAlive)
+                return 'friends';
+            if (state.hasCompanion && !state.companionAlive && state.staysBound)
+                return 'spider';
+            return 'whitedwarf';
+        }
         if (state.hasCompanion && !state.companionAlive && state.staysBound)
             return 'spider';
-        if (state.mass >= 80)
+        if (state.mass >= G.BLACK_HOLE_MIN)
             return 'blackhole';
-        if (state.mass >= 50)
-            return 'supernova';
-        return 'whitedwarf';
+        return 'supernova';
     };
 })();

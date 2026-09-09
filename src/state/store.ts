@@ -5,15 +5,16 @@
 
   function freshState(): GameState {
     return {
-      started: false, gameOver: false, endingType: null,
-      mass: 20, volume: 20, fuel: G.FUEL_MAX,
-      ageYears: 0, distanceLy: 0,
+      started: false, gameOver: false, hasFusion: false, endingType: null,
+      mass: 1 * G.EARTH_MASS, volume: 20, fuel: G.FUEL_MAX,
+      ageYears: 0, maxFusionIndex: -1, distanceLy: 0, postIgnitionDistanceLy: 0, accretionBoost: 1,
+      companionOffered: Math.random() < G.COMPANION_ENCOUNTER_CHANCE,
       hasCompanion: false, companionTier: null, companionMass: 0, companionFuel: 0,
       companionAlive: false, staysBound: false, mergeFlag: false, collisionFlag: false,
       companionEventShown: false, crisisShown: false, collisionEventShown: false, lastBreathShown: false,
       lastEventId: null, usedOnce: new Set<number>(),
       choiceLog: [],
-      eventOpen: false, nextEventAt: 6,
+      eventOpen: false, nextEventAt: 0.5,
       phaseStarBudget: 220,
     };
   }
@@ -30,5 +31,19 @@
     if (!preset) return;
     G.state.mass = preset.mass;
     G.state.volume = preset.volume;
+    G.state.accretionBoost = preset.accretionBoost;
+
+    // 시작 질량이 이미 수소연소한계를 넘는 프리셋(고밀도)은 형성기 없이
+    // 곧바로 항성으로 태어난다. 점화 판정(main/loop.ts)이 다시 걸리지 않도록
+    // 여기서 상태를 완성해 둔다.
+    if (G.state.mass >= G.IGNITION_MASS) {
+      G.state.hasFusion = true;
+      G.state.fuel = G.FUEL_MAX;
+      G.state.maxFusionIndex = 0; // 수소 연소부터
+      // 나이 가속 램프는 "형성기 속도 → 항성 속도" 전환을 부드럽게 하려는
+      // 장치다. 형성기 자체가 없으므로 처음부터 항성 속도로 흐르게 다 채워둔다.
+      const RT = (G as any)._runtime;
+      if (RT) RT.ignitionAgeRampT = 1e9;
+    }
   };
 })();

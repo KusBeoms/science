@@ -3,6 +3,7 @@
   "use strict";
   const G = (window.Game = window.Game || ({} as GameNamespace));
   const Gp = G as any;
+  const RT = Gp._runtime;
   const state = G.state;
 
   Gp._triggerEnding = function (type: EndingKind) {
@@ -10,7 +11,10 @@
     state.gameOver = true; state.endingType = type;
     if (state.eventOpen) Gp._popupCloseEvent();
     G.Audio.stopMusic();
-    document.getElementById('lifeGaugeFill')!.classList.remove('danger');
-    G.Render.setupEndingAnim(type);
+    // 화면 이동을 멈추고 별이 중앙으로 이동한 뒤(move) 엔딩 모양이 형성되도록(form)
+    // 단계를 나눈다 — setupEndingAnim(파티클/사운드 준비)은 별이 중앙에 도착한
+    // 뒤(loop.ts의 move→form 전환 시점)에 호출한다.
+    RT.endingPhase = 'move';
+    RT.endingMoveT = 0;
   };
 })();
