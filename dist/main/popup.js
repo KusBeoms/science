@@ -111,6 +111,10 @@
         }
         state.choiceLog.push({ id: e.id, key, riskTier });
         state.mass = clamp(state.mass, massBefore / 3, massBefore * 3);
+        if (state.mass > massBefore) {
+            const damp = 1 / (1 + massBefore / G.ACCRETION_DAMP_MASS);
+            state.mass = massBefore * (1 + (state.mass / massBefore - 1) * damp);
+        }
         state.mass = clamp(state.mass, 1e-9, 200);
         state.volume = clamp(state.volume, 4, 200);
         Gp._popupCloseEvent();

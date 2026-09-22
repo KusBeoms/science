@@ -266,6 +266,7 @@ interface GameNamespace {
   GAS_GIANT_MIN_MASS: number;
   JUPITER_MASS: number;
   COMPANION_ENCOUNTER_CHANCE: number;
+  ACCRETION_DAMP_MASS: number;
   IGNITION_MASS: number;
   WHITE_DWARF_MAX: number;
   BLACK_HOLE_MIN: number;

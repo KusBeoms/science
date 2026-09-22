@@ -130,6 +130,12 @@
     // 에서 출발하므로 그 하한이 형성기 첫 이벤트만으로 점화 직전까지 강제로
     // 끌어올리는 버그가 됐다. 진짜 0/음수만 막는 훨씬 작은 하한으로 낮춘다.
     state.mass = clamp(state.mass, massBefore / 3, massBefore * 3);
+    // 질량이 늘어나는 선택은 복사압만큼 깎인다(constants.ts 주석 참고) —
+    // 가벼울 땐 거의 그대로 붙지만, 무거워질수록 같은 선택도 점점 덜 붙는다.
+    if (state.mass > massBefore) {
+      const damp = 1 / (1 + massBefore / G.ACCRETION_DAMP_MASS);
+      state.mass = massBefore * (1 + (state.mass / massBefore - 1) * damp);
+    }
     state.mass = clamp(state.mass, 1e-9, 200);
     // 부피는 순수 시각적 크기 스탯이지만, +부피 선택이 반복되면 무한정 커져
     // 화면을 완전히 덮어버린다 — 커진 티는 충분히 나면서 화면 안에 남는
