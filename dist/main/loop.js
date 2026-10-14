@@ -7,7 +7,6 @@
     const state = G.state;
     const clamp = G.clamp;
     const R = G.Render;
-    function lerp(a, b, t) { return a + (b - a) * t; }
     const evTimerBar = document.getElementById('evTimerBar');
     const ENDING_MOVE_DUR = 1.0;
     const ENDING_HOLD_DUR = 1.6;
@@ -18,35 +17,15 @@
         RT.lastT = now;
         requestAnimationFrame(loop);
         const ctx = R.ctx, W = R.W, H = R.H;
-        const dark = R.bgDarkness();
-        const bgCol = `rgba(${lerp(6, 2, dark)},${lerp(9, 3, dark)},${lerp(24, 8, dark)},1)`;
-        ctx.fillStyle = bgCol;
-        ctx.fillRect(0, 0, W, H);
+        let scroll = 0;
+        if (RT.introPlaying)
+            scroll = RT.introT >= RT.introDur ? 1 : 0;
+        else if (state.started && !state.gameOver)
+            scroll = 1;
+        else if (!state.started)
+            scroll = 0.15;
         const budget = RT.introPlaying ? R.stars.length : R.starBudget();
-        for (let i = 0; i < R.stars.length; i++) {
-            if (i >= budget)
-                continue;
-            const s = R.stars[i];
-            if (!RT.introPlaying && state.started && !state.gameOver) {
-                s.x -= G.SPEED * 260 * s.layer * dt;
-                if (s.x < -5) {
-                    s.x = W + 5;
-                    s.y = Math.random() * H * 0.85;
-                }
-            }
-            ctx.globalAlpha = s.baseAlpha * (1 - dark * 0.85);
-            ctx.fillStyle = '#dfe8ff';
-            ctx.beginPath();
-            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = 'rgba(140,160,255,' + (0.15 * (1 - dark * 0.7)) + ')';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(0, H * 0.72);
-        ctx.lineTo(W, H * 0.72);
-        ctx.stroke();
+        R.drawBackground(dt, scroll, budget);
         if (RT.introPlaying) {
             Gp._introTick(dt);
         }
@@ -60,7 +39,9 @@
                     state.postIgnitionDistanceLy += G.SPEED * dt;
                 state.distanceLy += G.SPEED * dt;
             }
-            if (state.hasFusion) {
+            if (state.collapseRush) {
+            }
+            else if (state.hasFusion) {
                 RT.ignitionAgeRampT = Math.min(RT.ignitionAgeRampT + dt, IGNITION_RAMP_DUR);
                 const t = clamp(RT.ignitionAgeRampT / IGNITION_RAMP_DUR, 0, 1);
                 const eased = t * t * (3 - 2 * t);
@@ -83,18 +64,16 @@
                 }
                 Gp._companionUpdate(dt);
             }
-            if (state.hasFusion) {
-                state.maxFusionIndex = Math.max(state.maxFusionIndex, G.Stage.fusionStageIndex(state));
-            }
+            const naturalDeath = state.hasFusion && Gp._stageRushUpdate(dt);
             if (!state.hasFusion && state.mass >= G.IGNITION_MASS)
                 Gp._triggerIgnition();
             if (state.collisionFlag)
                 Gp._triggerEnding('collision');
             else if (state.mergeFlag)
                 Gp._triggerEnding('merge');
-            else if (state.hasFusion && state.fuel <= 0)
+            else if (naturalDeath)
                 Gp._triggerEnding(G.Ending.naturalEndingKind());
-            if (!state.eventOpen && !RT.timeSkipping && !state.gameOver && state.distanceLy >= state.nextEventAt) {
+            if (!state.eventOpen && !RT.timeSkipping && !state.gameOver && !state.collapseRush && state.distanceLy >= state.nextEventAt) {
                 const e = G.pickEvent();
                 if (e)
                     Gp._popupOpenEvent(e);

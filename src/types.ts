@@ -40,6 +40,10 @@ interface GameState {
   // 질량은 이벤트로 오르내리므로 "죽는 순간의 질량"만으로는 어디까지 태웠는지
   // 알 수 없다 — 엔딩 분기와 크레딧 표시가 이 값을 쓴다.
   maxFusionIndex: number;
+  /* 말기 연소 질주(main/collapse.ts) 중 화면에 보여줄 연소 단계. -1이면 평소처럼
+     연료 잔량으로 판정한다. */
+  forcedFusionIndex: number;
+  collapseRush: CollapseRushState | null;
   endingType: EndingKind | null;
   mass: number;
   volume: number;
@@ -68,6 +72,13 @@ interface GameState {
   eventOpen: boolean;
   nextEventAt: number;
   phaseStarBudget: number;
+}
+
+interface CollapseRushState {
+  index: number;  // 지금 보여주는 연소 단계
+  target: number; // 질량이 정한 마지막 단계
+  t: number;      // 현재 단계에 머문 시간(초)
+  step: number;   // 질주 시작 후 넘어간 단계 수
 }
 
 interface EventChoice {
@@ -184,6 +195,10 @@ interface BackgroundStar {
   r: number;
   layer: number;
   baseAlpha: number;
+  color: string;
+  twinkle: number;
+  phase: number;
+  spike: boolean;
 }
 
 interface EndingParticle {
@@ -208,6 +223,7 @@ interface RenderAPI {
   initStars(): void;
   starBudget(): number;
   bgDarkness(): number;
+  drawBackground(dt: number, scroll: number, budget: number): void;
   massColor(m: number): string;
   starClass(m: number): StarTier;
   starRadius(volume: number): number;
@@ -274,6 +290,7 @@ interface GameNamespace {
   CARBON_IGNITION_MIN: number;
   IRON_CORE_MIN: number;
   STAR_REST_X_FRACTION: number;
+  PROTO_BODY_SCALE: number;
   FORMATION_YEARS_PER_SEC: number;
   clamp(v: number, a: number, b: number): number;
   fuelBurnRate(m: number): number;

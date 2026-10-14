@@ -28,7 +28,7 @@
             return 2;
         return 1;
     };
-    Gp._stageFusionIndex = function (state) {
+    Gp._stageFuelIndex = function (state) {
         const fuelFrac = G.clamp(state.fuel / G.FUEL_MAX, 0, 1);
         const boundaries = BOUNDARIES_BY_COUNT[Gp._stageFusionCount(state.mass)];
         for (let i = 0; i < boundaries.length - 1; i++) {
@@ -36,6 +36,11 @@
                 return i;
         }
         return boundaries.length - 2;
+    };
+    Gp._stageFusionIndex = function (state) {
+        if (state.forcedFusionIndex >= 0)
+            return state.forcedFusionIndex;
+        return Gp._stageFuelIndex(state);
     };
     Gp._stageBodyKey = function (state) {
         if (!state.hasFusion) {

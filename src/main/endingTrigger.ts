@@ -9,6 +9,8 @@
   Gp._triggerEnding = function (type: EndingKind) {
     if (state.gameOver) return;
     state.gameOver = true; state.endingType = type;
+    // 질주 도중 충돌·병합 같은 즉시 결말이 끼어들어도 경고 표시가 남지 않게
+    Gp._collapseRushReset();
     if (state.eventOpen) Gp._popupCloseEvent();
     G.Audio.stopMusic();
     // 화면 이동을 멈추고 별이 중앙으로 이동한 뒤(move) 엔딩 모양이 형성되도록(form)

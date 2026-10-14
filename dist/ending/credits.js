@@ -86,5 +86,6 @@
         RT.endingHoldT = 0;
         RT.endingFadeT = 0;
         document.getElementById('startOverlay').style.display = 'flex';
+        document.body.classList.remove('inGame');
     };
 })();

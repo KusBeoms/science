@@ -21,6 +21,7 @@
         A.init();
         A.playMusic('ingame');
         startOverlay.style.display = 'none';
+        document.body.classList.add('inGame');
         RT.introParticles = [];
         const density = nebulaDensityFactor();
         const densitySqrt = Math.sqrt(density);
@@ -98,13 +99,6 @@
             const panP = clamp(RT.introPanT / INTRO_PAN_DUR, 0, 1);
             const panEase = panP * panP * (3 - 2 * panP);
             R.drawPlayerStar(dt, undefined, panEase);
-            for (const s of R.stars) {
-                s.x -= G.SPEED * 260 * s.layer * dt;
-                if (s.x < -5) {
-                    s.x = W + 5;
-                    s.y = Math.random() * H * 0.85;
-                }
-            }
             if (panP >= 1) {
                 RT.introPlaying = false;
                 state.started = true;

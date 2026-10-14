@@ -10,6 +10,7 @@
             return;
         state.gameOver = true;
         state.endingType = type;
+        Gp._collapseRushReset();
         if (state.eventOpen)
             Gp._popupCloseEvent();
         G.Audio.stopMusic();

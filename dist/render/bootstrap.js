@@ -15,6 +15,7 @@
         initStars() { Gp._renderInitStars.call(this); },
         starBudget() { return Gp._renderStarBudget.call(this); },
         bgDarkness() { return Gp._renderBgDarkness.call(this); },
+        drawBackground(dt, scroll, budget) { Gp._renderDrawBackground.call(this, dt, scroll, budget); },
         massColor(m) { return Gp._renderMassColor(m); },
         starClass(m) { return Gp._renderStarClass(m); },
         starRadius(volume) { return Gp._renderStarRadius(volume); },
@@ -31,5 +32,6 @@
     };
     window.addEventListener('resize', () => Render.resize());
     Render.resize();
+    setTimeout(Gp._renderWarmBodyTextures, 120);
     G.Render = Render;
 })();

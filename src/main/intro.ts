@@ -32,6 +32,7 @@
     A.init();
     A.playMusic('ingame');
     startOverlay.style.display = 'none';
+    document.body.classList.add('inGame');
     RT.introParticles = [];
     const density = nebulaDensityFactor();
     const densitySqrt = Math.sqrt(density);
@@ -127,14 +128,8 @@
       // 실제 게임 별 렌더링과 동일해 종료 시 크기/모양 점프 없음. panEase가 0→1로
       // 진행되며 화면 중앙에서 형성된 별이 실제 플레이 위치로 미끄러져 이동한다.
       R.drawPlayerStar(dt, undefined, panEase);
-      // 배경 별은 "화면 중앙→실제 위치" 같은 별도의 이동 거리/속도를 따로
-      // 정하지 않고, 실제 게임이 시작된 뒤 쓰는 것과 완전히 같은 스크롤
-      // 속도식을 그대로 쓴다 — 그래야 팬이 끝나고 진짜 게임이 시작되는
-      // 순간 배경 속도가 갑자기 뚝 떨어지는 (혹은 확 빨라지는) 불연속이 없다.
-      for (const s of R.stars) {
-        s.x -= G.SPEED * 260 * s.layer * dt;
-        if (s.x < -5) { s.x = W + 5; s.y = Math.random() * H * 0.85; }
-      }
+      // 배경 스크롤은 loop.ts가 담당한다 — 팬 구간부터 실제 게임과 완전히
+      // 같은 속도식으로 흘러, 팬이 끝나는 순간 속도가 뚝 끊기는 불연속이 없다.
       if (panP >= 1) {
         RT.introPlaying = false; state.started = true; state.nextEventAt = state.distanceLy + 0.5;
       }

@@ -40,13 +40,23 @@
     return 1;
   };
 
-  Gp._stageFusionIndex = function (state: GameState): number {
+  // 연료 잔량만으로 본 연소 단계(질주 덮어쓰기 무시) — main/collapse.ts가
+  // "원래 지금 어디여야 하는지"를 알기 위해 쓴다.
+  Gp._stageFuelIndex = function (state: GameState): number {
     const fuelFrac = G.clamp(state.fuel / G.FUEL_MAX, 0, 1);
     const boundaries = BOUNDARIES_BY_COUNT[Gp._stageFusionCount(state.mass)];
     for (let i = 0; i < boundaries.length - 1; i++) {
       if (fuelFrac <= boundaries[i] && fuelFrac >= boundaries[i + 1]) return i;
     }
     return boundaries.length - 2;
+  };
+
+  Gp._stageFusionIndex = function (state: GameState): number {
+    // 건너뛴 단계를 빠르게 밟는 중이면(main/collapse.ts) 그 단계를 그대로 쓴다 —
+    // 연료가 크게 깎이면 연료 기준 판정이 여러 단계를 한 프레임 만에 건너뛰고,
+    // 특히 연료 0은 경로의 마지막 단계(철핵 등)로 판정되기 때문이다.
+    if (state.forcedFusionIndex >= 0) return state.forcedFusionIndex;
+    return Gp._stageFuelIndex(state);
   };
 
   Gp._stageBodyKey = function (state: GameState): BodyStageKey {

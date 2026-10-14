@@ -17,6 +17,7 @@
     initStars() { Gp._renderInitStars.call(this); },
     starBudget() { return Gp._renderStarBudget.call(this); },
     bgDarkness() { return Gp._renderBgDarkness.call(this); },
+    drawBackground(dt, scroll, budget) { Gp._renderDrawBackground.call(this, dt, scroll, budget); },
     massColor(m) { return Gp._renderMassColor(m); },
     starClass(m) { return Gp._renderStarClass(m); },
     starRadius(volume) { return Gp._renderStarRadius(volume); },
@@ -34,6 +35,9 @@
 
   window.addEventListener('resize', () => Render.resize());
   Render.resize();
+  // 행성 표면 지도는 생성에 수십 ms가 든다 — 시작 화면에 머무는 동안 미리
+  // 만들어 두어, 게임이 시작되는 순간 첫 프레임이 끊기지 않게 한다.
+  setTimeout(Gp._renderWarmBodyTextures, 120);
 
   G.Render = Render;
 })();

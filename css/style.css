@@ -10,16 +10,32 @@ html {
 html, body { width:100%; height:100%; overflow:hidden; background:#02030a; font-family: "Malgun Gothic","Apple SD Gothic Neo",sans-serif; }
 #scene { position:fixed; top:0; left:0; width:100%; height:100%; display:block; }
 
+/* 상단 세 덩어리(단계 배지·단면도/트랙·HUD)는 같은 유리 패널 언어를 쓴다 —
+   밝은 은하수/성운이 뒤로 지나가도 글자가 묻히지 않고, 화면 위쪽이 흩어진
+   글자 대신 정돈된 띠로 읽힌다. */
+#stageBadge, #hud, #vitalsPanel, #muteBtn {
+  background:linear-gradient(160deg, rgba(22,28,64,.55), rgba(8,10,28,.42));
+  border:1px solid rgba(150,175,255,.18);
+  box-shadow:0 6px 24px rgba(0,0,10,.35), inset 0 1px 0 rgba(255,255,255,.06);
+  -webkit-backdrop-filter:blur(10px) saturate(1.2);
+  backdrop-filter:blur(10px) saturate(1.2);
+}
+/* 게임 HUD는 시작 화면(반투명 막) 뒤로 빈 패널이 비쳐 보이지 않도록,
+   판이 시작될 때(body.inGame) 서서히 떠오른다. */
+#stageBadge, #hud, #vitalsPanel { transition:opacity .8s ease; }
+body:not(.inGame) #stageBadge, body:not(.inGame) #hud, body:not(.inGame) #vitalsPanel { opacity:0; pointer-events:none; }
 #stageBadge {
-  position:fixed; top:1rem; left:1.25rem; color:#dfe6ff;
+  position:fixed; top:1rem; left:1.25rem; color:#e8edff;
   text-shadow:0 0 12px rgba(120,160,255,.7); z-index:20; user-select:none;
-  font-size:1.625rem; font-weight:bold; letter-spacing:.045em;
+  font-size:1.5rem; font-weight:bold; letter-spacing:.045em;
+  padding:0.45rem 1rem; border-radius:0.875rem;
 }
 
 #hud {
   position:fixed; top:1rem; right:1.25rem; text-align:right; color:#dfe6ff;
   text-shadow:0 0 8px rgba(120,160,255,.6); z-index:20; user-select:none;
   font-variant-numeric: tabular-nums;
+  padding:0.55rem 0.9rem; border-radius:0.875rem; min-width:11rem;
 }
 #hud .row { display:flex; align-items:baseline; justify-content:flex-end; gap:0.3125rem; }
 #hud .ico { font-size:0.8125rem; opacity:.8; }
@@ -38,15 +54,27 @@ html, body { width:100%; height:100%; overflow:hidden; background:#02030a; font-
    완전히 대체한다 — 연료가 얼마나 남았는지 대신, 지금 어떤 몸체/연소
    단계인지를 보여준다. */
 #vitalsPanel {
-  position:fixed; top:0.6rem; left:50%; transform:translateX(-50%); z-index:20;
+  position:fixed; top:1rem; left:50%; transform:translateX(-50%); z-index:20;
   display:flex; align-items:center; gap:0.75rem;
   color:#dfe6ff; user-select:none;
+  padding:0.35rem 0.9rem 0.35rem 0.4rem; border-radius:2.5rem;
 }
 #crossSectionCanvas {
   width:3.5rem; height:3.5rem;
   border-radius:50%;
-  background:rgba(255,255,255,.05);
-  filter:drop-shadow(0 0 0.375rem rgba(60,90,200,.35));
+  background:rgba(0,0,0,.25);
+  filter:drop-shadow(0 0 0.5rem rgba(90,120,230,.45));
+}
+/* 말기 연소 질주(연료가 바닥난 뒤 남은 단계를 빠르게 밟는 중): 붕괴가 임박했음을
+   단면도·트랙 패널이 붉게 맥동하며 알린다. */
+#vitalsPanel.collapsing {
+  border-color:rgba(255,120,100,.55);
+  animation:collapse-pulse .45s ease-in-out infinite alternate;
+}
+#vitalsPanel.collapsing #stageTrackLabel { color:#ffb4a0; text-shadow:0 0 10px rgba(255,110,80,.8); }
+@keyframes collapse-pulse {
+  from { box-shadow:0 6px 24px rgba(0,0,10,.35), 0 0 0 rgba(255,90,60,0); }
+  to   { box-shadow:0 6px 24px rgba(0,0,10,.35), 0 0 22px rgba(255,90,60,.55); }
 }
 /* 단계 진행 트랙: 전체 단계를 세로로 늘어놓고, 뷰포트 창(고정 높이 +
    위아래가 옅어지는 mask)으로 현재 위치 근처만 보여준다. 목록 자체는
@@ -97,17 +125,25 @@ html, body { width:100%; height:100%; overflow:hidden; background:#02030a; font-
 
 #startOverlay {
   position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-  background:radial-gradient(circle at 50% 50%, #0a0f24 0%, #020308 70%); z-index:50;
+  /* 반투명 막 — 뒤에서 천천히 흘러가는 실제 은하수/성운이 비쳐 보여,
+     시작 화면부터 "우주 한가운데"에 있다는 느낌을 준다. */
+  background:radial-gradient(ellipse at 50% 48%, rgba(8,12,34,.35) 0%, rgba(2,3,10,.72) 70%, rgba(1,1,6,.9) 100%); z-index:50;
   color:#eaf0ff; text-align:center;
 }
-#startOverlay h1 { font-size:2.125rem; letter-spacing:.118em; font-weight:300; margin-bottom:0.625rem; text-shadow:0 0 20px rgba(140,170,255,.8); }
+#startOverlay h1 {
+  font-size:2.75rem; letter-spacing:.2em; font-weight:300; margin-bottom:0.75rem;
+  background:linear-gradient(180deg, #ffffff 0%, #cfdcff 55%, #9fb4ff 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 0 18px rgba(140,170,255,.65));
+}
 #startOverlay p { font-size:0.875rem; opacity:.7; letter-spacing:.143em; animation:pulse 2s infinite ease-in-out; }
 @keyframes pulse { 0%,100%{opacity:.35} 50%{opacity:.85} }
 #startOverlay .hint { font-size:0.8125rem; opacity:.45; letter-spacing:.083em; margin-top:1.75rem; animation:none; }
 
 .presetRow { display:flex; flex-wrap:wrap; justify-content:center; gap:1rem; margin:2rem 0 0.25rem; animation:none; }
 .presetCard {
-  width:9.75rem; background:linear-gradient(160deg, rgba(120,150,255,.12), rgba(120,150,255,.03));
+  width:9.75rem; background:linear-gradient(160deg, rgba(120,150,255,.16), rgba(20,26,60,.35));
+  -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
   border:1px solid rgba(140,170,255,.3); border-radius:0.875rem; padding:1.375rem 1rem;
   cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:0.5rem;
   box-shadow:0 4px 18px rgba(0,0,0,.25);
@@ -128,10 +164,11 @@ html, body { width:100%; height:100%; overflow:hidden; background:#02030a; font-
    패널을 둘 공간이 부족해지므로 기존처럼 화면 하단 전체 폭 시트로 되돌아간다. */
 #eventPopup {
   position:fixed; right:4vw; top:50%; transform:translateY(-50%) translateX(1.25rem);
-  width:min(24rem, 38vw); background:rgba(8,10,26,.88); border:1px solid rgba(140,170,255,.35);
+  width:min(24rem, 38vw); background:linear-gradient(165deg, rgba(20,26,62,.82), rgba(6,8,22,.86)); border:1px solid rgba(140,170,255,.35);
+  -webkit-backdrop-filter:blur(12px) saturate(1.2); backdrop-filter:blur(12px) saturate(1.2);
   border-radius:0.625rem; padding:1.125rem 1.375rem; color:#eef1ff; z-index:30;
   opacity:0; pointer-events:none; transition:opacity .35s ease, transform .35s ease;
-  box-shadow:0 0 30px rgba(60,90,200,.25);
+  box-shadow:0 0 30px rgba(60,90,200,.25), 0 18px 50px rgba(0,0,10,.45), inset 0 1px 0 rgba(255,255,255,.07);
 }
 #eventPopup.show { opacity:1; transform:translateY(-50%) translateX(0); pointer-events:auto; }
 #eventPopup h3 { font-size:1.0625rem; margin-bottom:0.375rem; color:#bcd0ff; letter-spacing:.059em; }
@@ -180,7 +217,9 @@ html, body { width:100%; height:100%; overflow:hidden; background:#02030a; font-
   #hud .clock { font-size:1.125rem; }
   /* 좁은 화면에선 HUD가 4줄이라 세로로 길어져, 중앙 패널을 같은 높이에 두면
      가로로 겹친다. 아예 HUD 블록 아래로 내려 겹칠 여지를 없앤다. */
-  #vitalsPanel { top:7rem; gap:0.5rem; }
+  #vitalsPanel { top:7.25rem; gap:0.5rem; }
+  #hud { min-width:0; padding:0.4rem 0.65rem; }
+  #stageBadge { padding:0.35rem 0.75rem; }
   #crossSectionCanvas { width:2.75rem; height:2.75rem; }
   #stageTrackViewport { width:6.5rem; }
 }
@@ -262,6 +301,8 @@ html, body { width:100%; height:100%; overflow:hidden; background:#02030a; font-
 
 #muteBtn {
   position:fixed; right:1.125rem; bottom:1rem; z-index:25; width:2.125rem; height:2.125rem; border-radius:50%;
-  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.2); color:#dfe6ff;
+  color:#dfe6ff;
   font-size:0.9375rem; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:border-color .2s, transform .15s;
 }
+#muteBtn:hover { border-color:rgba(190,205,255,.6); transform:scale(1.06); }

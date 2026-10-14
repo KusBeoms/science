@@ -7,7 +7,7 @@
             desc: "중심부에서 첫 반응이 시작된다.",
             condition: (s) => s.hasFusion,
             w: { label: "반응을 적극적으로 가속한다", caption: "폭주", riskTier: 2, vis: { mass: -1, fuel: -2 }, apply: (s) => { s.mass *= 0.72; s.fuel -= 14; } },
-            s: { label: "반응을 조절해 안정화한다", caption: "안정화", riskTier: 0, vis: { fuel: 200, mass: 200, volume: 200 }, apply: (s) => { s.fuel += 10; } } },
+            s: { label: "반응을 조절해 안정화한다", caption: "안정화", riskTier: 0, vis: { fuel: 2 }, apply: (s) => { s.fuel += 10; } } },
         { id: 6, once: false, title: "항성풍 분출",
             desc: "표면에서 물질이 뿜어져 나가려 한다.",
             condition: (s) => s.hasFusion,

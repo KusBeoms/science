@@ -23,6 +23,9 @@
     canvas.style.width = this.W + 'px';
     canvas.style.height = this.H + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // 천체 크기 배율: 720px 높이 창을 기준(1.0)으로 큰 모니터에서는 행성/별도
+    // 함께 커져, 넓은 화면에 작은 점만 덩그러니 떠 있는 빈 느낌을 줄인다.
+    Gp._renderViewScale = G.clamp(Math.min(this.W, this.H) / 720, 0.85, 1.6);
     Gp._renderResyncStars.call(this, oldW, oldH);
   };
 })();

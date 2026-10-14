@@ -13,6 +13,7 @@
     if (n < 1 || n > 7) { console.warn('use 1~7'); return; }
     A.init();
     document.getElementById('startOverlay')!.style.display = 'none';
+    document.body.classList.add('inGame');
     document.getElementById('credits')!.classList.remove('show');
     G.resetState();
     G.Render.resetSurfaces();

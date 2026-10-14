@@ -14,6 +14,7 @@
         }
         A.init();
         document.getElementById('startOverlay').style.display = 'none';
+        document.body.classList.add('inGame');
         document.getElementById('credits').classList.remove('show');
         G.resetState();
         G.Render.resetSurfaces();

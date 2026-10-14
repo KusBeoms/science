@@ -8,7 +8,6 @@
   const clamp = G.clamp;
   const R = G.Render;
 
-  function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
 
   const evTimerBar = document.getElementById('evTimerBar') as HTMLElement;
 
@@ -27,30 +26,15 @@
 
     const ctx = R.ctx, W = R.W, H = R.H;
 
-    // background darkness fade (우주의 노화)
-    const dark = R.bgDarkness();
-    const bgCol = `rgba(${lerp(6, 2, dark)},${lerp(9, 3, dark)},${lerp(24, 8, dark)},1)`;
-    ctx.fillStyle = bgCol;
-    ctx.fillRect(0, 0, W, H);
-
+    // 배경(우주의 노화에 따른 어둠 + 시차 별밭/은하수/성운). 카메라는 실제
+    // 게임 중에는 게임 속도로, 인트로의 응축 단계에선 멈췄다가 팬이 시작되면
+    // 같은 속도로, 시작 화면에서는 아주 느리게 표류해 메뉴 뒤 우주가 살아 있게 한다.
+    let scroll = 0;
+    if (RT.introPlaying) scroll = RT.introT >= RT.introDur ? 1 : 0;
+    else if (state.started && !state.gameOver) scroll = 1;
+    else if (!state.started) scroll = 0.15;
     const budget = RT.introPlaying ? R.stars.length : R.starBudget();
-    for (let i = 0; i < R.stars.length; i++) {
-      if (i >= budget) continue;
-      const s = R.stars[i];
-      if (!RT.introPlaying && state.started && !state.gameOver) {
-        s.x -= G.SPEED * 260 * s.layer * dt;
-        if (s.x < -5) { s.x = W + 5; s.y = Math.random() * H * 0.85; }
-      }
-      ctx.globalAlpha = s.baseAlpha * (1 - dark * 0.85);
-      ctx.fillStyle = '#dfe8ff';
-      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-
-    // ground line
-    ctx.strokeStyle = 'rgba(140,160,255,' + (0.15 * (1 - dark * 0.7)) + ')';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0, H * 0.72); ctx.lineTo(W, H * 0.72); ctx.stroke();
+    R.drawBackground(dt, scroll, budget);
 
     if (RT.introPlaying) {
       Gp._introTick(dt);
@@ -76,7 +60,10 @@
       // 다만 그 둘은 규모가 60만 배 가까이 차이나서, 점화하는 순간 카운터가
       // 한 프레임 만에 폭주하듯 튄다. 점화 직후 몇 초에 걸쳐 기하적으로
       // (비율을 일정하게) 가속시켜 "서서히 빨라진다"로 만든다.
-      if (state.hasFusion) {
+      if (state.collapseRush) {
+        // 말기 연소 단계들은 주계열 수명에 비하면 찰나다(규소 연소는 하루) —
+        // 질주하는 몇 초 동안 나이를 주계열 속도로 계속 올리면 수명이 부풀려진다.
+      } else if (state.hasFusion) {
         RT.ignitionAgeRampT = Math.min(RT.ignitionAgeRampT + dt, IGNITION_RAMP_DUR);
         const t = clamp(RT.ignitionAgeRampT / IGNITION_RAMP_DUR, 0, 1);
         const eased = t * t * (3 - 2 * t); // smoothstep
@@ -115,9 +102,9 @@
       // 이번 판에서 실제로 어디까지 태웠는지 기록해 둔다. 질량이 이벤트로
       // 오르내리므로 죽는 순간의 질량만으로는 알 수 없다 — 한때 15 M☉까지
       // 올라가 탄소를 태웠다면, 나중에 질량을 잃어도 그 핵은 이미 만들어졌다.
-      if (state.hasFusion) {
-        state.maxFusionIndex = Math.max(state.maxFusionIndex, G.Stage.fusionStageIndex(state));
-      }
+      // 도달 단계 기록 + 건너뛴 단계 질주(collapse.ts). 연료가 바닥났고 마지막
+      // 단계까지 다 보여줬으면 naturalDeath가 true가 된다.
+      const naturalDeath = state.hasFusion && Gp._stageRushUpdate(dt);
 
       // 점화 판정: 질량이 수소연소한계를 넘는 순간 단 한 번 발생.
       if (!state.hasFusion && state.mass >= G.IGNITION_MASS) Gp._triggerIgnition();
@@ -125,10 +112,10 @@
       // ending triggers
       if (state.collisionFlag) Gp._triggerEnding('collision');
       else if (state.mergeFlag) Gp._triggerEnding('merge');
-      else if (state.hasFusion && state.fuel <= 0) Gp._triggerEnding(G.Ending.naturalEndingKind());
+      else if (naturalDeath) Gp._triggerEnding(G.Ending.naturalEndingKind());
 
       // event scheduling
-      if (!state.eventOpen && !RT.timeSkipping && !state.gameOver && state.distanceLy >= state.nextEventAt) {
+      if (!state.eventOpen && !RT.timeSkipping && !state.gameOver && !state.collapseRush && state.distanceLy >= state.nextEventAt) {
         const e = G.pickEvent();
         if (e) Gp._popupOpenEvent(e);
         else state.nextEventAt = state.distanceLy + 0.3;

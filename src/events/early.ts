@@ -24,7 +24,7 @@
     { id: 2, once: false, title: "거대 분자운 통과",
       desc: "짙은 가스 구름이 진로를 가로막는다.",
       condition: (s) => !s.hasFusion,
-      w: { label: "구름 속으로 파고들어 흡수한다", caption: "흡수", riskTier: 1, vis: { mass: 100, volume: 20, fuel: 100 }, apply: (s) => { s.mass *= 2.9; s.volume += 10; } },
+      w: { label: "구름 속으로 파고들어 흡수한다", caption: "흡수", riskTier: 1, vis: { mass: 1, volume: 2, fuel: 0 }, apply: (s) => { s.mass *= 2.9; s.volume += 10; } },
       s: { label: "구름을 피해 돌아간다", caption: "회피", riskTier: 0, vis: { mass: 1, volume: 0, fuel: -1 }, apply: (s) => { s.mass *= 1.9; s.fuel -= 2; } } },
     { id: 3, once: false, title: "쌍둥이 원시성 경쟁",
       desc: "근처에 같은 물질을 노리는 또 다른 원시체가 있다.",
