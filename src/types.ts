@@ -3,33 +3,16 @@
    (module: none 전략 — 브라우저에서 file://로 직접 열어도 동작해야 하므로
    ES 모듈 번들러 없이 <script> 태그 순서로만 의존성을 해결한다.) */
 
-type SpecialKind =
-  | 'bond' | 'pass' | 'stayBound' | 'drift' | 'collide' | 'swerve'
-  | 'impact' | 'compress' | 'flare' | 'fade';
-
 type EndingKind =
   | 'blackhole' | 'supernova' | 'whitedwarf' | 'friends'
   | 'merge' | 'collision' | 'spider';
 
 type CompanionTier = 'low' | 'mid' | 'high';
 
-interface ChoiceVis {
-  mass?: number;
-  volume?: number;
-  fuel?: number;
-  special?: SpecialKind;
-}
-
-interface Badge {
-  glyph: string;
-  dir: -1 | 0 | 1;
+interface EffectLogEntry {
+  id: string;
   name: string;
-}
-
-interface ChoiceLogEntry {
-  id: number;
-  key: 'A' | 'D' | null;
-  riskTier: number;
+  icon: string;
 }
 
 interface GameState {
@@ -66,11 +49,17 @@ interface GameState {
   crisisShown: boolean;
   collisionEventShown: boolean;
   lastBreathShown: boolean;
-  lastEventId: number | null;
-  usedOnce: Set<number>;
-  choiceLog: ChoiceLogEntry[];
-  eventOpen: boolean;
-  nextEventAt: number;
+  /* 키 입력 → 성운 → 흡수 루프의 누적 통계 */
+  gravity: number;          // 중력 배율(1.0에서 시작, 성운을 삼킬수록 늘어난다)
+  pressCount: number;       // 누른 키 수
+  burstPresses: number;     // 직전 입력 후 0.28초 안에 눌린 입력 수(몰아치기 성향)
+  lastPressAt: number;
+  absorbedClouds: number;   // 완전히 삼킨 성운 수
+  playTime: number;         // 시뮬레이션이 실제로 흐른 시간(초) — 효과 주기의 기준
+  nextEffectAt: number;     // 다음 효과가 발동할 playTime
+  lastEffectId: string | null;
+  usedEffects: Set<string>;
+  effectLog: EffectLogEntry[];
   phaseStarBudget: number;
 }
 
@@ -81,26 +70,60 @@ interface CollapseRushState {
   step: number;   // 질주 시작 후 넘어간 단계 수
 }
 
-interface EventChoice {
-  label: string;
-  caption: string;
-  riskTier: number;
-  vis: ChoiceVis;
-  apply: (s: GameState) => void;
+interface EffectMods {
+  absorb: number;    // 성운 입자 하나가 붙여주는 질량 배율
+  gravity: number;   // 끌어당기는 힘 배율
+  fuelBurn: number;  // 연료 소모 배율
+  cloud: number;     // 키 한 번에 생기는 성운의 크기(입자 수) 배율
+  massDrain: number; // 초당 잃는 질량 비율(항성풍 등)
+  spin: number;      // 자전 속도 배율
+  swirl: number;     // 성운이 접선 방향으로 휘도는 정도
 }
 
-interface EventDef {
-  id: number;
-  once: boolean;
-  /* 자격을 갖췄을 때 이 이벤트가 뽑힐 확률(0~1). 지정하면 가중치 방식 대신
-     이 값이 그대로 등장 확률이 된다 — 후보 수에 따라 확률이 출렁이지 않는다.
-     생략하면 기존 방식(일반 1배, once 2배 가중치)을 따른다. */
-  chance?: number;
-  title: string;
+interface EffectEnv {
+  ctx: CanvasRenderingContext2D;
+  W: number;
+  H: number;
+  vs: number;                 // 화면 크기 배율(_renderViewScale)
+  b: StarActorPoint;          // 플레이어 몸체의 화면 위치/반지름
+  age: number;                // 이 효과가 시작된 뒤 경과 시간(초)
+  dur: number;
+  p: number;                  // age / dur
+  k: number;                  // 페이드 인/아웃 강도(0~1)
+  dt: number;
+  t: number;                  // 전역 시계(초)
+  st: GameState;
+}
+
+interface EffectInst {
+  def: EffectDef;
+  age: number;
+  dur: number;
+  k: number;
+  rnd: () => number;
+  data: any;
+  el: HTMLElement | null;
+}
+
+interface EffectDef {
+  id: string;
+  name: string;
+  icon: string;
+  kind: 'buff' | 'debuff' | 'event';
   desc: string;
+  duration: number | [number, number];
+  once?: boolean;
+  weight?: number;
+  mods?: Partial<EffectMods>;
   condition: (s: GameState) => boolean;
-  w: EventChoice;
-  s: EventChoice;
+  /* 패널에 보일 설명을 상황에 맞게 바꾸고 싶을 때(무작위 결과가 정해진 뒤 등) */
+  detail?: (inst: EffectInst) => string;
+  start?: (inst: EffectInst, s: GameState) => void;
+  step?: (inst: EffectInst, env: EffectEnv) => void;
+  end?: (inst: EffectInst, s: GameState) => void;
+  back?: (inst: EffectInst, env: EffectEnv) => void;
+  front?: (inst: EffectInst, env: EffectEnv) => void;
+  sound?: (A: AudioAPI) => void;
 }
 
 interface NebulaPreset {
@@ -246,9 +269,40 @@ interface EndingAnimModule {
   draw: EndingAnimDrawFn;
 }
 
-interface ChoiceAnimAPI {
-  badgesFor(vis?: ChoiceVis): Badge[];
-  draw(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, vis?: ChoiceVis): void;
+interface Attractor {
+  x: number;
+  y: number;
+  r: number;
+  gm: number;
+  hit: (g: any) => void;
+}
+
+interface NebulaAPI {
+  GM: number;
+  attractors: Attractor[];
+  hitsThisFrame: number;
+  spawn(code: string, label: string): boolean;
+  emit(x: number, y: number, count: number, hue: number, opts?: any): void;
+  addMassFrac(frac: number, x?: number, y?: number, hue?: number): void;
+  ring(x: number, y: number, r0: number, r1: number, life: number, hue: number, lw?: number, a?: number): void;
+  pulse(v: number): void;
+  floatText(x: number, y: number, text: string, hue: number, size?: number): void;
+  accel(x: number, y: number, k?: number): { ax: number; ay: number };
+  update(dt: number, body: StarActorPoint): void;
+  drawBack(ctx: CanvasRenderingContext2D, body: StarActorPoint, dt: number): void;
+  drawFront(ctx: CanvasRenderingContext2D, body: StarActorPoint, dt: number): void;
+  reset(): void;
+}
+
+interface EffectsAPI {
+  mods: EffectMods;
+  active: EffectInst[];
+  companionPos: StarActorPoint | null;
+  update(dt: number, body: StarActorPoint): void;
+  drawBack(ctx: CanvasRenderingContext2D, body: StarActorPoint, dt: number): void;
+  drawFront(ctx: CanvasRenderingContext2D, body: StarActorPoint, dt: number): void;
+  force(id: string): void;
+  reset(): void;
 }
 
 interface EndingAPI {
@@ -299,11 +353,10 @@ interface GameNamespace {
   resetState(): void;
   NEBULA_PRESETS: NebulaPreset[];
   applyPreset(id: string): void;
-  EVENTS: EventDef[];
-  pickEvent(): EventDef | null;
   Audio: AudioAPI;
   Render: RenderAPI;
-  ChoiceAnim: ChoiceAnimAPI;
+  Nebula: NebulaAPI;
+  Effects: EffectsAPI;
   Ending: EndingAPI;
   Stage: StageAPI;
 }

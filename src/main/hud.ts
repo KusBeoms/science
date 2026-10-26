@@ -1,4 +1,4 @@
-/* HUD 갱신: 시계, 이동거리, 질량(단계별 단위), 상단 배지 + 단면도/나침반 위임 */
+/* HUD 갱신: 시계, 이동거리, 질량(단계별 단위), 중력, 상단 배지 + 단면도/나침반 위임 */
 (function () {
   "use strict";
   const G = (window.Game = window.Game || ({} as GameNamespace));
@@ -7,6 +7,7 @@
 
   const massDisplay = document.getElementById('massDisplay')!;
   const stageDisplay = document.getElementById('stageDisplay')!;
+  const gravDisplay = document.getElementById('gravDisplay')!;
 
   const EARTH_MASSES_PER_SOLAR = 1 / G.EARTH_MASS; // ≈ 332,946
   const JUPITER_MASSES_PER_SOLAR = 1047.35; // 1 M☉ ≈ 1047.35 M_Jup
@@ -44,6 +45,7 @@
     document.getElementById('clockDisplay')!.textContent = G.formatYears(state.ageYears);
     document.getElementById('distDisplay')!.textContent = state.distanceLy.toFixed(1) + ' 광년';
     massDisplay.textContent = massText();
+    gravDisplay.textContent = '×' + state.gravity.toFixed(2);
     updateFuel();
     stageDisplay.textContent = G.Stage.coarseLabel(state);
     Gp._vitalsPanelUpdate(state);

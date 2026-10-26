@@ -33,10 +33,7 @@
     const arch: ArchetypeInfo = Gp._endingComputeArchetype();
     const distStr = state.distanceLy.toFixed(1);
     const ageStr = G.formatYears(state.ageYears);
-    const total = state.choiceLog.length;
-    let wCount = 0; for (const c of state.choiceLog) if (c.key === 'A') wCount++;
-    const wPct = total ? Math.round(wCount / total * 100) : 0;
-    const sPct = 100 - wPct;
+    const rate = state.pressCount / Math.max(1, state.playTime);
     const companionStr = state.hasCompanion
       ? (state.companionAlive ? "생존 (동반성과 함께)" : "먼저 사망")
       : "없음";
@@ -51,12 +48,13 @@
       `총 이동거리 &nbsp;<span>${distStr} 광년</span><br>` +
       `총 생존 연수 &nbsp;<span>${ageStr}</span><br>` +
       `최종 질량 &nbsp;<span>${state.mass.toFixed(1)} × 태양</span> · 최종 부피 &nbsp;<span>${state.volume.toFixed(0)}</span><br>` +
-      `겪은 이벤트 수 &nbsp;<span>${total}</span><br>` +
+      `받은 효과 &nbsp;<span>${state.effectLog.length}개</span> · 삼킨 성운 &nbsp;<span>${state.absorbedClouds}개</span><br>` +
+      `누적 중력 &nbsp;<span>×${state.gravity.toFixed(2)}</span><br>` +
       `동반성 &nbsp;<span>${companionStr}</span><br>` +
-      `선택 성향 &nbsp;<span>A ${wPct}% / D ${sPct}%</span>` +
+      `키 입력 &nbsp;<span>${state.pressCount}번 (초당 ${rate.toFixed(1)}회)</span>` +
       `</div>` +
       buildFusionHtml(state) +
-      Gp._endingBuildTimelineHtml(state.choiceLog) +
+      Gp._endingBuildTimelineHtml(state.effectLog) +
       `<div class="sectionTitle">우주에 생긴 일</div>` +
       `<div class="flavor">${flavor}</div>` +
       `<div class="sectionTitle">성격 유형 분석</div>` +
@@ -91,6 +89,8 @@
     G.resetState();
     G.Render.initStars();
     G.Render.resetSurfaces();
+    G.Effects.reset(); G.Nebula.reset();
+    document.body.classList.remove('pressed');
     Gp._hudResetGauge();
     const RT = Gp._runtime;
     RT.endingPhase = 'idle'; RT.endingMoveT = 0; RT.endingHoldT = 0; RT.endingFadeT = 0;

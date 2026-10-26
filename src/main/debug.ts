@@ -23,10 +23,13 @@
     state.ageYears = state.distanceLy / G.SPEED;
     state.mass = 3 + Math.random() * 25;
     state.volume = 30 + Math.random() * 60;
-    state.choiceLog = [];
-    for (let i = 0; i < 10; i++) {
-      state.choiceLog.push({ id: i, key: Math.random() < 0.5 ? 'A' : 'D', riskTier: Math.floor(Math.random() * 3) });
-    }
+    G.Effects.reset(); G.Nebula.reset();
+    state.pressCount = 30 + Math.floor(Math.random() * 200);
+    state.burstPresses = Math.floor(state.pressCount * Math.random());
+    state.playTime = 60 + Math.random() * 60;
+    state.absorbedClouds = Math.floor(state.pressCount * 0.9);
+    state.gravity = 1 + Math.random() * 5;
+    for (const id of ['disk', 'molecular', 'runaway', 'wind', 'gasgiant']) state.effectLog.push({ id, name: id, icon: '✦' });
     const type = DEBUG_ORDER[n - 1];
     if (type === 'friends') { state.hasCompanion = true; state.companionAlive = true; state.mass = 3; }
     if (type === 'spider') { state.hasCompanion = true; state.companionAlive = false; state.staysBound = true; }

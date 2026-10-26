@@ -12,9 +12,9 @@
       hasCompanion: false, companionTier: null, companionMass: 0, companionFuel: 0,
       companionAlive: false, staysBound: false, mergeFlag: false, collisionFlag: false,
       companionEventShown: false, crisisShown: false, collisionEventShown: false, lastBreathShown: false,
-      lastEventId: null, usedOnce: new Set<number>(),
-      choiceLog: [],
-      eventOpen: false, nextEventAt: 0.5,
+      gravity: 1, pressCount: 0, burstPresses: 0, lastPressAt: 0, absorbedClouds: 0,
+      playTime: 0, nextEffectAt: 6, lastEffectId: null, usedEffects: new Set<string>(),
+      effectLog: [],
       phaseStarBudget: 220,
     };
   }

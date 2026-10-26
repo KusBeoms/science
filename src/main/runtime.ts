@@ -9,12 +9,6 @@
   interface IntroParticle { a: number; r0: number; size: number; delay: number; }
 
   Gp._runtime = {
-    currentEvent: null as EventDef | null,
-    evTimeLeft: 0,
-    evDuration: 4.5, // 읽고 고르기엔 충분하되, 한 판 2분 목표에 맞춘 제한시간
-    choiceAnimRAF: null as number | null,
-    choiceAnimStartT: 0,
-
     timeSkipping: false,
 
     // 점화 후 나이 가속 램프의 경과 시간(초). ignition.ts가 0으로 되돌린다.

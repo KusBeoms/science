@@ -12,12 +12,25 @@
 
 <div id="stageBadge"><span id="stageDisplay">지구형행성</span></div>
 
+<div id="rightStack">
 <div id="hud">
   <div class="row mass"><span class="ico">🪐</span><span class="lbl">질량</span><span id="massDisplay">~1.0 × 지구</span></div>
   <div class="row clock"><span class="ico">⏳</span><span class="lbl">나이</span><span id="clockDisplay">0년</span></div>
+  <div class="row grav"><span class="ico">🌀</span><span class="lbl">중력</span><span id="gravDisplay">×1.00</span></div>
   <div class="row dist"><span class="ico">✦</span><span class="lbl">거리</span><span id="distDisplay">0.0 광년</span></div>
   <div class="row fuel"><span class="ico">🔥</span><span class="lbl">연료</span><span id="fuelDisplay">—</span></div>
 </div>
+
+<div id="effectsPanel">
+  <div class="fxHead"><span class="fxTitle">적용된 효과</span><span id="fxCount">0</span><span id="fxNext"></span></div>
+  <div class="fxNextTrack"><div id="fxNextBar"></div></div>
+  <div id="fxEmpty">아직 걸린 효과가 없습니다</div>
+  <div id="fxList"></div>
+</div>
+</div>
+
+<div id="fxBanner"></div>
+<div id="keyHint">키보드의 글자 · 숫자 키를 눌러 성운을 불러들이세요</div>
 
 <div id="vitalsPanel">
   <canvas id="crossSectionCanvas"></canvas>
@@ -47,26 +60,7 @@
       <div class="presetDesc">지구형 행성에서 시작한다</div>
     </div>
   </div>
-  <p class="hint">이벤트가 뜨면 A / D 키 또는 버튼 클릭으로 선택하세요</p>
-</div>
-
-<div id="eventPopup">
-  <h3 id="evTitle"></h3>
-  <p class="desc" id="evDesc"></p>
-  <p class="hintSmall">제한시간 안에 선택하지 않으면 페널티가 적용됩니다</p>
-  <div class="timerBar"><div id="evTimerBar"></div></div>
-  <div class="choices">
-    <div class="choiceBtn" id="evBtnW">
-      <canvas class="choiceAnim" id="animW"></canvas>
-      <div class="badgeRow" id="badgeW"></div>
-      <div class="pickRow"><div class="keyBox">A</div><div class="caption" id="captionW"></div></div>
-    </div>
-    <div class="choiceBtn" id="evBtnS">
-      <canvas class="choiceAnim" id="animS"></canvas>
-      <div class="badgeRow" id="badgeS"></div>
-      <div class="pickRow"><div class="keyBox">D</div><div class="caption" id="captionS"></div></div>
-    </div>
-  </div>
+  <p class="hint">시작하면 아무 글자·숫자 키나 눌러 성운을 끌어당기세요 — 약 10초마다 새 효과가 걸립니다</p>
 </div>
 
 <div id="timeskip">
@@ -89,16 +83,12 @@
 <!-- TypeScript(src/*.ts) → tsc → dist/*.js 로 컴파일된 결과물.
      빌드: npm run build (tsc). 모듈 번들러 없이 전역 Game 네임스페이스 +
      <script> 순서로 의존성을 해결하므로(파일://로도 바로 실행 가능),
-     아래 순서를 반드시 지켜야 한다: state → events → audio → render →
-     choiceanim → ending → main. -->
+     아래 순서를 반드시 지켜야 한다: state → audio → render → effects/nebula →
+     ending → main. -->
 <script src="dist/state/constants.js"></script>
 <script src="dist/state/physics.js"></script>
 <script src="dist/state/store.js"></script>
 
-<script src="dist/events/early.js"></script>
-<script src="dist/events/mid.js"></script>
-<script src="dist/events/late.js"></script>
-<script src="dist/events/registry.js"></script>
 
 <script src="dist/audio/synth.js"></script>
 <script src="dist/audio/music.js"></script>
@@ -122,11 +112,13 @@
 <script src="dist/render/stageTrack.js"></script>
 <script src="dist/render/vitalsPanel.js"></script>
 
-<script src="dist/choiceanim/badges.js"></script>
-<script src="dist/choiceanim/core.js"></script>
-<script src="dist/choiceanim/volumeFuel.js"></script>
-<script src="dist/choiceanim/specials.js"></script>
-<script src="dist/choiceanim/bootstrap.js"></script>
+<script src="dist/effects/fxkit.js"></script>
+<script src="dist/nebula/nebula.js"></script>
+<script src="dist/effects/defsGrowth.js"></script>
+<script src="dist/effects/defsStellar.js"></script>
+<script src="dist/effects/defsCompanion.js"></script>
+<script src="dist/effects/core.js"></script>
+
 
 <script src="dist/ending/data.js"></script>
 <script src="dist/ending/personality.js"></script>
@@ -136,8 +128,8 @@
 <script src="dist/ending/bootstrap.js"></script>
 
 <script src="dist/main/runtime.js"></script>
+<script src="dist/nebula/input.js"></script>
 <script src="dist/main/stageModel.js"></script>
-<script src="dist/main/popup.js"></script>
 <script src="dist/main/companion.js"></script>
 <script src="dist/main/endingTrigger.js"></script>
 <script src="dist/main/ignition.js"></script>

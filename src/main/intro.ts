@@ -131,7 +131,7 @@
       // 배경 스크롤은 loop.ts가 담당한다 — 팬 구간부터 실제 게임과 완전히
       // 같은 속도식으로 흘러, 팬이 끝나는 순간 속도가 뚝 끊기는 불연속이 없다.
       if (panP >= 1) {
-        RT.introPlaying = false; state.started = true; state.nextEventAt = state.distanceLy + 0.5;
+        RT.introPlaying = false; state.started = true;
       }
     }
   };

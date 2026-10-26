@@ -8,9 +8,6 @@
   const clamp = G.clamp;
   const R = G.Render;
 
-
-  const evTimerBar = document.getElementById('evTimerBar') as HTMLElement;
-
   // 사망 연출 단계별 지속시간(초)
   const ENDING_MOVE_DUR = 1.0;  // 별이 화면 중앙으로 미끄러져 오는 시간
   const ENDING_HOLD_DUR = 1.6;  // 엔딩 모양이 다 형성된 뒤 정지해서 보여주는 시간
@@ -39,19 +36,29 @@
     if (RT.introPlaying) {
       Gp._introTick(dt);
     } else if (state.started && !state.gameOver) {
-      R.starAngle += dt * (0.6 + state.mass / 30);
-      R.drawPlayerStar(dt);
-      if (state.hasCompanion && state.companionAlive) R.drawCompanionStar(dt);
+      const E = G.Effects, N = G.Nebula;
+      R.starAngle += dt * (0.6 + state.mass / 30) * E.mods.spin;
+      // 시간 도약(동반성 사망 후) 중에는 효과·성운 시계를 멈춘다
+      const fxDt = RT.timeSkipping ? 0 : dt;
+      const lastBody: StarActorPoint = Gp._bodyCache || { x: R.W * G.STAR_REST_X_FRACTION, y: R.H * 0.55, r: R.starRadius(state.volume) };
+      // 효과 수치 → 성운 물리 순서. 몸체 위치는 직전 프레임 값을 쓴다(1프레임 차이는 보이지 않는다)
+      E.update(fxDt, lastBody);
+      N.update(fxDt, lastBody);
+      // 몸체 뒤 연출(중력장, 효과의 배경층) → 몸체 → 앞 연출
+      N.drawBack(ctx, lastBody, dt);
+      E.drawBack(ctx, lastBody, dt);
+      const body = R.drawPlayerStar(dt);
+      Gp._bodyCache = body;
+      if (state.hasCompanion && state.companionAlive) E.companionPos = R.drawCompanionStar(dt);
+      else E.companionPos = null;
+      N.drawFront(ctx, body, dt);
+      E.drawFront(ctx, body, dt);
 
       // simulation updates
-      // 팝업이 열려 있는 동안에는 이동거리를 멈춘다 — distanceLy가 다음 이벤트
-      // 예약 시점과 중·후반 이벤트 개방 시점을 동시에 결정하기 때문에, 고민하는
-      // 시간이 그대로 진행도로 흘러가면 총 플레이타임이 "얼마나 빨리 눌렀나"에
-      // 좌우돼 편차가 커진다. 결정 시간과 이동 시간을 분리한다.
-      if (!state.eventOpen) {
-        if (state.hasFusion) state.postIgnitionDistanceLy += G.SPEED * dt;
-        state.distanceLy += G.SPEED * dt;
-      }
+      // 선택지가 없어졌으므로 이동거리는 항상 일정하게 흐른다. 이 값이 후반 효과의
+      // 개방 시점(점화 후 2광년 ≈ 20초)을 정한다.
+      if (state.hasFusion) state.postIgnitionDistanceLy += G.SPEED * dt;
+      state.distanceLy += G.SPEED * dt;
       // 나이는 점화 전에도 흐른다. 예전엔 점화 후에만 흘러서, 형성기 내내
       // 화면에 "0년"이 박힌 채로 거리만 몇 광년씩 쌓였다 — 0년 만에 1광년을
       // 가는 초광속이었다. 형성기에는 원시행성계원반의 실제 수명 규모로,
@@ -73,17 +80,17 @@
       } else {
         state.ageYears += dt * G.FORMATION_YEARS_PER_SEC;
       }
-      if (!RT.timeSkipping && !state.eventOpen) {
+      if (!RT.timeSkipping) {
         // 핵융합이 붙기 전(아직 "별"이 아닌 원시체) 상태에서는 생명력(fuel)이라는
         // 개념 자체가 없다 — 태울 연료가 없으니 소모될 것도 없다.
-        if (state.hasFusion) state.fuel -= G.fuelBurnRate(state.mass) * dt;
+        if (state.hasFusion) state.fuel -= G.fuelBurnRate(state.mass) * dt * G.Effects.mods.fuelBurn;
+
+        // 항성풍 분출 같은 효과가 거는 질량 손실(초당 비율)
+        if (G.Effects.mods.massDrain > 0) state.mass = Math.max(1e-9, state.mass * (1 - G.Effects.mods.massDrain * dt));
 
         if (!state.hasFusion) {
-          // 지구질량급 암석체~가스행성 성장은 실제로도 가스를 매끄럽게 계속
-          // 빨아들이는 게 아니라, 미행성체·원시행성 간의 "거대 충돌(giant
-          // impact)"이라는 불연속적 사건으로 일어난다 — 그래서 배경(수동)
-          // 성장은 아예 두지 않는다. 화면 숫자는 이벤트를 고를 때만, 그
-          // 순간에만 뛰어오른다(이벤트 배율은 events/early.ts 참고).
+          // 형성기의 질량 성장은 오직 성운 흡수(nebula/nebula.ts)로만 일어난다 —
+          // 키를 누르지 않으면 원시체는 자라지 않는다.
         } else {
           // 항성풍 질량 손실. 문헌상 O형 별은 주계열 기간 동안 누적으로 초기
           // 질량의 대략 10~50%를 항성풍으로 잃는다(연간 손실률 10^-6~10^-5 M☉,
@@ -113,20 +120,6 @@
       if (state.collisionFlag) Gp._triggerEnding('collision');
       else if (state.mergeFlag) Gp._triggerEnding('merge');
       else if (naturalDeath) Gp._triggerEnding(G.Ending.naturalEndingKind());
-
-      // event scheduling
-      if (!state.eventOpen && !RT.timeSkipping && !state.gameOver && !state.collapseRush && state.distanceLy >= state.nextEventAt) {
-        const e = G.pickEvent();
-        if (e) Gp._popupOpenEvent(e);
-        else state.nextEventAt = state.distanceLy + 0.3;
-      }
-      if (state.eventOpen) {
-        RT.evTimeLeft -= dt;
-        const frac = clamp(RT.evTimeLeft / RT.evDuration, 0, 1);
-        evTimerBar.style.transform = 'scaleX(' + frac + ')';
-        evTimerBar.style.background = frac < 0.3 ? '#ff6b6b' : (frac < 0.6 ? '#ffcf6b' : '#7fa0ff');
-        if (RT.evTimeLeft <= 0) Gp._popupResolveEvent(null);
-      }
 
       Gp._hudUpdate(dt);
     } else if (state.gameOver) {

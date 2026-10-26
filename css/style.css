@@ -13,7 +13,7 @@ html, body { width:100%; height:100%; overflow:hidden; background:#02030a; font-
 /* 상단 세 덩어리(단계 배지·단면도/트랙·HUD)는 같은 유리 패널 언어를 쓴다 —
    밝은 은하수/성운이 뒤로 지나가도 글자가 묻히지 않고, 화면 위쪽이 흩어진
    글자 대신 정돈된 띠로 읽힌다. */
-#stageBadge, #hud, #vitalsPanel, #muteBtn {
+#stageBadge, #hud, #effectsPanel, #vitalsPanel, #muteBtn {
   background:linear-gradient(160deg, rgba(22,28,64,.55), rgba(8,10,28,.42));
   border:1px solid rgba(150,175,255,.18);
   box-shadow:0 6px 24px rgba(0,0,10,.35), inset 0 1px 0 rgba(255,255,255,.06);
@@ -22,8 +22,8 @@ html, body { width:100%; height:100%; overflow:hidden; background:#02030a; font-
 }
 /* 게임 HUD는 시작 화면(반투명 막) 뒤로 빈 패널이 비쳐 보이지 않도록,
    판이 시작될 때(body.inGame) 서서히 떠오른다. */
-#stageBadge, #hud, #vitalsPanel { transition:opacity .8s ease; }
-body:not(.inGame) #stageBadge, body:not(.inGame) #hud, body:not(.inGame) #vitalsPanel { opacity:0; pointer-events:none; }
+#stageBadge, #vitalsPanel { transition:opacity .8s ease; }
+body:not(.inGame) #stageBadge, body:not(.inGame) #vitalsPanel { opacity:0; pointer-events:none; }
 #stageBadge {
   position:fixed; top:1rem; left:1.25rem; color:#e8edff;
   text-shadow:0 0 12px rgba(120,160,255,.7); z-index:20; user-select:none;
@@ -31,8 +31,15 @@ body:not(.inGame) #stageBadge, body:not(.inGame) #hud, body:not(.inGame) #vitals
   padding:0.45rem 1rem; border-radius:0.875rem;
 }
 
+/* 오른쪽 위 스택: 위에 HUD 수치, 아래에 "적용된 효과" 패널 */
+#rightStack {
+  position:fixed; top:1rem; right:1.25rem; z-index:20;
+  display:flex; flex-direction:column; align-items:flex-end; gap:0.6rem;
+  transition:opacity .8s ease;
+}
+body:not(.inGame) #rightStack { opacity:0; pointer-events:none; }
 #hud {
-  position:fixed; top:1rem; right:1.25rem; text-align:right; color:#dfe6ff;
+  position:static; text-align:right; color:#dfe6ff;
   text-shadow:0 0 8px rgba(120,160,255,.6); z-index:20; user-select:none;
   font-variant-numeric: tabular-nums;
   padding:0.55rem 0.9rem; border-radius:0.875rem; min-width:11rem;
@@ -46,6 +53,8 @@ body:not(.inGame) #stageBadge, body:not(.inGame) #hud, body:not(.inGame) #vitals
 #hud .clock { font-size:1.375rem; font-weight:bold; letter-spacing:.045em; }
 #hud .dist { font-size:0.875rem; opacity:.85; margin-top:0.125rem; }
 #hud .fuel { font-size:0.875rem; opacity:.85; margin-top:0.125rem; }
+#hud .grav { font-size:0.875rem; margin-top:0.125rem; color:#d9ccff; }
+#hud #massDisplay, #hud #gravDisplay { display:inline-block; transform-origin:right center; }
 /* 연료 경고색은 배지 화살표(.arrow.down)가 이미 쓰는 주황을 그대로 이어 쓴다. */
 #hud .fuel .warn { color:#ff9a6b; }
 #hud .fuel .critical { color:#ff6b6b; animation:pulse 1.4s infinite; }
@@ -159,61 +168,13 @@ body:not(.inGame) #stageBadge, body:not(.inGame) #hud, body:not(.inGame) #vitals
 .presetName { font-size:0.9375rem; font-weight:600; color:#dbe4ff; letter-spacing:.036em; }
 .presetDesc { font-size:0.71875rem; opacity:.65; line-height:1.45; }
 
-/* 이벤트 선택 팝업: 화면 오른쪽에 도킹시켜, 왼쪽(약 화면의 28% 지점)에 있는
-   별과 절대 겹치지 않게 한다. 창이 좁아지면(모바일 등) 별 옆에 세로로 긴
-   패널을 둘 공간이 부족해지므로 기존처럼 화면 하단 전체 폭 시트로 되돌아간다. */
-#eventPopup {
-  position:fixed; right:4vw; top:50%; transform:translateY(-50%) translateX(1.25rem);
-  width:min(24rem, 38vw); background:linear-gradient(165deg, rgba(20,26,62,.82), rgba(6,8,22,.86)); border:1px solid rgba(140,170,255,.35);
-  -webkit-backdrop-filter:blur(12px) saturate(1.2); backdrop-filter:blur(12px) saturate(1.2);
-  border-radius:0.625rem; padding:1.125rem 1.375rem; color:#eef1ff; z-index:30;
-  opacity:0; pointer-events:none; transition:opacity .35s ease, transform .35s ease;
-  box-shadow:0 0 30px rgba(60,90,200,.25), 0 18px 50px rgba(0,0,10,.45), inset 0 1px 0 rgba(255,255,255,.07);
-}
-#eventPopup.show { opacity:1; transform:translateY(-50%) translateX(0); pointer-events:auto; }
-#eventPopup h3 { font-size:1.0625rem; margin-bottom:0.375rem; color:#bcd0ff; letter-spacing:.059em; }
-#eventPopup p.desc { font-size:0.8125rem; line-height:1.5; opacity:.85; margin-bottom:0.5rem; }
-#eventPopup .hintSmall { font-size:0.8125rem; opacity:.55; margin:0 0 0.75rem; letter-spacing:.027em; }
-#eventPopup .timerBar { height:0.1875rem; background:rgba(255,255,255,.15); border-radius:0.125rem; margin-bottom:0.875rem; overflow:hidden; }
-#eventPopup .timerBar > div { height:100%; width:100%; background:#7fa0ff; transform-origin:left; }
-.choices { display:flex; gap:0.75rem; }
-.choiceBtn {
-  flex:1; background:rgba(120,150,255,.08); border:1px solid rgba(140,170,255,.4);
-  border-radius:0.5rem; padding:0.5rem; cursor:pointer;
-  display:flex; flex-direction:column; align-items:center; gap:0.375rem;
-  transition:background .2s, transform .1s;
-}
-.choiceBtn:hover { background:rgba(120,150,255,.22); }
-.choiceBtn:active { transform:scale(.97); }
-.choiceAnim { width:100%; height:4.375rem; display:block; }
-.badgeRow { display:flex; gap:0.5rem; align-items:center; justify-content:center; min-height:1rem; }
-.badgeRow .badge { display:inline-flex; align-items:center; gap:0.1875rem; font-size:0.8125rem; line-height:1; }
-.badgeRow .badge .glyph { color:#cddaff; }
-.badgeRow .badge .name { font-size:0.8125rem; color:#aebbe6; opacity:.85; letter-spacing:.019em; }
-.badgeRow .badge .arrow.up { color:#7fc8ff; }
-.badgeRow .badge .arrow.down { color:#ff9a6b; }
-.pickRow { display:flex; align-items:center; gap:0.4375rem; }
-.keyBox {
-  width:1.625rem; height:1.375rem; border-radius:0.3125rem; background:rgba(169,194,255,.15);
-  border:1px solid rgba(169,194,255,.5); color:#cddaff;
-  display:flex; align-items:center; justify-content:center;
-  font-size:0.8125rem; font-weight:bold; letter-spacing:.042em; flex-shrink:0;
-}
-.caption { font-size:0.875rem; color:#dfe6ff; opacity:.9; }
-
 @media (max-width: 720px) {
-  #eventPopup {
-    right:auto; left:50%; top:auto; bottom:4.375rem;
-    transform:translateX(-50%) translateY(1.25rem);
-    width:min(35rem, 90vw);
-  }
-  #eventPopup.show { transform:translateX(-50%) translateY(0); }
-
   /* 좁은 화면에서는 상단의 세 정보 덩어리(좌:단계 배지, 중앙:단면도/트랙,
      우:HUD)가 같은 가로 띠를 두고 다투게 된다. 좌우를 먼저 좁히고, 그래도
      겹칠 수 있는 중앙 패널은 아래층으로 내려 물리적으로 분리한다. */
   #stageBadge { top:0.5rem; left:0.75rem; font-size:1.25rem; }
-  #hud { top:0.5rem; right:0.75rem; }
+  #rightStack { top:0.5rem; right:0.75rem; }
+  #effectsPanel { width:min(15rem, 52vw); }
   #hud .clock { font-size:1.125rem; }
   /* 좁은 화면에선 HUD가 4줄이라 세로로 길어져, 중앙 패널을 같은 높이에 두면
      가로로 겹친다. 아예 HUD 블록 아래로 내려 겹칠 여지를 없앤다. */
@@ -306,3 +267,75 @@ body:not(.inGame) #stageBadge, body:not(.inGame) #hud, body:not(.inGame) #vitals
   transition:border-color .2s, transform .15s;
 }
 #muteBtn:hover { border-color:rgba(190,205,255,.6); transform:scale(1.06); }
+
+
+/* ===== 적용된 효과 패널 ===== */
+#effectsPanel {
+  width:17rem; max-width:44vw; color:#dfe6ff; padding:0.5rem 0.6rem 0.55rem; border-radius:0.875rem;
+  user-select:none; text-align:left;
+}
+.fxHead { display:flex; align-items:baseline; gap:0.4rem; font-size:0.8125rem; }
+.fxTitle { letter-spacing:.06em; color:#bcd0ff; font-weight:600; }
+#fxCount {
+  min-width:1.1rem; text-align:center; font-size:0.75rem; line-height:1.1rem; border-radius:0.6rem;
+  background:rgba(150,175,255,.22); color:#e6edff;
+}
+#fxNext { margin-left:auto; font-size:0.75rem; opacity:.55; }
+.fxNextTrack { height:2px; margin:0.3rem 0 0.4rem; background:rgba(255,255,255,.1); border-radius:1px; overflow:hidden; }
+#fxNextBar { height:100%; width:100%; transform-origin:left; transform:scaleX(0); background:linear-gradient(90deg,#7fa0ff,#c6a8ff); }
+#fxEmpty { font-size:0.75rem; opacity:.4; padding:0.2rem 0 0.1rem; }
+#fxList { display:flex; flex-direction:column; gap:0.4rem; }
+
+.fxItem {
+  --p:1; --c:#7fd0ff;
+  display:flex; gap:0.55rem; align-items:center; padding:0.4rem 0.5rem; border-radius:0.65rem;
+  background:rgba(120,150,255,.09); border:1px solid rgba(140,170,255,.22);
+  opacity:0; transform:translateX(1.6rem) scale(.96);
+  transition:opacity .35s ease, transform .35s cubic-bezier(.2,.9,.3,1.2);
+}
+.fxItem.buff { --c:#7fe0c8; border-color:rgba(127,224,200,.35); }
+.fxItem.debuff { --c:#ff8e72; border-color:rgba(255,142,114,.38); background:rgba(255,110,80,.08); }
+.fxItem.event { --c:#ffd36e; border-color:rgba(255,211,110,.38); background:rgba(255,200,90,.07); }
+.fxItem.in { opacity:1; transform:none; animation:fx-flash .9s ease-out; }
+.fxItem.out { opacity:0; transform:translateX(1.6rem) scale(.96); }
+@keyframes fx-flash { 0% { box-shadow:0 0 0 rgba(255,255,255,0); background:rgba(255,255,255,.28); } 100% { box-shadow:none; } }
+.fxIcon {
+  position:relative; flex-shrink:0; width:2.15rem; height:2.15rem; border-radius:50%;
+  background:conic-gradient(var(--c) calc(var(--p) * 360deg), rgba(255,255,255,.12) 0);
+  display:flex; align-items:center; justify-content:center;
+}
+.fxIcon::before { content:''; position:absolute; inset:3px; border-radius:50%; background:#0c1130; }
+.fxIcon span { position:relative; font-size:1.05rem; line-height:1; animation:fx-bob 2.4s ease-in-out infinite; }
+@keyframes fx-bob { 0%,100% { transform:translateY(0) scale(1); } 50% { transform:translateY(-1px) scale(1.12); } }
+.fxBody { min-width:0; flex:1; }
+.fxName { font-size:0.8125rem; font-weight:600; color:var(--c); display:flex; justify-content:space-between; gap:0.4rem; }
+.fxTime { font-weight:normal; opacity:.65; font-variant-numeric:tabular-nums; color:#dfe6ff; }
+.fxDesc { font-size:0.71875rem; line-height:1.35; opacity:.7; margin:0.1rem 0 0.2rem; }
+.fxChips { display:flex; flex-wrap:wrap; gap:0.25rem; }
+.chip { font-size:0.6875rem; padding:0.05rem 0.4rem; border-radius:0.6rem; background:rgba(255,255,255,.08); }
+.chip.up { color:#8fe3ff; } .chip.down { color:#ffab8a; }
+
+/* 효과 시작 배너: 화면 중앙 위쪽에 번쩍 떴다가 사라진다 */
+#fxBanner {
+  position:fixed; left:50%; top:22%; z-index:35; transform:translate(-50%,-14px) scale(.9);
+  display:flex; align-items:center; gap:0.9rem; padding:0.7rem 1.4rem; border-radius:1.2rem;
+  background:linear-gradient(160deg, rgba(20,26,62,.82), rgba(6,8,22,.8)); border:1px solid rgba(140,170,255,.4);
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  color:#eef1ff; opacity:0; pointer-events:none; max-width:min(30rem, 88vw);
+  transition:opacity .5s ease, transform .5s cubic-bezier(.2,.9,.3,1.3);
+}
+#fxBanner.buff { box-shadow:0 0 36px rgba(127,224,200,.35); border-color:rgba(127,224,200,.55); }
+#fxBanner.debuff { box-shadow:0 0 36px rgba(255,120,90,.4); border-color:rgba(255,142,114,.6); }
+#fxBanner.event { box-shadow:0 0 36px rgba(255,211,110,.38); border-color:rgba(255,211,110,.6); }
+#fxBanner.show { opacity:1; transform:translate(-50%,0) scale(1); }
+#fxBanner .bIcon { font-size:2rem; line-height:1; filter:drop-shadow(0 0 8px rgba(255,255,255,.5)); }
+#fxBanner .bName { font-size:1.15rem; font-weight:700; letter-spacing:.06em; }
+#fxBanner .bDesc { font-size:0.8125rem; opacity:.75; margin-top:0.15rem; line-height:1.4; }
+
+/* 첫 입력 전 안내 */
+#keyHint {
+  position:fixed; left:50%; bottom:2.2rem; transform:translateX(-50%); z-index:20;
+  font-size:0.9375rem; letter-spacing:.1em; color:#dfe6ff; text-shadow:0 0 12px rgba(120,160,255,.8);
+  opacity:0; pointer-events:none; transition:opacity .8s ease;
+}
+body.inGame:not(.pressed) #keyHint { opacity:.85; animation:pulse 2s infinite ease-in-out; }
