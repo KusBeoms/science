@@ -5,7 +5,7 @@
 
 type EndingKind =
   | 'blackhole' | 'supernova' | 'whitedwarf' | 'friends'
-  | 'merge' | 'collision' | 'spider';
+  | 'merge' | 'collision' | 'spider' | 'vanish';
 
 type CompanionTier = 'low' | 'mid' | 'high';
 
@@ -55,6 +55,9 @@ interface GameState {
   burstPresses: number;     // 직전 입력 후 0.28초 안에 눌린 입력 수(몰아치기 성향)
   lastPressAt: number;
   absorbedClouds: number;   // 완전히 삼킨 성운 수
+  steps: number;            // 앞으로 나아간 칸 수
+  meteorHits: number;       // 운석과 충돌한 횟수
+  peakMass: number;         // 이번 판에서 도달한 최대 질량(M☉)
   playTime: number;         // 시뮬레이션이 실제로 흐른 시간(초) — 효과 주기의 기준
   nextEffectAt: number;     // 다음 효과가 발동할 playTime
   lastEffectId: string | null;
@@ -281,7 +284,8 @@ interface NebulaAPI {
   GM: number;
   attractors: Attractor[];
   hitsThisFrame: number;
-  spawn(code: string, label: string): boolean;
+  spawn(code: string, label: string, opts?: { near?: boolean }): boolean;
+  scaleMass(ratio: number, x?: number, y?: number): void;
   emit(x: number, y: number, count: number, hue: number, opts?: any): void;
   addMassFrac(frac: number, x?: number, y?: number, hue?: number): void;
   ring(x: number, y: number, r0: number, r1: number, life: number, hue: number, lw?: number, a?: number): void;
@@ -292,6 +296,22 @@ interface NebulaAPI {
   drawBack(ctx: CanvasRenderingContext2D, body: StarActorPoint, dt: number): void;
   drawFront(ctx: CanvasRenderingContext2D, body: StarActorPoint, dt: number): void;
   reset(): void;
+}
+
+interface RunBest { steps: number; mass: number; }
+
+interface RunAPI {
+  best: RunBest;
+  newRecord: boolean;
+  scrollRatio: number;
+  hop(code: string, label: string): boolean;
+  update(dt: number, body: StarActorPoint): void;
+  drawBack(ctx: CanvasRenderingContext2D, body: StarActorPoint): void;
+  drawFront(ctx: CanvasRenderingContext2D, body: StarActorPoint): void;
+  finish(): void;
+  reset(): void;
+  massLabel(m: number): string;
+  refreshBestUI(): void;
 }
 
 interface EffectsAPI {
@@ -357,6 +377,7 @@ interface GameNamespace {
   Render: RenderAPI;
   Nebula: NebulaAPI;
   Effects: EffectsAPI;
+  Run: RunAPI;
   Ending: EndingAPI;
   Stage: StageAPI;
 }

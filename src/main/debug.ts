@@ -23,7 +23,8 @@
     state.ageYears = state.distanceLy / G.SPEED;
     state.mass = 3 + Math.random() * 25;
     state.volume = 30 + Math.random() * 60;
-    G.Effects.reset(); G.Nebula.reset();
+    G.Effects.reset(); G.Nebula.reset(); G.Run.reset();
+    state.steps = 20 + Math.floor(Math.random() * 60); state.peakMass = state.mass;
     state.pressCount = 30 + Math.floor(Math.random() * 200);
     state.burstPresses = Math.floor(state.pressCount * Math.random());
     state.playTime = 60 + Math.random() * 60;

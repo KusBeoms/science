@@ -18,6 +18,8 @@
     return Math.min(normalX, rightEdgeTarget - r);
   }
 
+  Gp._renderRestingX = restingX; // run/run.ts가 몸체를 차선 중심에 맞추는 데 쓴다
+
   // centerT: 사망 연출 중 별이 평소 자리에서 화면 중앙(0.5, 0.5)으로 이동하는
   // 진행도(0~1). panT: 성운 응축 인트로에서 화면 중앙(0.5, 0.55)에 형성된 별이
   // 카메라 팬을 따라 평소 자리로 이동하는 진행도(0~1, 기본값 1=이미 도착).
@@ -51,9 +53,11 @@
     const ct = centerT == null ? 0 : centerT;
     const pt = panT == null ? 1 : panT;
     const restX = restingX(this, state.volume);
-    const baseX = lerp(this.W * 0.5, restX, pt);
+    // 전진 규칙(run/run.ts): 칸을 나아간 만큼 평소 자리에서 앞으로, 뛰는 동안엔 위로 호를 그린다
+    const offX = Gp._runOffX || 0, offY = Gp._runOffY || 0;
+    const baseX = lerp(this.W * 0.5, restX + offX, pt);
     const x = lerp(baseX, this.W * 0.5, ct);
-    const y = lerp(this.H * 0.55, this.H * 0.5, ct);
+    const y = lerp(this.H * 0.55 + offY, this.H * 0.5, ct);
     if (!state.hasFusion) {
       // 암석형이냐 가스형이냐는 단면도(vitalsPanel)와 같은 판정을 그대로 쓴다.
       const isGasGiant = G.Stage.bodyStageKey(state) === 'gasGiant';
@@ -80,7 +84,7 @@
 
   Gp._renderDrawCompanionStar = function (this: RenderAPI, dt?: number): StarActorPoint {
     const state = G.state;
-    const px = this.W * 0.28, py = this.H * 0.55;
+    const px = this.W * 0.28 + (Gp._runOffX || 0), py = this.H * 0.55 + (Gp._runOffY || 0);
     const m1 = clamp(state.mass, 0.1, 60), m2 = clamp(state.companionMass, 0.1, 60);
     const orbitR = (90 + m1 * 1.2) * (Gp._renderViewScale || 1);
     this.companionOrbitAngle += (dt == null ? 0.016 : dt) * companionOrbitSpeed(m1, m2);

@@ -28,7 +28,7 @@
     // 같은 속도로, 시작 화면에서는 아주 느리게 표류해 메뉴 뒤 우주가 살아 있게 한다.
     let scroll = 0;
     if (RT.introPlaying) scroll = RT.introT >= RT.introDur ? 1 : 0;
-    else if (state.started && !state.gameOver) scroll = 1;
+    else if (state.started && !state.gameOver) scroll = G.Run.scrollRatio;
     else if (!state.started) scroll = 0.15;
     const budget = RT.introPlaying ? R.stars.length : R.starBudget();
     R.drawBackground(dt, scroll, budget);
@@ -44,7 +44,9 @@
       // 효과 수치 → 성운 물리 순서. 몸체 위치는 직전 프레임 값을 쓴다(1프레임 차이는 보이지 않는다)
       E.update(fxDt, lastBody);
       N.update(fxDt, lastBody);
+      if (!RT.timeSkipping) G.Run.update(dt, lastBody);
       // 몸체 뒤 연출(중력장, 효과의 배경층) → 몸체 → 앞 연출
+      G.Run.drawBack(ctx, lastBody);
       N.drawBack(ctx, lastBody, dt);
       E.drawBack(ctx, lastBody, dt);
       const body = R.drawPlayerStar(dt);
@@ -52,6 +54,7 @@
       if (state.hasCompanion && state.companionAlive) E.companionPos = R.drawCompanionStar(dt);
       else E.companionPos = null;
       N.drawFront(ctx, body, dt);
+      G.Run.drawFront(ctx, body);
       E.drawFront(ctx, body, dt);
 
       // simulation updates
@@ -125,7 +128,11 @@
     } else if (state.gameOver) {
       // move → form → hold → fadeOut → done 순서로 진행되는 사망 연출.
       // 화면 이동(별밭 스크롤)은 이미 위에서 !state.gameOver 조건으로 멈춰 있다.
-      if (RT.endingPhase === 'move') {
+      if (RT.endingPhase === 'move' && state.endingType === 'vanish') {
+        // 소멸: 이미 화면 밖으로 밀려난 별을 중앙으로 되돌리지 않고 곧장 연출로 넘어간다
+        RT.endingPhase = 'form';
+        R.setupEndingAnim('vanish');
+      } else if (RT.endingPhase === 'move') {
         RT.endingMoveT += dt;
         const p = clamp(RT.endingMoveT / ENDING_MOVE_DUR, 0, 1);
         const eased = 1 - Math.pow(1 - p, 3);

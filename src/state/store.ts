@@ -13,6 +13,7 @@
       companionAlive: false, staysBound: false, mergeFlag: false, collisionFlag: false,
       companionEventShown: false, crisisShown: false, collisionEventShown: false, lastBreathShown: false,
       gravity: 1, pressCount: 0, burstPresses: 0, lastPressAt: 0, absorbedClouds: 0,
+      steps: 0, meteorHits: 0, peakMass: 0,
       playTime: 0, nextEffectAt: 6, lastEffectId: null, usedEffects: new Set<string>(),
       effectLog: [],
       phaseStarBudget: 220,

@@ -1,4 +1,4 @@
-/* 효과 정의 ① 성장 계열 — 어느 단계에서나 걸리는, 물질이 모여드는 현상들.
+/* 효과 정의 ① 성장 계열 — 어느 단계에서나 걸리는, 물질이 모여드는 현상들(운석은 run/run.ts의 위험 요소).
    각 효과는 step(상태 갱신) / back(몸체 뒤) / front(몸체 앞) 세 갈래로 연출을 나눠 갖는다. */
 (function () {
   "use strict";
@@ -75,7 +75,7 @@
   // 화면 전체를 가로지르는 짙은 구름. 지나가는 동안 키 한 번에 훨씬 큰 성운이 생긴다.
   DEFS.push({
     id: 'molecular', name: '거대 분자운 통과', icon: '☁️', kind: 'buff', duration: 12, weight: 1.2,
-    desc: '짙은 가스 구름 속을 지난다. 키를 누를 때마다 더 큰 성운이 피어난다.',
+    desc: '짙은 가스 구름 속을 지난다. 한 칸 나아갈 때마다 더 큰 성운이 모여든다.',
     mods: { cloud: 1.8, absorb: 1.1 },
     condition: () => true,
     start(inst) {
@@ -317,100 +317,5 @@
       }
     },
     sound(A) { A.playSweep(60, 140, 1.4); },
-  });
-
-  // ===== 소행성대 통과 =====================================================
-  // 암석 덩어리가 중력에 끌려 하나씩 날아와 표면에 충돌한다. 충돌마다 질량이 덩어리째 붙는다.
-  function rockPoly(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, rot: number, seed: number[]) {
-    ctx.beginPath();
-    for (let i = 0; i < seed.length; i++) {
-      const a = rot + (i / seed.length) * TAU, rr = r * seed[i];
-      if (i === 0) ctx.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); else ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
-    }
-    ctx.closePath();
-  }
-  DEFS.push({
-    id: 'asteroid', name: '소행성대 통과', icon: '☄️', kind: 'buff', duration: 11, weight: 1.3,
-    desc: '암석 덩어리가 빗발친다. 충돌할 때마다 질량이 덩어리째 붙는다.',
-    condition: () => true,
-    start(inst) {
-      const belt = [];
-      for (let i = 0; i < 120; i++) belt.push({ x: inst.rnd() * G.Render.W, y: inst.rnd() * G.Render.H, s: 0.5 + inst.rnd() * 1.6, sp: 40 + inst.rnd() * 160 });
-      inst.data = { rocks: [], spawn: 0.3, belt, debris: [] };
-    },
-    step(inst, env) {
-      const d = inst.data, b = env.b, vs = env.vs, W = env.W, H = env.H;
-      d.spawn -= env.dt;
-      if (d.spawn <= 0 && env.p < 0.82) {
-        d.spawn = 0.5 + inst.rnd() * 0.3;
-        const y = H * (0.12 + inst.rnd() * 0.78), x = W + 30;
-        const dx = b.x - x, dy = b.y - y, dist = Math.hypot(dx, dy);
-        const off = (inst.rnd() - 0.5) * 1.6 * b.r;                 // 조준 오차
-        const sp = (150 + inst.rnd() * 90) * vs;
-        const seed = []; const n = 7 + Math.floor(inst.rnd() * 3);
-        for (let i = 0; i < n; i++) seed.push(0.7 + inst.rnd() * 0.5);
-        d.rocks.push({ x, y, vx: (dx / dist) * sp, vy: (dy / dist) * sp + off * 0.4, r: (4 + inst.rnd() * 7) * vs, rot: 0, spin: (inst.rnd() - 0.5) * 6, seed, age: 0, trail: [] });
-      }
-      for (let i = d.rocks.length - 1; i >= 0; i--) {
-        const r = d.rocks[i]; r.age += env.dt; r.rot += r.spin * env.dt;
-        const a = G.Nebula.accel(r.x, r.y, 0.5);
-        r.vx += a.ax * env.dt; r.vy += a.ay * env.dt;
-        r.x += r.vx * env.dt; r.y += r.vy * env.dt;
-        r.trail.push({ x: r.x, y: r.y }); if (r.trail.length > 12) r.trail.shift();
-        const dist = Math.hypot(b.x - r.x, b.y - r.y);
-        if (dist <= b.r + r.r * 0.6) {                 // 충돌!
-          G.Nebula.addMassFrac(0.018 + r.r / vs * 0.0022, r.x, r.y, 28);
-          G.Nebula.ring(b.x, b.y, b.r, b.r * 2.6, 0.7, 30, 2.4, 0.7);
-          kit.shake(2 + r.r / vs * 0.35);
-          const ang = Math.atan2(r.y - b.y, r.x - b.x);
-          for (let k = 0; k < 9; k++) {              // 튀는 파편 — 곧 다시 중력에 붙잡혀 떨어진다
-            const sa = ang + (inst.rnd() - 0.5) * 1.3, sp = 60 + inst.rnd() * 120;
-            d.debris.push({ x: r.x, y: r.y, vx: Math.cos(sa) * sp, vy: Math.sin(sa) * sp, t: 0 });
-          }
-          if (G.Audio.actx) G.Audio.playNoiseBurst(0.18, 0.12);
-          d.rocks.splice(i, 1); continue;
-        }
-        if (r.age > 9 || r.x < -80) d.rocks.splice(i, 1);
-      }
-      for (let i = d.debris.length - 1; i >= 0; i--) {
-        const u = d.debris[i]; u.t += env.dt;
-        const a = G.Nebula.accel(u.x, u.y, 0.5);
-        u.vx += a.ax * env.dt; u.vy += a.ay * env.dt; u.x += u.vx * env.dt; u.y += u.vy * env.dt;
-        if (u.t > 1.1 || Math.hypot(b.x - u.x, b.y - u.y) < b.r) d.debris.splice(i, 1);
-      }
-      for (const s of d.belt) { s.x -= s.sp * env.dt; if (s.x < -4) { s.x = W + 4; s.y = inst.rnd() * H; } }
-    },
-    back(inst, env) {
-      const { ctx, k } = env;
-      ctx.fillStyle = 'rgba(190,160,130,' + (0.35 * k).toFixed(3) + ')';
-      for (const s of inst.data.belt) { ctx.beginPath(); ctx.arc(s.x, s.y, s.s, 0, TAU); ctx.fill(); }
-    },
-    front(inst, env) {
-      const { ctx, b } = env, d = inst.data;
-      for (const r of d.rocks) {
-        const dist = Math.hypot(b.x - r.x, b.y - r.y);
-        const heat = clamp(1 - (dist - b.r) / (b.r * 3 + 60), 0, 1);   // 가까워질수록 달궈진다
-        ctx.globalCompositeOperation = 'lighter';
-        for (let i = 0; i < r.trail.length; i++) {
-          const u = i / r.trail.length;
-          ctx.fillStyle = kit.hsl(24 + 20 * heat, 90, 60, 0.35 * u * (0.4 + heat));
-          ctx.beginPath(); ctx.arc(r.trail[i].x, r.trail[i].y, r.r * 0.8 * u, 0, TAU); ctx.fill();
-        }
-        kit.glow(ctx, r.x, r.y, r.r * (2 + 2.5 * heat), kit.hsl(26, 95, 60, 0.15 + 0.5 * heat), 'rgba(0,0,0,0)');
-        ctx.globalCompositeOperation = 'source-over';
-        rockPoly(ctx, r.x, r.y, r.r, r.rot, r.seed);
-        ctx.fillStyle = heat > 0.4 ? '#c8895a' : '#7d6a5a'; ctx.fill();
-        ctx.strokeStyle = 'rgba(30,20,14,0.8)'; ctx.lineWidth = 1; ctx.stroke();
-        // 빛 받는 쪽 하이라이트
-        rockPoly(ctx, r.x - r.r * 0.12, r.y - r.r * 0.12, r.r * 0.55, r.rot, r.seed);
-        ctx.fillStyle = 'rgba(255,230,200,0.22)'; ctx.fill();
-      }
-      ctx.globalCompositeOperation = 'lighter';
-      for (const u of d.debris) {
-        ctx.fillStyle = kit.hsl(30, 90, 70, (1 - u.t / 1.1) * 0.8);
-        ctx.beginPath(); ctx.arc(u.x, u.y, 1.6, 0, TAU); ctx.fill();
-      }
-    },
-    sound(A) { A.playNoiseBurst(0.5, 0.1); A.playTone(110, 0.5, 'square', 0.05, 0.1); },
   });
 })();

@@ -33,6 +33,7 @@
     A.playMusic('ingame');
     startOverlay.style.display = 'none';
     document.body.classList.add('inGame');
+    G.Run.reset();
     RT.introParticles = [];
     const density = nebulaDensityFactor();
     const densitySqrt = Math.sqrt(density);

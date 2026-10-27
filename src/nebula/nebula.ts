@@ -18,13 +18,15 @@
   const MAX_GRAINS = 1100;
   const BASE_GM = 1.25e7;             // px³/s² — 화면 크기 배율 제곱을 곱해 쓴다
   const CLOUD_GRAINS = 24;            // 보통 성운 하나의 입자 수
-  const GAIN_REF = 0.12 / CLOUD_GRAINS;   // 예전 기준 입자당 질량 비율(중력·부피 가중치의 기준)
-  // 성운 하나가 붙이는 질량 = 현재 질량의 약 0.012%(예전 12%의 1/1000). 값을 키우면 빨리 자란다.
-  const CLOUD_MASS_SCALE = 0.001;
+  const GAIN_REF = 0.04 / CLOUD_GRAINS;   // 입자당 질량 비율 기준
+  // 한 칸 전진할 때 생기는 성운 하나가 붙이는 질량 = 현재 질량의 약 4%(복사압 감쇠 전).
+  // 값을 줄이면 한 칸의 보상이 작아진다.
+  const CLOUD_MASS_SCALE = 1;
   const GAIN_PER_GRAIN = GAIN_REF * CLOUD_MASS_SCALE;
   // 크기(부피)와 중력은 따로 쌓지 않고 질량이 늘어난 비율에서 파생한다.
-  // 부피 ∝ 질량^0.3, 중력 ∝ 질량^0.5 — 질량이 그대로면 크기도 중력도 그대로다.
-  const VOLUME_EXP = 0.3;
+  // 부피 ∝ 질량^0.06, 중력 ∝ 질량^0.5 — 질량이 그대로면 크기도 중력도 그대로다.
+  // 크기는 한 칸(차선) 폭 안에 머물도록 아주 완만하게만 변한다.
+  const VOLUME_EXP = 0.06;
   const GRAVITY_EXP = 0.5;
   function growWithMass(ratio: number) {
     const st = G.state;
@@ -152,7 +154,7 @@
     hitsThisFrame: 0,
 
     // 키 한 번 = 성운 하나. 몸체 주위 허공에 생겨나 접선 방향으로 비스듬히 낙하를 시작한다.
-    spawn(code: string, label: string): boolean {
+    spawn(code: string, label: string, opts?: { near?: boolean }): boolean {
       if (clouds.length >= MAX_CLOUDS || grains.length > MAX_GRAINS - 70) return false;
       const mods = G.Effects.mods;
       const vs = vscale();
@@ -162,7 +164,12 @@
       const spread = (26 + Math.random() * 20) * vs * Math.sqrt(mods.cloud);
 
       let cx = body.x, cy = body.y;
-      for (let tries = 0; tries < 10; tries++) {
+      if (opts && opts.near) {
+        // 한 칸 전진한 보상: 진행 방향(오른쪽) 가까운 곳에서 성운이 모여 곧바로 끌려온다
+        const ang = (Math.random() - 0.5) * 1.8;
+        const dist = body.r + spread + (60 + Math.random() * 70) * vs;
+        cx = body.x + Math.cos(ang) * dist; cy = body.y + Math.sin(ang) * dist;
+      } else for (let tries = 0; tries < 10; tries++) {
         const ang = Math.random() * TAU;
         const dist = body.r + spread + (210 + Math.random() * 230) * vs;
         cx = body.x + Math.cos(ang) * dist;
@@ -234,6 +241,19 @@
         impacts.push({ ang, t: 0, life: 0.8, hue: hue == null ? 30 : hue, power: 2.2 });
         pushText(body.x + Math.cos(ang) * (body.r + 20), body.y + Math.sin(ang) * (body.r + 20),
           '+' + (f * 100).toFixed(1) + '%', hue == null ? 30 : hue, 14);
+      }
+    },
+
+    // 운석 충돌 등으로 질량이 줄 때: 크기·중력도 같은 비율에서 파생되어 함께 줄어든다
+    scaleMass(ratio: number, x?: number, y?: number) {
+      const state = G.state;
+      const m0 = state.mass;
+      state.mass = clamp(m0 * ratio, 1e-9, 200);
+      growWithMass(state.mass / m0);
+      if (x != null && y != null) {
+        const ang = Math.atan2(y - body.y, x - body.x);
+        pushText(body.x + Math.cos(ang) * (body.r + 18), body.y + Math.sin(ang) * (body.r + 18),
+          '−' + Math.round((1 - ratio) * 100) + '%', 8, 15);
       }
     },
 

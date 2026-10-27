@@ -17,7 +17,7 @@
   <div class="row mass"><span class="ico">🪐</span><span class="lbl">질량</span><span id="massDisplay">~1.0 × 지구</span></div>
   <div class="row clock"><span class="ico">⏳</span><span class="lbl">나이</span><span id="clockDisplay">0년</span></div>
   <div class="row grav"><span class="ico">🌀</span><span class="lbl">중력</span><span id="gravDisplay">×1.00</span></div>
-  <div class="row dist"><span class="ico">✦</span><span class="lbl">거리</span><span id="distDisplay">0.0 광년</span></div>
+  <div class="row dist"><span class="ico">✦</span><span class="lbl">전진</span><span id="distDisplay">0 걸음</span></div>
   <div class="row fuel"><span class="ico">🔥</span><span class="lbl">연료</span><span id="fuelDisplay">—</span></div>
 </div>
 
@@ -30,7 +30,7 @@
 </div>
 
 <div id="fxBanner"></div>
-<div id="keyHint">키보드의 글자 · 숫자 키를 눌러 성운을 불러들이세요</div>
+<div id="keyHint">아무 글자 · 숫자 키를 눌러 한 칸씩 전진하세요 — 운석 차선을 피해 계속 나아가세요</div>
 
 <div id="vitalsPanel">
   <canvas id="crossSectionCanvas"></canvas>
@@ -60,7 +60,8 @@
       <div class="presetDesc">지구형 행성에서 시작한다</div>
     </div>
   </div>
-  <p class="hint">시작하면 아무 글자·숫자 키나 눌러 성운을 끌어당기세요 — 약 10초마다 새 효과가 걸립니다</p>
+  <p id="bestInfo"></p>
+  <p class="hint">아무 글자·숫자 키를 누르면 한 칸 전진 — 빨리 갈수록 화면도 빨라지고, 멈추면 밀려나 소멸합니다. 운석이 다니는 붉은 차선을 피하세요</p>
 </div>
 
 <div id="timeskip">
@@ -107,6 +108,7 @@
 <script src="dist/render/endingAnim/merge.js"></script>
 <script src="dist/render/endingAnim/collision.js"></script>
 <script src="dist/render/endingAnim/spider.js"></script>
+<script src="dist/render/endingAnim/vanish.js"></script>
 <script src="dist/render/endingAnim/dispatch.js"></script>
 <script src="dist/render/bootstrap.js"></script>
 <script src="dist/render/stageTrack.js"></script>
@@ -118,6 +120,7 @@
 <script src="dist/effects/defsStellar.js"></script>
 <script src="dist/effects/defsCompanion.js"></script>
 <script src="dist/effects/core.js"></script>
+<script src="dist/run/run.js"></script>
 
 
 <script src="dist/ending/data.js"></script>

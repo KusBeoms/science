@@ -48,6 +48,9 @@
       `총 이동거리 &nbsp;<span>${distStr} 광년</span><br>` +
       `총 생존 연수 &nbsp;<span>${ageStr}</span><br>` +
       `최종 질량 &nbsp;<span>${state.mass.toFixed(1)} × 태양</span> · 최종 부피 &nbsp;<span>${state.volume.toFixed(0)}</span><br>` +
+      `전진 &nbsp;<span>${state.steps}걸음</span> · 최고 기록 &nbsp;<span>${G.Run.best.steps}걸음</span>${G.Run.newRecord ? ' &nbsp;<span>★ 신기록!</span>' : ''}<br>` +
+      `최대 질량 &nbsp;<span>${G.Run.massLabel(state.peakMass)}</span> · 최고 기록 &nbsp;<span>${G.Run.massLabel(G.Run.best.mass)}</span><br>` +
+      `운석 충돌 &nbsp;<span>${state.meteorHits}번</span><br>` +
       `받은 효과 &nbsp;<span>${state.effectLog.length}개</span> · 삼킨 성운 &nbsp;<span>${state.absorbedClouds}개</span><br>` +
       `누적 중력 &nbsp;<span>×${state.gravity.toFixed(2)}</span><br>` +
       `동반성 &nbsp;<span>${companionStr}</span><br>` +
@@ -89,7 +92,7 @@
     G.resetState();
     G.Render.initStars();
     G.Render.resetSurfaces();
-    G.Effects.reset(); G.Nebula.reset();
+    G.Effects.reset(); G.Nebula.reset(); G.Run.reset(); G.Run.refreshBestUI();
     document.body.classList.remove('pressed');
     Gp._hudResetGauge();
     const RT = Gp._runtime;

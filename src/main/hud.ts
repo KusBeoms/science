@@ -43,7 +43,8 @@
 
   Gp._hudUpdate = function () {
     document.getElementById('clockDisplay')!.textContent = G.formatYears(state.ageYears);
-    document.getElementById('distDisplay')!.textContent = state.distanceLy.toFixed(1) + ' 광년';
+    const best = G.Run.best.steps;
+    document.getElementById('distDisplay')!.textContent = state.steps + (best > 0 ? ' / 최고 ' + Math.max(best, state.steps) : '') + ' 걸음';
     massDisplay.textContent = massText();
     gravDisplay.textContent = '×' + state.gravity.toFixed(2);
     updateFuel();

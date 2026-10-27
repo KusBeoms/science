@@ -14,7 +14,7 @@
     const R = G.Render, st = env.st;
     const m1 = G.clamp(st.mass, 0.1, 60);
     const orbitR = (90 + m1 * 1.2) * env.vs;
-    const px = R.W * 0.28, py = R.H * 0.55;
+    const px = R.W * 0.28 + (Gp._runOffX || 0), py = R.H * 0.55 + (Gp._runOffY || 0);
     return { x: px + Math.cos(R.companionOrbitAngle) * orbitR, y: py + Math.sin(R.companionOrbitAngle) * orbitR * 0.4, px, py, orbitR };
   }
 

@@ -14,6 +14,7 @@
     // 진행 중이던 효과와 날아오던 성운은 정리한다(엔딩 연출을 가리지 않게)
     G.Effects.reset();
     G.Nebula.reset();
+    G.Run.finish();
     G.Audio.stopMusic();
     // 화면 이동을 멈추고 별이 중앙으로 이동한 뒤(move) 엔딩 모양이 형성되도록(form)
     // 단계를 나눈다 — setupEndingAnim(파티클/사운드 준비)은 별이 중앙에 도착한

@@ -339,3 +339,5 @@ body:not(.inGame) #rightStack { opacity:0; pointer-events:none; }
   opacity:0; pointer-events:none; transition:opacity .8s ease;
 }
 body.inGame:not(.pressed) #keyHint { opacity:.85; animation:pulse 2s infinite ease-in-out; }
+
+#startOverlay #bestInfo { font-size:0.875rem; opacity:.8; letter-spacing:.08em; margin-top:1.4rem; color:#ffe6a8; animation:none; }
