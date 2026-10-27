@@ -79,14 +79,15 @@
       currentIndex = index;
       const target = ticks[index];
       const targetX = viewport.offsetWidth / 2 - (target.offsetLeft + target.offsetWidth / 2);
-      gsap.to(list, { x: targetX, duration: 0.6, ease: 'power2.out', overwrite: true });
+      if (typeof gsap !== 'undefined') gsap.to(list, { x: targetX, duration: 0.6, ease: 'power2.out', overwrite: true });
+      else list.style.transform = 'translateX(' + targetX + 'px)';
     }
 
     const text = G.Stage.bodyStageLabel(state);
     if (text !== lastLabelText) {
       lastLabelText = text;
       label.textContent = text;
-      gsap.fromTo(label, { opacity: 0 }, { opacity: 1, duration: 0.35 });
+      if (typeof gsap !== 'undefined') gsap.fromTo(label, { opacity: 0 }, { opacity: 1, duration: 0.35 });
     }
   };
 })();

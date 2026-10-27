@@ -16,21 +16,22 @@
   // 응축이 끝난 뒤 카메라가 오른쪽으로 팬하며(=별이 왼쪽 제자리로 이동) 진행되는 시간
   const INTRO_PAN_DUR = 0.8;
 
-  // 성운의 "밀도"는 질량을 부피로 나눈 값으로 정의한다 — 프리셋 자체가 질량은
-  // 크고 부피는 작을수록(고밀도), 질량은 작고 부피는 클수록(희박) 설계되어
-  // 있어서, mass만 볼 때보다 mass/volume 비율을 볼 때 프리셋 간 격차가
-  // 훨씬 크게(약 13배) 벌어진다. 표준 성운(mass 1, volume 20)의 밀도를
-  // 기준(=1)으로 정규화한다.
+  // 성운의 "밀도"는 질량을 부피로 나눈 값으로 정의한다.
+  // 프리셋 사이 밀도 차는 자릿수 단위(고밀도 ≈ 표준의 700배, 희박 ≈ 표준의 1/200)라
+  // 선형 비율로 두면 표준·희박이 모두 하한에 붙어 구분되지 않는다. 표준 성운(목성
+  // 질량, volume 30)을 1로 놓고 로그 척도로 눌러 대략 고밀도 2.5 / 표준 1 / 희박 0.5가 된다.
   function nebulaDensityFactor(): number {
     const density = state.mass / Math.max(state.volume, 1);
-    const standardDensity = 1 / 20;
-    return clamp(density / standardDensity, 0.15, 5);
+    const standardDensity = G.JUPITER_MASS / 30;
+    const factor = Math.pow(10, 0.14 * Math.log10(Math.max(density, 1e-12) / standardDensity));
+    return clamp(factor, 0.15, 5);
   }
 
   Gp._introBeginGame = function (presetId?: string) {
     G.applyPreset(presetId || 'standard');
     A.init();
     A.playMusic('ingame');
+    A.playChord([55, 82.4, 110, 164.8], 3.4, 0.07);
     startOverlay.style.display = 'none';
     document.body.classList.add('inGame');
     G.Run.reset();

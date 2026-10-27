@@ -16,6 +16,8 @@
     playTone(freq, dur, type, gainVal, delay) { return Gp._audioPlayTone.call(this, freq, dur, type, gainVal, delay); },
     playSweep(f0, f1, dur) { Gp._audioPlaySweep.call(this, f0, f1, dur); },
     playNoiseBurst(dur, gainVal) { Gp._audioPlayNoiseBurst.call(this, dur, gainVal); },
+    playChord(freqs, dur, gainVal, type) { Gp._audioPlayChord.call(this, freqs, dur, gainVal, type); },
+    playBoom(gainVal, dur) { Gp._audioPlayBoom.call(this, gainVal, dur); },
   };
 
   G.Audio = Audio_;

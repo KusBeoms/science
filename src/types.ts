@@ -48,7 +48,6 @@ interface GameState {
   companionEventShown: boolean;
   crisisShown: boolean;
   collisionEventShown: boolean;
-  lastBreathShown: boolean;
   /* 키 입력 → 성운 → 흡수 루프의 누적 통계 */
   gravity: number;          // 중력 배율(1.0에서 시작, 성운을 삼킬수록 늘어난다)
   pressCount: number;       // 누른 키 수
@@ -63,7 +62,6 @@ interface GameState {
   lastEffectId: string | null;
   usedEffects: Set<string>;
   effectLog: EffectLogEntry[];
-  phaseStarBudget: number;
 }
 
 interface CollapseRushState {
@@ -213,6 +211,8 @@ interface AudioAPI {
   playTone(freq: number, dur: number, type?: OscillatorType, gainVal?: number, delay?: number): OscillatorNode | undefined;
   playSweep(f0: number, f1: number, dur: number): void;
   playNoiseBurst(dur: number, gainVal?: number): void;
+  playChord(freqs: number[], dur: number, gainVal?: number, type?: OscillatorType): void;
+  playBoom(gainVal?: number, dur?: number): void;
 }
 
 interface BackgroundStar {
@@ -304,6 +304,9 @@ interface RunAPI {
   best: RunBest;
   newRecord: boolean;
   scrollRatio: number;
+  paceRatio: number;    // 내 걸음 속도 ÷ 카메라가 요구하는 최소 속도
+  gainScale: number;    // 빠를수록 걸음당 질량 증가가 묽어지는 배율
+  burnMul: number;      // 걸음 속도에 따른 연료 소모 배율(빠를수록 작다)
   hop(code: string, label: string): boolean;
   update(dt: number, body: StarActorPoint): void;
   drawBack(ctx: CanvasRenderingContext2D, body: StarActorPoint): void;

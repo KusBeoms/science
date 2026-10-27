@@ -14,7 +14,8 @@
     const R = G.Render, st = env.st;
     const m1 = G.clamp(st.mass, 0.1, 60);
     const orbitR = (90 + m1 * 1.2) * env.vs;
-    const px = R.W * 0.28 + (Gp._runOffX || 0), py = R.H * 0.55 + (Gp._runOffY || 0);
+    // 궤도 중심은 플레이어 몸체 자신이다(starActors.ts의 동반성과 같은 기준)
+    const px = env.b.x, py = env.b.y;
     return { x: px + Math.cos(R.companionOrbitAngle) * orbitR, y: py + Math.sin(R.companionOrbitAngle) * orbitR * 0.4, px, py, orbitR };
   }
 
@@ -46,7 +47,7 @@
         G.Nebula.ring(o.x, o.y, 6, 120 * env.vs, 1.1, 200, 2.5, 0.8);
         G.Nebula.ring(o.x, o.y, 4, 70 * env.vs, 0.8, 320, 1.5, 0.7);
         G.Nebula.floatText(o.x, o.y - 40 * env.vs, '궤도에 결속!', 200, 16);
-        kit.shake(4); G.Audio.playTone(784, 0.5, 'sine', 0.1); G.Audio.playTone(1047, 0.7, 'sine', 0.08, 0.1);
+        kit.shake(4); G.Audio.playChord([392, 523, 659, 784], 2.4, 0.06, 'triangle'); G.Audio.playTone(784, 0.5, 'sine', 0.1); G.Audio.playTone(1047, 0.7, 'sine', 0.08, 0.1);
       }
       d.flash = Math.max(0, d.flash - env.dt * 1.4);
     },
@@ -131,6 +132,8 @@
       if (env.p > 0.93) d.flash = clampF((env.p - 0.93) / 0.07);
     },
     end(inst, s) {
+      // 8초 사이에 동반성이 이미 죽었다면 부딪힐 상대가 없다
+      if (inst.data.collide && !s.companionAlive) return;
       if (inst.data.collide) s.collisionFlag = true;
       else {
         G.Nebula.addMassFrac(0.3, G.Effects.companionPos ? G.Effects.companionPos.x : undefined, G.Effects.companionPos ? G.Effects.companionPos.y : undefined, 40);

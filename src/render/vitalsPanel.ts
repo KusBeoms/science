@@ -105,9 +105,13 @@
     } else if (curKey !== prevKey) {
       fadingFromKey = prevKey;
       prevKey = curKey;
-      gsap.killTweensOf(blend);
-      blend.t = 0;
-      gsap.to(blend, { t: 1, duration: 0.7, ease: 'power2.out' });
+      if (typeof gsap !== 'undefined') {
+        gsap.killTweensOf(blend);
+        blend.t = 0;
+        gsap.to(blend, { t: 1, duration: 0.7, ease: 'power2.out' });
+      } else {
+        blend.t = 1;
+      }
     }
 
     if (blend.t < 1) {

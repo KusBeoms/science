@@ -10,7 +10,7 @@
   const gravDisplay = document.getElementById('gravDisplay')!;
 
   const EARTH_MASSES_PER_SOLAR = 1 / G.EARTH_MASS; // ≈ 332,946
-  const JUPITER_MASSES_PER_SOLAR = 1047.35; // 1 M☉ ≈ 1047.35 M_Jup
+  const JUPITER_MASSES_PER_SOLAR = 1 / G.JUPITER_MASS; // 1 M☉ ≈ 1047.35 M_Jup
 
   // 질량 단위는 국면에 맞춰 3단계로 바뀐다 — 지구형(지구질량) →
   // 목성형(목성질량) → 점화 후(태양질량). 각 단위에서 "0.0"으로 뭉개지지

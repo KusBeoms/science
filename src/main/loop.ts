@@ -44,7 +44,9 @@
       // 효과 수치 → 성운 물리 순서. 몸체 위치는 직전 프레임 값을 쓴다(1프레임 차이는 보이지 않는다)
       E.update(fxDt, lastBody);
       N.update(fxDt, lastBody);
-      if (!RT.timeSkipping) G.Run.update(dt, lastBody);
+      // 시간 도약·말기 연소 질주 중에는 입력이 막히므로 카메라·운석도 함께 멈춘다
+      // (그대로 두면 키를 누를 수 없는 채로 몸체가 밀려나 질주 중 소멸하거나 운석을 맞는다)
+      if (!RT.timeSkipping && !state.collapseRush) G.Run.update(dt, lastBody);
       // 몸체 뒤 연출(중력장, 효과의 배경층) → 몸체 → 앞 연출
       G.Run.drawBack(ctx, lastBody);
       N.drawBack(ctx, lastBody, dt);
@@ -77,7 +79,9 @@
         RT.ignitionAgeRampT = Math.min(RT.ignitionAgeRampT + dt, IGNITION_RAMP_DUR);
         const t = clamp(RT.ignitionAgeRampT / IGNITION_RAMP_DUR, 0, 1);
         const eased = t * t * (3 - 2 * t); // smoothstep
-        const stellar = G.yearsPerSecond(state.mass);
+        // 연료가 빨리 타면(핵융합 폭주 등) 그만큼 나이도 빨리 흘러야 죽는 순간의
+        // 나이가 그 별의 수명과 맞는다.
+        const stellar = G.yearsPerSecond(state.mass) * G.Effects.mods.fuelBurn * G.Run.burnMul;
         const rate = Math.pow(G.FORMATION_YEARS_PER_SEC, 1 - eased) * Math.pow(stellar, eased);
         state.ageYears += dt * rate;
       } else {
@@ -86,7 +90,7 @@
       if (!RT.timeSkipping) {
         // 핵융합이 붙기 전(아직 "별"이 아닌 원시체) 상태에서는 생명력(fuel)이라는
         // 개념 자체가 없다 — 태울 연료가 없으니 소모될 것도 없다.
-        if (state.hasFusion) state.fuel -= G.fuelBurnRate(state.mass) * dt * G.Effects.mods.fuelBurn;
+        if (state.hasFusion) state.fuel -= G.fuelBurnRate(state.mass) * dt * G.Effects.mods.fuelBurn * G.Run.burnMul;
 
         // 항성풍 분출 같은 효과가 거는 질량 손실(초당 비율)
         if (G.Effects.mods.massDrain > 0) state.mass = Math.max(1e-9, state.mass * (1 - G.Effects.mods.massDrain * dt));
@@ -102,9 +106,10 @@
           // f(mass)*mass를 남은 수명(FUEL_MAX/연료소모율) 동안 나눠 잃는
           // 속도로 역산한다 — 그러면 실제 별이 정확히 그 비율만큼만 잃고
           // 죽도록 자동으로 맞춰진다.
-          const lifeFrac = G.clamp((state.mass - G.WHITE_DWARF_MAX) / 72, 0, 0.5);
+          const lifeFrac = G.clamp((state.mass - G.WHITE_DWARF_MAX) / 144, 0, 0.5);
           const windLoss = lifeFrac * state.mass * G.fuelBurnRate(state.mass) / G.FUEL_MAX;
-          state.mass = Math.max(0.05, state.mass - windLoss * dt);
+          // 손실이 있을 때만 바닥(0.05)을 건다 — 항상 걸면 이미 0.05 아래인 별의 질량이 올라간다
+          if (windLoss > 0) state.mass = Math.max(0.05, state.mass - windLoss * dt);
         }
         Gp._companionUpdate(dt);
       }

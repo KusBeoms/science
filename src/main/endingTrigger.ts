@@ -16,6 +16,7 @@
     G.Nebula.reset();
     G.Run.finish();
     G.Audio.stopMusic();
+    if (type !== 'vanish') G.Audio.playBoom(0.6, 2.2);
     // 화면 이동을 멈추고 별이 중앙으로 이동한 뒤(move) 엔딩 모양이 형성되도록(form)
     // 단계를 나눈다 — setupEndingAnim(파티클/사운드 준비)은 별이 중앙에 도착한
     // 뒤(loop.ts의 move→form 전환 시점)에 호출한다.

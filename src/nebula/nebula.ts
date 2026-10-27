@@ -38,7 +38,7 @@
   interface Cloud {
     hue: number; label: string; n: number; alive: number;
     gx: number; gy: number; sx: number; sy: number;
-    gainAcc: number; gravAcc: number; age: number; spread: number;
+    gainAcc: number; age: number; spread: number;
   }
   interface Grain {
     x: number; y: number; px: number; py: number; vx: number; vy: number;
@@ -122,7 +122,7 @@
     const damp = 1 / (1 + m0 / G.ACCRETION_DAMP_MASS);
     // 중력이 클수록 같은 입자도 더 단단히 붙잡힌다
     const gravBonus = 1 + Math.min(0.6, 0.06 * (state.gravity - 1));
-    const frac = g.gain * mods.absorb * damp * gravBonus;
+    const frac = g.gain * mods.absorb * damp * gravBonus * (g.cloud ? G.Run.gainScale : 1);
     state.mass = clamp(m0 * (1 + frac), 1e-9, 200);
     growWithMass(state.mass / m0);
     fieldPulse = Math.min(0.6, fieldPulse + 0.008 * w);
@@ -166,9 +166,16 @@
       let cx = body.x, cy = body.y;
       if (opts && opts.near) {
         // 한 칸 전진한 보상: 진행 방향(오른쪽) 가까운 곳에서 성운이 모여 곧바로 끌려온다
-        const ang = (Math.random() - 0.5) * 1.8;
+        // 몸체가 오른쪽 끝 근처면 앞쪽은 화면 밖이라 성운이 가장자리에 눌려 몸체 뒤에서
+        // 생기고, 달리면 도착 전에 지나쳐 버린다 — 화면 안에 들어올 때까지 각도 범위를
+        // 위·아래로 넓혀가며 다시 뽑는다.
         const dist = body.r + spread + (60 + Math.random() * 70) * vs;
-        cx = body.x + Math.cos(ang) * dist; cy = body.y + Math.sin(ang) * dist;
+        for (let tries = 0; tries < 8; tries++) {
+          const half = 0.9 + tries * 0.3;
+          const ang = (Math.random() - 0.5) * 2 * half;
+          cx = body.x + Math.cos(ang) * dist; cy = body.y + Math.sin(ang) * dist;
+          if (cx < W - 80 && cy > 60 && cy < H - 60) break;
+        }
       } else for (let tries = 0; tries < 10; tries++) {
         const ang = Math.random() * TAU;
         const dist = body.r + spread + (210 + Math.random() * 230) * vs;
@@ -188,7 +195,7 @@
 
       const cloud: Cloud = {
         hue, label, n, alive: n, gx: cx, gy: cy, sx: 0, sy: 0,
-        gainAcc: 0, gravAcc: 0, age: 0, spread,
+        gainAcc: 0, age: 0, spread,
       };
       clouds.push(cloud);
       // 실제 분자운 조각처럼 길쭉하고 가장자리가 흐릿한 가우시안 덩어리 (장축은 무작위 방향)

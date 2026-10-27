@@ -56,6 +56,58 @@
     o.start(t0); o.stop(t0 + dur + 0.05);
   };
 
+  // 웅장한 울림: 살짝 어긋난 오실레이터 여러 겹이 천천히 차올랐다 길게 사라진다.
+  // 로우패스 필터가 열리며 밝아지고, 짧은 에코가 공간감을 더한다.
+  Gp._audioPlayChord = function (this: AudioAPI, freqs: number[], dur: number, gainVal?: number, type?: OscillatorType) {
+    if (!this.actx) return;
+    const a = this.actx, t0 = a.currentTime;
+    const peak = gainVal !== undefined ? gainVal : 0.07;
+    const g = a.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(peak, t0 + dur * 0.35);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    const lp = a.createBiquadFilter(); lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(300, t0);
+    lp.frequency.exponentialRampToValueAtTime(2600, t0 + dur * 0.4);
+    lp.frequency.exponentialRampToValueAtTime(500, t0 + dur);
+    const echo = a.createDelay(0.5); echo.delayTime.value = 0.23;
+    const fb = a.createGain(); fb.gain.value = 0.35;
+    echo.connect(fb); fb.connect(echo);
+    lp.connect(g); g.connect(this.masterGain!);
+    g.connect(echo); echo.connect(this.masterGain!);
+    for (const f of freqs) {
+      for (const detune of [-7, 7]) {
+        const o = a.createOscillator(); o.type = type || 'sawtooth';
+        o.frequency.value = f; o.detune.value = detune;
+        o.connect(lp); o.start(t0); o.stop(t0 + dur + 0.1);
+      }
+    }
+  };
+
+  // 묵직한 충격: 내려앉는 저음 + 낮게 걸러낸 노이즈 폭발.
+  Gp._audioPlayBoom = function (this: AudioAPI, gainVal?: number, dur?: number) {
+    if (!this.actx) return;
+    const a = this.actx, t0 = a.currentTime, d = dur || 1.6, peak = gainVal !== undefined ? gainVal : 0.5;
+    const o = a.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(110, t0);
+    o.frequency.exponentialRampToValueAtTime(28, t0 + d * 0.8);
+    const g = a.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(peak, t0 + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+    o.connect(g); g.connect(this.masterGain!);
+    o.start(t0); o.stop(t0 + d + 0.05);
+    const n = Math.floor(a.sampleRate * d * 0.6);
+    const buf = a.createBuffer(1, n, a.sampleRate), data = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
+    const src = a.createBufferSource(); src.buffer = buf;
+    const lp = a.createBiquadFilter(); lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(900, t0); lp.frequency.exponentialRampToValueAtTime(80, t0 + d * 0.6);
+    const ng = a.createGain(); ng.gain.value = peak * 0.7;
+    src.connect(lp); lp.connect(ng); ng.connect(this.masterGain!);
+    src.start(t0);
+  };
+
   Gp._audioPlayNoiseBurst = function (this: AudioAPI, dur: number, gainVal?: number) {
     if (!this.actx) return;
     const bufSize = this.actx.sampleRate * dur;

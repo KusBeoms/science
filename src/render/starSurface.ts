@@ -139,7 +139,12 @@
     const surf = Gp._renderGetSurface(id);
     // 점화 직전 원시체는 별 반지름의 PROTO_BODY_SCALE배로 그려진다(starActors.ts). 블렌드
     // 동안 그 크기에서 별 크기로 함께 부풀어야 점화 순간 크기가 툭 튀지 않는다.
-    const r = Gp._renderStarRadius(volume) * (G.PROTO_BODY_SCALE + (1 - G.PROTO_BODY_SCALE) * blend);
+    // 연료가 30% 아래로 내려간 0.5 M☉ 이상의 별은 거성으로 부풀고 붉어진다. 라벨만
+    // "적색거성"이고 모습은 주계열 그대로이던 불일치를 없앤다(0.5 M☉ 미만은 거성이 못 된다).
+    // 초거성(8 M☉~)은 더 크게 부푼다.
+    const giant = mass >= G.HELIUM_IGNITION_MIN ? clamp((0.3 - fuelFrac) / 0.3, 0, 1) : 0;
+    const giantSize = 1 + giant * (mass >= G.WHITE_DWARF_MAX ? 0.9 : 0.6);
+    const r = Gp._renderStarRadius(volume) * (G.PROTO_BODY_SCALE + (1 - G.PROTO_BODY_SCALE) * blend) * giantSize;
     const ease = 1 - Math.exp(-3 * dt);
     // 스펙트럼형 경계를 넘을 때 편평도/맥동 강도가 순간적으로 바뀌지 않도록
     // 목표값으로 부드럽게 접근시킨다.
@@ -154,7 +159,7 @@
     const rp = r * pulse;
     const squashY = 1 - surf.visibleOblate;
 
-    const base = mixRgb(PROTO_COLOR, rgbOf(Gp._renderMassColor(mass)), blend);
+    const base = mixRgb(mixRgb(PROTO_COLOR, rgbOf(Gp._renderMassColor(mass)), blend), [255, 112, 72], giant * 0.7);
     const white = [255, 255, 255];
     const core = mixRgb(base, white, 0.62);
     // 가장자리는 같은 색조를 유지한 채 어둡게만 — 색을 따뜻하게 틀면 뜨거운

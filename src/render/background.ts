@@ -91,15 +91,21 @@
   };
 
   Gp._renderStarBudget = function (this: RenderAPI): number {
-    const step = Math.floor(G.state.distanceLy);
     // 전체 별 개수가 화면 크기마다 달라지므로 비율로 줄여야 큰 화면에서도
     // 똑같이 서서히 어두워진다.
-    const frac = G.clamp(1 - step * 22 / 260, 0, 1);
+    const frac = G.clamp(1 - this.bgDarkness(), 0, 1);
     return Math.max(1, Math.round(this.stars.length * frac));
   };
 
+  // 우주의 노화는 시간이 아니라 이 별의 진행도를 따른다. 예전엔 이동거리(=시간)가 12광년,
+  // 즉 120초가 되면 완전히 어두워졌는데, 희박 프리셋은 형성기까지 170초 안팎이라
+  // 별이 죽기 한참 전에 이미 암전이 끝나 있었다. 점화 전엔 0~25%까지만 천천히,
+  // 점화 후엔 연료 소모에 맞춰 25%→100%로 어두워져 죽는 순간에 맞닿는다.
   Gp._renderBgDarkness = function (this: RenderAPI): number {
-    return G.clamp(G.state.distanceLy / 12, 0, 1);
+    const st = G.state;
+    if (!st.hasFusion) return G.clamp(st.distanceLy / 28, 0, 0.25);
+    const burned = 1 - G.clamp(st.fuel / G.FUEL_MAX, 0, 1);
+    return 0.25 + 0.75 * burned;
   };
 
   // ── 은하수 ──────────────────────────────────────────────────────────────

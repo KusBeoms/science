@@ -209,7 +209,9 @@
           st.playTime += dt;
           if (st.playTime >= st.nextEffectAt) {
             const d = pick();
-            lastGap = EFFECT_GAP[0] + Math.random() * (EFFECT_GAP[1] - EFFECT_GAP[0]);
+            // 점화 전에는 성운이 짙을수록 물질이 빨리 모여 사건 간격이 짧아진다(프리셋의 accretionBoost)
+            const pace = st.hasFusion ? 1 : Math.max(0.3, st.accretionBoost);
+            lastGap = (EFFECT_GAP[0] + Math.random() * (EFFECT_GAP[1] - EFFECT_GAP[0])) / pace;
             st.nextEffectAt = st.playTime + (d ? lastGap : 2);
             if (d) startEffect(d);
           }

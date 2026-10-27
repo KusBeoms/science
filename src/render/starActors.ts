@@ -84,7 +84,9 @@
 
   Gp._renderDrawCompanionStar = function (this: RenderAPI, dt?: number): StarActorPoint {
     const state = G.state;
-    const px = this.W * 0.28 + (Gp._runOffX || 0), py = this.H * 0.55 + (Gp._runOffY || 0);
+    // 몸체 중심 = 평소 자리 + 이동 오프셋(drawPlayerStar와 같은 식). 큰 별에서 평소 자리가
+    // 왼쪽으로 밀리므로 W*0.28을 그대로 쓰면 궤도 중심이 별에서 어긋난다.
+    const px = restingX(this, state.volume) + (Gp._runOffX || 0), py = this.H * 0.55 + (Gp._runOffY || 0);
     const m1 = clamp(state.mass, 0.1, 60), m2 = clamp(state.companionMass, 0.1, 60);
     const orbitR = (90 + m1 * 1.2) * (Gp._renderViewScale || 1);
     this.companionOrbitAngle += (dt == null ? 0.016 : dt) * companionOrbitSpeed(m1, m2);

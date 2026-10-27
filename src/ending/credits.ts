@@ -47,7 +47,7 @@
       `<div class="statBlock">` +
       `총 이동거리 &nbsp;<span>${distStr} 광년</span><br>` +
       `총 생존 연수 &nbsp;<span>${ageStr}</span><br>` +
-      `최종 질량 &nbsp;<span>${state.mass.toFixed(1)} × 태양</span> · 최종 부피 &nbsp;<span>${state.volume.toFixed(0)}</span><br>` +
+      `최종 질량 &nbsp;<span>${G.Run.massLabel(state.mass)}</span> · 최종 부피 &nbsp;<span>${state.volume.toFixed(0)}</span><br>` +
       `전진 &nbsp;<span>${state.steps}걸음</span> · 최고 기록 &nbsp;<span>${G.Run.best.steps}걸음</span>${G.Run.newRecord ? ' &nbsp;<span>★ 신기록!</span>' : ''}<br>` +
       `최대 질량 &nbsp;<span>${G.Run.massLabel(state.peakMass)}</span> · 최고 기록 &nbsp;<span>${G.Run.massLabel(G.Run.best.mass)}</span><br>` +
       `운석 충돌 &nbsp;<span>${state.meteorHits}번</span><br>` +
@@ -96,6 +96,12 @@
     document.body.classList.remove('pressed');
     Gp._hudResetGauge();
     const RT = Gp._runtime;
+    // 시간 도약 중에 끝났다면 연출·플래그가 새 판에 남지 않게 정리한다
+    Gp._timeSkipToken++;
+    RT.timeSkipping = false;
+    document.getElementById('timeskip')!.classList.remove('show');
+    RT.ignitionAgeRampT = 0;
+    Gp._ignitionBlend = null;
     RT.endingPhase = 'idle'; RT.endingMoveT = 0; RT.endingHoldT = 0; RT.endingFadeT = 0;
     document.getElementById('startOverlay')!.style.display = 'flex';
     document.body.classList.remove('inGame');

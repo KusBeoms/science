@@ -18,11 +18,20 @@
   const BEST_KEY = 'star-life:best:v1';
   const HOP_ARC = 0.14;                 // 한 칸 뛰는 연출 시간(다음 입력을 막지 않는다)
   const CELL_PX = 64;                   // 한 칸(차선 폭)의 화면 크기(화면 배율 곱)
-  const BASE_SECONDS_PER_CELL = 0.85;   // 가만히 있을 때 화면이 한 칸 흘러가는 시간
-  const FRONT_LIMIT = 0.46;             // 몸체가 머무는 가장 앞 화면 위치(폭 비율) — 넘으면 카메라가 따라붙는다
+  const BASE_SECONDS_PER_CELL = 0.75;   // 가만히 있을 때 화면이 한 칸 흘러가는 시간
+  const FRONT_LIMIT = 0.85;            // 몸체가 머무는 가장 앞 화면 위치(폭 비율) — 넘으면 카메라가 따라붙는다
   const PACE_WINDOW = 0.8;              // 걸음 속도를 재는 시간 창(초)
   const STEP_GAIN = 0.04;               // 직접 붙여 줄 때의 한 칸 질량 보상(성운 생성이 막힌 경우)
-  const METEOR_LOSS = 0.08;             // 운석 한 번에 잃는 질량 비율
+  const METEOR_LOSS = 0.2;              // 운석 한 번에 잃는 질량 비율
+  const HIT_KNOCKBACK_CELLS = 2;        // 맞으면 몸체가 뒤로 물러나는 칸 수(정수)
+  const HIT_STUN = 0.45;                // 맞은 직후 입력이 먹통인 시간(초)
+  const HIT_INVULN = 0.9;               // 맞은 뒤 연속 피격을 막는 시간(초)
+  const HEAT_FREE_RATIO = 2.2;          // 이 배율(최소 속도 대비)까지는 열이 쌓이지 않는다
+  const HEAT_RISE = 0.6;                // 초과분 1배당 초당 상승량(앞쪽 끝에 붙어 있을 때 기준)
+  const HEAT_COOL = 0.5;                // 평소 초당 식는 양
+  const OVERHEAT_STUN = 1.4;            // 과열로 멈추는 시간(초)
+  const OVERHEAT_FUEL_FRAC = 0.04;      // 과열 시 깎이는 연료 비율(점화 후)
+  const HIT_FUEL_FRAC = 0.08;           // 맞으면 깎이는 연료 비율(점화 후)
 
   interface Lane { k: number; hazard: boolean; dir: number; speed: number; period: number; r: number; t: number; }
   interface Meteor { X: number; y: number; vy: number; r: number; rot: number; spin: number; seed: number[]; trail: number[]; }
@@ -35,8 +44,25 @@
     } catch (e) { /* 저장소를 못 쓰는 환경(시크릿 모드 등)에서는 이번 판 기록만 유지 */ }
     return { steps: 0, mass: 0 };
   }
+  // 서버(server.js)로 열었을 때는 기록을 서버에도 남긴다 — 브라우저 저장소를 지워도 유지된다.
+  // 서버가 없으면(파일로 직접 열기 등) localStorage만 쓴다.
+  const hasServer = /^https?:$/.test(location.protocol);
   function saveBest(b: RunBest) {
     try { localStorage.setItem(BEST_KEY, JSON.stringify(b)); } catch (e) { /* 무시 */ }
+    if (hasServer) {
+      fetch('/api/best', { method: 'POST', body: JSON.stringify(b), keepalive: true }).catch(() => { /* 서버 저장 실패는 조용히 */ });
+    }
+  }
+  function syncFromServer() {
+    if (!hasServer) return;
+    fetch('/api/best', { cache: 'no-store' }).then((r) => r.json()).then((s) => {
+      if (!s || !isFinite(s.steps) || !isFinite(s.mass)) return;
+      // 서버·브라우저 기록 중 높은 쪽을 따른다
+      R_.best.steps = Math.max(R_.best.steps, s.steps);
+      R_.best.mass = Math.max(R_.best.mass, s.mass);
+      try { localStorage.setItem(BEST_KEY, JSON.stringify(R_.best)); } catch (e) { /* 무시 */ }
+      R_.refreshBestUI();
+    }).catch(() => { /* 서버가 없으면 localStorage 기록 그대로 */ });
   }
 
   let camX = 0;            // 카메라가 월드에서 얼마나 나아갔나(px)
@@ -45,6 +71,9 @@
   let paceCount = 0;       // 최근 걸음 수(지수 감쇠) → 걸음 속도 = paceCount / PACE_WINDOW
   let camSpeed = 0;        // 지금 카메라 속도(px/s)
   let hitFlash = 0;
+  let heat = 0;            // 과열 게이지(0~1): 지속 가능한 속도를 넘겨 달리면 쌓이고, 가득 차면 멈춘다
+  let stunT = 0;           // 피격 직후 입력 불가 시간
+  let invT = 0;            // 피격 직후 무적 시간
   let seed = 1;
   let lanes: Record<number, Lane> = {};
   let hazardMemo: Record<number, boolean> = {};
@@ -56,8 +85,9 @@
   function cell(): number { return CELL_PX * vs(); }
   function origin(): number { return G.Render.W * G.STAR_REST_X_FRACTION; } // 0번 차선(출발 칸)의 중심 화면 x
   function baseSpeed(): number { return cell() / BASE_SECONDS_PER_CELL; }
-  // 걸음이 쌓일수록 기본 화면 속도도 조금씩 오른다(최대 약 1.8배)
-  function stageMul(): number { return 1 + Math.min(0.8, G.state.steps * 0.006); }
+  // 걸음이 쌓일수록 운석의 속도·빈도가 오른다(최대 2.4배). 카메라 속도는 일정하다 —
+  // 같이 올리면 후반 화면이 비현실적으로 빨라진다.
+  function stageMul(): number { return 1 + Math.min(1.4, G.state.steps * 0.007); }
 
   function laneRnd(k: number, salt: number): number {
     return kit.rng(((k + 1000) * 2654435761 + salt * 40503 + seed) >>> 0)();
@@ -66,7 +96,7 @@
   function isHazard(k: number): boolean {
     if (k < 2) return false;
     if (hazardMemo[k] != null) return hazardMemo[k];
-    let h = laneRnd(k, 1) < 0.5;
+    let h = laneRnd(k, 1) < 0.5 + Math.min(0.2, k * 0.003);   // 멀리 갈수록 위험 차선이 늘어난다
     if (h && isHazard(k - 1) && isHazard(k - 2) && isHazard(k - 3)) h = false;
     return (hazardMemo[k] = h);
   }
@@ -74,11 +104,11 @@
     let L = lanes[k];
     if (L) return L;
     const v = vs();
-    const period = 2.8 + laneRnd(k, 3) * 1.8;   // 차선마다 일정한 간격(2.8~4.6초)
+    const period = 2.2 + laneRnd(k, 3) * 1.4;   // 차선마다 일정한 간격(2.2~3.6초)
     L = {
       k, hazard: isHazard(k), dir: laneRnd(k, 2) < 0.5 ? 1 : -1,
       speed: (170 + laneRnd(k, 4) * 110) * v, period,
-      r: (11 + laneRnd(k, 5) * 3) * v, t: laneRnd(k, 6) * period,
+      r: (11 + laneRnd(k, 5) * 3 + Math.min(5, Math.max(0, k) * 0.04)) * v, t: laneRnd(k, 6) * period,
     };
     return (lanes[k] = L);
   }
@@ -96,7 +126,7 @@
   function massLabel(m: number): string {
     if (m >= G.IGNITION_MASS) return m.toFixed(2) + ' × 태양';
     if (m < G.GAS_GIANT_MIN_MASS) return (m / G.EARTH_MASS).toFixed(2) + ' × 지구';
-    return (m * 1047.35).toFixed(2) + ' × 목성';
+    return (m / G.JUPITER_MASS).toFixed(2) + ' × 목성';
   }
 
   function spawnMeteor(L: Lane) {
@@ -113,17 +143,25 @@
     best: loadBest(),
     newRecord: false,
     scrollRatio: 1,
+    burnMul: 1,
+    paceRatio: 1,
+    gainScale: 1,
 
     // 한 칸 전진. 속도 제한은 없다.
     hop(code: string, label: string): boolean {
       const st = G.state;
+      if (stunT > 0) return false;   // 맞은 직후엔 한 박자 쉰다
       st.steps++;
       hopT = 0;
       paceCount += 1;
-      if (st.steps > R_.best.steps) { R_.best.steps = st.steps; R_.newRecord = true; saveBest(R_.best); }
+      // 저장은 판이 끝날 때(finish)와 페이지를 떠날 때만 한다 — 걸음마다 쓰면 기록 경신 중
+      // localStorage 쓰기와 서버 POST가 키 입력마다 나간다.
+      if (st.steps > R_.best.steps) { R_.best.steps = st.steps; R_.newRecord = true; }
       // 성운이 모여 흡수될 때 질량이 오른다. 성운 수 한도에 걸리면 같은 양을 바로 붙여 준다.
-      if (!G.Nebula.spawn(code, label, { near: true })) G.Nebula.addMassFrac(STEP_GAIN);
+      if (!G.Nebula.spawn(code, label, { near: true })) G.Nebula.addMassFrac(STEP_GAIN * R_.gainScale);
       if (A.actx) A.playTone(300 + Math.min(st.steps, 80) * 5, 0.06, 'triangle', 0.045);
+      // 25걸음마다 웅장한 울림으로 이정표를 알린다
+      if (st.steps % 25 === 0) { A.playChord([131, 196, 262, 392], 2.0, 0.06); A.playBoom(0.3, 1.2); }
       return true;
     },
 
@@ -136,15 +174,42 @@
       // 카메라: 기본 속도와 "최근 걸음 속도" 중 빠른 쪽을 따른다 — 빨리 갈수록 화면도 빨라진다.
       paceCount *= Math.exp(-dt / PACE_WINDOW);
       const pace = paceCount / PACE_WINDOW;                 // 초당 걸음 수
-      const base = baseSpeed() * stageMul();
+      const base = baseSpeed();   // 카메라 기본 속도는 일정하다(난이도는 운석 쪽에서 올린다)
       const want = Math.max(base, pace * cl * 1.05);
-      camSpeed += (want - camSpeed) * Math.min(1, dt * 6);  // 가속·감속은 부드럽게
+      // 맞은 직후엔 걸음 속도 기록이 0이 돼도 카메라 속도를 그대로 유지한다
+      // (그렇지 않으면 화면이 갑자기 느려져 카메라가 뒤로 가는 것처럼 보인다)
+      if (stunT <= 0) camSpeed += (want - camSpeed) * Math.min(1, dt * 6);  // 가속·감속은 부드럽게
       camX += camSpeed * dt;
       // 몸체가 앞쪽 한계를 넘어 앞서 나가면 카메라가 따라붙는다(몸체는 늘 화면 안)
       const maxLead = G.Render.W * FRONT_LIMIT - origin();
       let lead = st.steps * cl - camX;
       if (lead > maxLead) { camX += (lead - maxLead) * Math.min(1, dt * 12); lead = st.steps * cl - camX; }
       R_.scrollRatio = clamp(camSpeed / baseSpeed(), 1, 8);
+      // 빨리 갈수록 시간을 번다: 카메라가 요구하는 최소 걸음 속도 대비 내 속도로 연료(=수명)
+      // 소모 배율을 정한다. 겨우 따라가면 1배, 두 배 빠르면 0.5배, 느리면 최대 1.3배.
+      const need = 1 / BASE_SECONDS_PER_CELL;
+      R_.paceRatio = pace / need;
+      // 시간 보너스는 1.6배 속도에서 포화한다(0.7배 소모) — 그 이상 달려도 수명은 더 늘지 않는다
+      R_.burnMul = clamp(1.5 - 0.5 * R_.paceRatio, 0.7, 1.3);
+      // 성운을 앞질러 달리면 한 걸음에 모이는 물질이 묽어진다. 속도가 빨라질수록
+      // 걸음당 질량은 줄어 초당 질량 증가는 거의 늘지 않는다(질량 목적의 질주를 막는다)
+      R_.gainScale = R_.paceRatio <= 1 ? 1 : clamp(Math.pow(R_.paceRatio, -0.7), 0.35, 1);
+      stunT = Math.max(0, stunT - dt); invT = Math.max(0, invT - dt);
+      // 달리기에도 대가가 있다: 최소 속도의 2.2배를 넘겨 몰아치면 열이 쌓이고, 가득 차면
+      // 과열로 멈춰 서서 속도·연료를 잃는다. 카메라 속도도 함께 본다 — 카메라는 내 속도를
+      // 따라 빨라지므로, 열은 카메라가 못 따라올 만큼 앞서 달려 몸체가 화면 앞쪽 끝에
+      // 붙어 있을 때만 쌓인다(중간 이하에서는 카메라가 따라잡는 중이라 쌓이지 않는다).
+      const front = clamp((lead / maxLead - 0.5) / 0.4, 0, 1);
+      if (R_.paceRatio > HEAT_FREE_RATIO && front > 0) heat += dt * (R_.paceRatio - HEAT_FREE_RATIO) * HEAT_RISE * front;
+      else heat = Math.max(0, heat - dt * HEAT_COOL);
+      if (heat >= 1 && stunT <= 0) {
+        heat = 0.35; stunT = OVERHEAT_STUN; paceCount = 0; hitFlash = 0.6;
+        if (st.hasFusion) st.fuel = Math.max(0, st.fuel - G.FUEL_MAX * OVERHEAT_FUEL_FRAC);
+        kit.shake(3);
+        G.Nebula.floatText(b.x, b.y - b.r - 24 * v, '과열!', 20, 20);
+        G.Nebula.ring(b.x, b.y, b.r, b.r * 3, 0.9, 20, 2.5, 0.7);
+        if (A.actx) { A.playNoiseBurst(0.3, 0.1); A.playTone(140, 0.4, 'sawtooth', 0.08); }
+      }
 
       leadVis += (lead - leadVis) * Math.min(1, dt * 18);
       if (hopT < 1) hopT = Math.min(1, hopT + dt / HOP_ARC);
@@ -165,6 +230,8 @@
         if (L.t <= 0) { spawnMeteor(L); L.t += L.period / stageMul(); }
       }
       for (const key in lanes) if (+key < kMin - 3) delete lanes[key];
+      // isHazard는 앞선 세 칸만 참조하므로 한참 지나간 칸의 메모는 버려도 된다
+      for (const key in hazardMemo) if (+key < kMin - 10) delete hazardMemo[key];
 
       const H = G.Render.H;
       for (let i = meteors.length - 1; i >= 0; i--) {
@@ -174,9 +241,14 @@
         const sx = m.X - camX;
         // 같은 차선의 몸체와만 부딪힌다(차선 폭을 넘어 옆 칸까지 치지 않는다)
         const hitR = Math.min(b.r, cl * 0.38) + m.r * 0.7;
-        if (Math.hypot(b.x - sx, b.y - m.y) <= hitR) {
+        if (invT <= 0 && Math.hypot(b.x - sx, b.y - m.y) <= hitR) {
           G.Nebula.scaleMass(1 - METEOR_LOSS, sx, m.y);
           st.meteorHits++; hitFlash = 1;
+          // 맞는 건 질량만 잃는 게 아니다: 뒤로 밀려나고, 잠깐 굳고, 속도(시간 보너스)를 잃고, 연료도 깎인다
+          stunT = HIT_STUN; invT = HIT_INVULN; paceCount = 0;
+          // 카메라를 건드리지 않고 몸체만 뒤 칸으로 물러난다(걸음 수가 줄어 leadVis가 부드럽게 따라간다)
+          st.steps = Math.max(0, st.steps - HIT_KNOCKBACK_CELLS);
+          if (st.hasFusion) st.fuel = Math.max(0, st.fuel - G.FUEL_MAX * HIT_FUEL_FRAC);
           kit.shake(4);
           const ang = Math.atan2(m.y - b.y, sx - b.x);
           for (let k = 0; k < 12; k++) {
@@ -271,6 +343,17 @@
         g.addColorStop(0, 'rgba(255,50,40,' + (0.45 * danger * pulse).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,50,40,0)');
         ctx.fillStyle = g; ctx.fillRect(0, 0, W * 0.2, H);
       }
+      // 과열 게이지: 몸체를 두르는 고리가 차오르고, 가득 차기 직전엔 붉게 깜빡인다
+      if (heat > 0.02) {
+        const rr = b.r * 1.3 + 6 * v;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.lineWidth = 3 * v; ctx.lineCap = 'round';
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+        ctx.beginPath(); ctx.arc(b.x, b.y, rr, 0, TAU); ctx.stroke();
+        const blink = heat > 0.8 ? 0.6 + 0.4 * Math.sin(performance.now() / 60) : 1;
+        ctx.strokeStyle = kit.hsl(55 - 55 * heat, 95, 62, 0.9 * blink);
+        ctx.beginPath(); ctx.arc(b.x, b.y, rr, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(heat, 0, 1)); ctx.stroke();
+      }
       ctx.restore();
       void v;
     },
@@ -285,7 +368,7 @@
     },
 
     reset() {
-      camX = 0; leadVis = 0; hopT = 1; paceCount = 0; camSpeed = baseSpeed(); hitFlash = 0;
+      camX = 0; leadVis = 0; hopT = 1; paceCount = 0; camSpeed = baseSpeed(); hitFlash = 0; stunT = 0; invT = 0; heat = 0; R_.burnMul = 1; R_.paceRatio = 1; R_.gainScale = 1;
       seed = (Math.random() * 1e9) >>> 0;
       lanes = {}; hazardMemo = {}; meteors = []; sparks = [];
       Gp._runOffX = 0; Gp._runOffY = 0; Gp._bodyCache = null;
@@ -303,7 +386,15 @@
     },
   };
 
+  // 판 도중 탭을 닫아도 방금까지의 걸음 기록은 남긴다
+  window.addEventListener('pagehide', () => {
+    const st = G.state;
+    if (st.started && st.peakMass > R_.best.mass) R_.best.mass = st.peakMass;
+    saveBest(R_.best);
+  });
+
   Gp._runOffX = 0; Gp._runOffY = 0;
   G.Run = R_;
   R_.refreshBestUI();
+  syncFromServer();
 })();

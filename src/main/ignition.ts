@@ -21,7 +21,11 @@
     // 읽어 drawStarBody에 넘기고, starSurface.ts가 그 값만큼 원시체 질감을
     // 겹쳐 그리며 색/글로우를 서서히 밝힌다.
     Gp._ignitionBlend = { v: 0 };
-    gsap.to(Gp._ignitionBlend, { v: 1, duration: 1.2, ease: 'power2.out' });
+    // CDN의 gsap을 못 받은 환경(오프라인 등)에서도 점화가 중간에 끊기지 않게 한다
+    if (typeof gsap !== 'undefined') gsap.to(Gp._ignitionBlend, { v: 1, duration: 1.2, ease: 'power2.out' });
+    else Gp._ignitionBlend.v = 1;
+    A.playBoom(0.55, 1.8);
+    A.playChord([110, 165, 220, 330], 3.2, 0.075);
     A.playSweep(90, 520, 1.2);
     A.playTone(660, 0.5, 'sine', 0.18, 0.15);
   };

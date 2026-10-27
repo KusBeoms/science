@@ -1,4 +1,4 @@
-/* QA용 콘솔 훅: window.debugEnding(1~7)로 각 엔딩을 즉시 트리거 */
+/* QA용 콘솔 훅: window.debugEnding(1~8)로 각 엔딩을 즉시 트리거 */
 (function () {
   "use strict";
   const G = (window.Game = window.Game || ({} as GameNamespace));
@@ -7,10 +7,10 @@
   const state = G.state;
   const A = G.Audio;
 
-  const DEBUG_ORDER: EndingKind[] = ['blackhole', 'supernova', 'whitedwarf', 'friends', 'merge', 'collision', 'spider'];
+  const DEBUG_ORDER: EndingKind[] = ['blackhole', 'supernova', 'whitedwarf', 'friends', 'merge', 'collision', 'spider', 'vanish'];
 
   window.debugEnding = function (n: number) {
-    if (n < 1 || n > 7) { console.warn('use 1~7'); return; }
+    if (n < 1 || n > 8) { console.warn('use 1~8'); return; }
     A.init();
     document.getElementById('startOverlay')!.style.display = 'none';
     document.body.classList.add('inGame');
@@ -39,7 +39,8 @@
     if (type === 'blackhole') state.mass = 25;
     if (type === 'supernova') state.mass = 12;
     if (type === 'whitedwarf') state.mass = 3;
-    RT.introPlaying = false;
+    RT.introPlaying = false; RT.timeSkipping = false; Gp._bodyCache = null;
+    if (type === 'vanish') state.mass = 1 * G.EARTH_MASS;
     Gp._triggerEnding(type);
   };
 })();

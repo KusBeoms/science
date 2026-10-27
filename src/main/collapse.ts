@@ -57,7 +57,13 @@
       const shown = Math.max(0, state.maxFusionIndex);
       const skipped = dead ? natural > shown : natural > shown + 1;
       if (!skipped) {
-        if (!dead) state.maxFusionIndex = Math.max(state.maxFusionIndex, natural);
+        if (!dead) {
+          // 연소 단계가 한 칸 올라설 때마다 낮고 묵직한 울림
+          if (state.maxFusionIndex >= 0 && natural > state.maxFusionIndex && A.actx) {
+            A.playChord([82.4 * Math.pow(1.19, natural), 123.5 * Math.pow(1.19, natural), 164.8 * Math.pow(1.19, natural)], 1.8, 0.06);
+          }
+          state.maxFusionIndex = Math.max(state.maxFusionIndex, natural);
+        }
         return dead;
       }
       rush = state.collapseRush = { index: shown, target: natural, t: 0, step: 0 };
@@ -83,6 +89,7 @@
     if (!dead) { endRush(state); return false; }
     if (rush.t < FINAL_HOLD) return false;
     endRush(state);
+    A.playBoom(0.5, 1.6);
     return true;
   };
 

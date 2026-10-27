@@ -138,8 +138,9 @@
   DEFS.push({
     id: 'gasgiant', name: '가스 자이언트 흡수', icon: '🪐', kind: 'buff', duration: 11, weight: 1.2,
     desc: '거대한 가스 행성이 궤도 안으로 들어와 조석력에 찢긴다. 그 물질이 전부 흘러든다.',
-    condition: (s) => s.hasFusion,
-    start(inst) { inst.data = { shed: 0, x: 0, y: 0, rad: 0, stretch: 1, ang: 0 }; },
+    // 목성 하나는 태양질량의 약 0.1%라 항성에는 티가 나지 않는다 — 행성 단계의 사건이다.
+    condition: (s) => !s.hasFusion,
+    start(inst) { inst.data = { shed: 0, x: 0, y: 0, rad: 0, stretch: 1, ang: 0, acc: 0 }; },
     step(inst, env) {
       const d = inst.data, b = env.b, vs = env.vs, p = env.p;
       const D0 = 560 * vs, D1 = b.r * 1.05;
@@ -153,8 +154,14 @@
       d.rad = R0 * (1 - 0.92 * shedFrac) * (p < 0.12 ? p / 0.12 : 1);
       d.stretch = 1 + 1.6 * shedFrac;
       if (shedFrac > 0 && shedFrac < 1) {
-        const n = Math.round(env.dt * 190);                         // 약 11초 × … 합쳐 약 +80% 질량
-        if (n > 0) G.Nebula.emit(d.x, d.y, n, 36 + inst.rnd() * 14, { gain: 0.8 / 200, speed: 70, jitter: 40, spread: d.rad, tang: 0.5 });
+        // 초당 190개를 누적기로 내보낸다(프레임마다 반올림하면 주사율에 따라 개수가 달라진다).
+        // 조석 파괴 구간(약 6.4초)에 약 1,200개 × 입자당 0.05% ≈ 합쳐 약 +80% 질량.
+        d.acc += env.dt * 190;
+        const n = Math.floor(d.acc);
+        if (n > 0) {
+          d.acc -= n;
+          G.Nebula.emit(d.x, d.y, n, 36 + inst.rnd() * 14, { gain: 0.0005, speed: 70, jitter: 40, spread: d.rad, tang: 0.5 });
+        }
       }
     },
     front(inst, env) {
@@ -339,7 +346,7 @@
 
   // ===== 마지막 숨 =========================================================
   DEFS.push({
-    id: 'lastbreath', name: '마지막 숨', icon: '🌅', kind: 'event', duration: 9, once: true, weight: 3,
+    id: 'lastbreath', name: '마지막 숨', icon: '🌅', kind: 'event', duration: 9, once: true, weight: 12,
     desc: '연료가 얼마 남지 않았다. 꺼져가는 불꽃이 마지막으로 크게 타오르며 물질을 거세게 끌어당긴다.',
     mods: { absorb: 2.2, fuelBurn: 1.4 },
     condition: (s) => late(s) && s.fuel / G.FUEL_MAX < 0.22,
