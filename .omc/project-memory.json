@@ -1,0 +1,84 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1793679992686,
+  "projectRoot": "/Users/dalgsiki/Developer/science",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [],
+    "gitBranches": {
+      "defaultBranch": "master",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "previous": {
+      "path": "previous",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1793679992680,
+      "keyFiles": [
+        "index.html",
+        "package.json",
+        "server.js",
+        "tsconfig.json"
+      ]
+    },
+    "previous/data": {
+      "path": "previous/data",
+      "purpose": "Data files",
+      "fileCount": 1,
+      "lastAccessed": 1793679992681,
+      "keyFiles": [
+        "best.json"
+      ]
+    },
+    "previous/dist": {
+      "path": "previous/dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 1,
+      "lastAccessed": 1793679992682,
+      "keyFiles": [
+        "types.js"
+      ]
+    },
+    "previous/src": {
+      "path": "previous/src",
+      "purpose": "Source code",
+      "fileCount": 2,
+      "lastAccessed": 1793679992682,
+      "keyFiles": [
+        "types.ts"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "index.html",
+      "accessCount": 1,
+      "lastAccessed": 1793680602949,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
