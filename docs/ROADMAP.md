@@ -14,7 +14,7 @@
 | M2 | 이동 수단(호버보드/우주선) + 빠른 이동 | 빠른 이동(포탈)은 M1에서 완료. 이동 수단 미착수 — `GameSystem.speedMul/hover` + `S.vehicle` 훅 준비됨 |
 | M3 | 수배 시스템 + 하이스트 | 미착수 |
 | M4 | **스토리 v2 연출**: 컷신 디렉터(무문자), 암시장, 시선 수호신(숨바꼭질), 삼연 행성 추격, 엔딩 + 자유 플레이/집 구매 — [STORY.md](STORY.md) | 기획 확정, 미착수 |
-| M5 | 행성 80종 + 문제 200문항 데이터 투입 | 미착수 |
+| M5 | 행성 80종 + 문제 210문항 데이터 투입, 섹터 12개를 CONTENT_PLAN 매핑대로 재배치(신규 id `jovian`·`giants`·`hotjup`, 폐기 `pulsar`·`neutron`·`edmunds`) | 미착수 |
 | M6 | 레이스/수집/업적/환경 위험 | 미착수 |
 | M7 | 밸런싱(10h 목표 검증) + 버그 정리 | 미착수 |
 
@@ -27,3 +27,4 @@
 - v3 키 `stealPlanet3` → v4 키 `stealPlanet4`. v4가 없으면 v3를 읽어 이어받는다.
 - v4 신규 필드: `ver, chapter, wanted, vehicle, ach, coins, playSec`.
 - v5 (키는 `stealPlanet4` 그대로, `ver: 5`): `unlocked, portals` + 후속용 빈 기본값 `quests, vehicles, heists, collectibles`. `zone` → `unlocked`, `notes` 키 인덱스 → 섹터 id 변환. 체인은 `client/src/core/save-schema.ts`.
+- v6 (예정, 한 번에 묶음): `S.story`(STORY 7.1), 의뢰·별조각·레이스·업적 필드(QUESTS_ACHIEVEMENTS 5장), 섹터 id 정리(폐기 id 합치기 — CONTENT_PLAN 2장 매핑표), `requires.chapter` → `requires.beat`. 이동 수단·수배·하이스트는 v5의 빈 기본값을 그대로 쓰므로 별도 버전 상승이 없다(GAMEPLAY_SYSTEMS).

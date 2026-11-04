@@ -378,7 +378,7 @@ type Pt = {x: number; z: number}; type Rect = {cx: number; cz: number; w: number
 ## 7. 결정할 것 ❓
 | # | 질문 | 추천 |
 |---|---|---|
-| 1 | CONTENT_PLAN S1~S12 번호와 CLIENT.md 현재 섹터 id/순서가 다르다. 매핑 기준은? | CONTENT_PLAN 기준으로 `data/sectors.ts` 재정렬(M5 콘텐츠 투입 때), 그 전까지 `HeistDef.sector`는 id 문자열 매핑 표를 한 곳에 둔다 |
+| 1 | CONTENT_PLAN S1~S12 번호와 CLIENT.md 현재 섹터 id/순서가 다르다. **(해소: CONTENT_PLAN 2장 "구역 번호↔섹터 id 매핑" 표 확정)** 매핑 기준은? | CONTENT_PLAN 기준으로 `data/sectors.ts` 재정렬(M5 콘텐츠 투입 때), 그 전까지 `HeistDef.sector`는 id 문자열 매핑 표를 한 곳에 둔다 |
 | 2 | `requires.vehicle` 숫자를 티어와 직접 맞출까, 별도 "기능"(허공 횡단) 플래그로 분리할까? | 티어 직접 사용 + 4·5티어는 편의용(조건에 안 씀) |
 | 3 | 키 `V/C/G` 충돌 점검 및 모바일 버튼 배치 | `input.ts` 점검 후 확정, 비행 버튼은 우하단 세로 배치 |
 | 4 | ★3 이상에서 기지는 "안전지대"인가? | 안전하되 열기는 느리게 식는다(-1/s) — 현재안 |
