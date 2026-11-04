@@ -75,11 +75,10 @@ test('walking north from the city reaches the unlocked S1 through the pass', asy
   });
   await page.keyboard.down('KeyW');
   await page.keyboard.down('Shift');
-  await page.waitForFunction(() => (window as any).__game.G.me.pos.z < -230, undefined, {timeout: 30000});
+  await page.waitForFunction(() => (window as any).__game.G.curZone === 0, undefined, {timeout: 30000});
   await page.keyboard.up('Shift');
   await page.keyboard.up('KeyW');
-  expect(await gameEval<number>(page, 'g.G.me.pos.y')).toBeGreaterThan(-1); // 떨어지지 않았다
-  expect(await gameEval<number>(page, 'g.G.curZone')).toBe(0);
+  expect(await gameEval<number>(page, 'g.G.me.pos.y')).toBeGreaterThan(-1); // 떨어지지 않았다 (통로를 지나 S1 안)
 });
 
 test('debug overlay shows renderer.info counters', async ({game}) => {
