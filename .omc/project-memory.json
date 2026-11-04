@@ -110,6 +110,12 @@
       "type": "file"
     },
     {
+      "path": "client/tests/out/smoke-played.png",
+      "accessCount": 2,
+      "lastAccessed": 1793794136943,
+      "type": "file"
+    },
+    {
       "path": "CLAUDE.md",
       "accessCount": 1,
       "lastAccessed": 1793779798736,
@@ -131,12 +137,6 @@
       "path": "client/src/render/world.ts",
       "accessCount": 1,
       "lastAccessed": 1793781457945,
-      "type": "file"
-    },
-    {
-      "path": "client/tests/out/smoke-played.png",
-      "accessCount": 1,
-      "lastAccessed": 1793781610952,
       "type": "file"
     },
     {
@@ -245,6 +245,12 @@
       "path": "docs/STORY.md",
       "accessCount": 1,
       "lastAccessed": 1793783404812,
+      "type": "file"
+    },
+    {
+      "path": "docs/HANDOFF.md",
+      "accessCount": 1,
+      "lastAccessed": 1793794463184,
       "type": "file"
     }
   ],
