@@ -1,6 +1,5 @@
-// 씬 구성: 렌더러·카메라·조명·별·허브 타일·상점·포탈 패드·플레이어·라이벌 (섹터는 render/sectors.ts)
+// 씬 구성: 렌더러·카메라·하늘·허브 타일·상점·포탈 패드·플레이어·라이벌 (섹터는 render/sectors.ts)
 import {G} from '../core/runtime.js';
-import {rnd} from '../core/util.js';
 import {SHOP_AT, SPAWN, slotPos} from '../core/geometry.js';
 import {CITY_HALF, PASSES} from '../core/terrain.js';
 import {P} from '../data/planets.js';
@@ -12,6 +11,7 @@ import {applyDeco} from './deco.js';
 import {checkerTex, label, makePlanet} from './textures.js';
 import {buildPads} from './portals.js';
 import {tile} from './sectors.js';
+import {initSky} from './sky.js';
 
 /** 임시 바닥(W1 에서 지형 메시로 교체): 도시 평지 + 구역 사이 통로. 기지 타일(top 0) 보다 살짝 낮게 깔아 겹침 깜빡임을 피한다 */
 function buildGround() {
@@ -32,26 +32,8 @@ export function initWorld() {
   G.renderer.setSize(innerWidth, innerHeight);
   document.body.prepend(G.renderer.domElement);
   G.scene = new THREE.Scene();
-  G.scene.background = new THREE.Color(0x070a18);
-  G.scene.fog = new THREE.Fog(0x070a18, 160, 520);
   G.camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 1200);
-  G.scene.add(new THREE.HemisphereLight(0xaac4ff, 0x303850, 0.95));
-  const sun = new THREE.DirectionalLight(0xffffff, 0.8);
-  sun.position.set(40, 80, 30);
-  G.scene.add(sun);
-  const sp = new Float32Array(1800 * 3);
-  for (let i = 0; i < 1800; i++) {
-    const a = rnd(0, 6.28),
-      b = Math.acos(rnd(-1, 1)),
-      r = 650;
-    sp[i * 3] = r * Math.sin(b) * Math.cos(a);
-    sp[i * 3 + 1] = r * Math.cos(b);
-    sp[i * 3 + 2] = r * Math.sin(b) * Math.sin(a) - 100;
-  }
-  const sg = new THREE.BufferGeometry();
-  sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
-  G.starPts = new THREE.Points(sg, new THREE.PointsMaterial({color: 0xffffff, size: 1.8, fog: false}));
-  G.scene.add(G.starPts);
+  initSky(); // 하늘 돔·별·해·달·사과 행성·조명·안개 (render/sky.ts)
   G.baseFloor = tile(G.scene, 0, 0, '#3c8f48', '#358040', 0x1c3a22, TS);
   buildGround();
   const bl = label('내 기지', '#9dffb0', 12);

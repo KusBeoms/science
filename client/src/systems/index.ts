@@ -7,6 +7,7 @@ import {hazardSystem} from './hazards.js';
 import {rivalSystem} from './rival.js';
 import {audioSystem} from './audio.js';
 import {cutsceneSystem} from './cutscene.js';
+import {crowdSystem} from './crowd.js';
 
 CORE_INTERACTABLES.forEach(registerInteractable);
 registerInteractable(portalIt);
@@ -16,3 +17,4 @@ registerSystem(rivalSystem);
 registerSystem(portalSystem);
 registerSystem(audioSystem);
 registerSystem(cutsceneSystem);
+registerSystem(crowdSystem);

@@ -9,12 +9,17 @@ import {bindUI} from './systems/ui.js';
 import {frame} from './systems/loop.js';
 import './systems/index.js';
 import './debug.js';
+import {showGallery} from './render/lowpoly/gallery.js';
 
 async function main() {
   if (typeof THREE === 'undefined') {
     const e = $('#err');
     e.style.display = 'block';
     e.textContent = 'three.js를 불러오지 못했습니다 (인터넷 연결 필요).';
+    return;
+  }
+  if (/[?&]gallery=1/.test(location.search)) {
+    showGallery();
     return;
   }
   if (!hadLocalSave) {

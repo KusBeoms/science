@@ -1,5 +1,6 @@
 // 지도 판정 (2D): 허브/섹터 안·잠긴 구역 막힘·문·포탈 패드·슬롯 좌표 (바닥 높이는 core/terrain.ts)
 import {H, SECTORS} from '../data/sectors.js';
+import {PAD_IN} from '../data/world-map.js';
 import {locked} from './progress.js';
 import {G} from './runtime.js';
 
@@ -42,9 +43,9 @@ export function nearGate(i: number, x: number, z: number, d: number) {
     dz = z - f.z;
   return Math.abs(dx * f.ix + dz * f.iz) < d && Math.abs(dx * f.lx + dz * f.lz) < SECTORS[i].size / 2 + 2;
 }
-/** 섹터 포탈 패드: 문에서 안쪽으로 8, 옆으로 반변의 절반 */
+/** 섹터 포탈 패드: 문에서 안쪽으로 PAD_IN(둘레 능선 안쪽 평지), 옆으로 반변의 절반 */
 export function padPos(i: number) {
   const f = gateFrame(i),
     o = SECTORS[i].size / 4;
-  return {x: f.x + f.ix * 8 + f.lx * o, z: f.z + f.iz * 8 + f.lz * o};
+  return {x: f.x + f.ix * PAD_IN + f.lx * o, z: f.z + f.iz * PAD_IN + f.lz * o};
 }
