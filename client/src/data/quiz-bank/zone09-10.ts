@@ -258,7 +258,7 @@ export const ZONE10: QuizItem[] = [
   {
     id: 'Z10-1.3.6-07', unitId: 'sci1-3-6', subUnits: ['sci1-3-5'], std: ['10통과1-03-06'], zone: 10, diff: 'advanced', use: ['gate', 'planet'], status: 'draft',
     stem: '효소(단백질)를 만드는 유전자가 고장 난 세포에서 일어날 일은?',
-    correct: '그 효소가 하는 반응이 느려지거나 안 일어난다',
+    correct: '그 효소 반응이 느려지거나 멈춘다',
     wrong: ['그 반응이 더 빨라진다', '효소가 DNA로 대신 만들어진다', '효소 없이도 반응 속도가 같다'],
     why: '효소가 만들어지지 않으면 그 효소가 돕는 화학 반응이 제대로 일어나지 않는다.',
   },
