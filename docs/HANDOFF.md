@@ -338,3 +338,33 @@ science/
 - `tests/e2e/dbg.spec.ts`는 에이전트 디버그용 임시 파일 → 검증 후 삭제.
 - 다음: ① E2E 전체 실행(임시 config) ② 실패·미완 부분 수정 ③ CLIENT/WORLD/ROADMAP 갱신 ④ 커밋 → master merge·push.
 - master는 W0 이전(4360b6e)에서 멈춰 있음. W1 검증 전에는 merge하지 않음.
+
+### 9.y W1 이어받기 가이드 (다른 Claude용)
+
+**배경**: W1 = WORLD.md의 "최소 플레이 슬라이스"(도시 허브 + 연결 대륙, 로우폴리). 사용자가 승인함. 에이전트 5개를 병렬로 돌리다 토큰이 떨어져 중단 → 코드는 `claude/agent-docs-planning-k6o7cf`에 WIP 커밋으로 있음(tsc 0, 나머지 미검증). **새 기획 결정은 필요 없고, 아래를 검증·마무리하는 것이 일.**
+
+**에이전트별 목표(= 완료 기준)** — 상세 설계는 `docs/WORLD.md`
+| 영역 | 담당 파일 | 완료 기준 |
+|---|---|---|
+| T 지형 | `core/heightmap.ts`, `core/terrain.ts`, `render/gates.ts`, `render/world.ts` | 높이 지도로 지형이 구워져 걸어 다닐 수 있음, 원경(바다/먼 산), 문 아치 개구 40, 구역 이름표의 글자 → 아이콘 |
+| C 도시 | `data/city.ts`, `render/city/*` | 300×300 도시: 광장, 사과 대로(정북 사과 천체 방향), 상점가, 암시장 입구, 랜드마크 |
+| K 군중 | `data/citygraph.ts`, `render/crowd.ts`, `systems/crowd.ts` | 보행 그래프를 따라 걷는 InstancedMesh NPC 최대 24명, 이모지 반응(글자 없음) |
+| A 캐릭터 | `render/characters*.ts`, `gear.ts`, `guardian.ts`, `textures.ts`, `main.ts` | 플레이어·점원·라이벌·수호자 로우폴리화, 꾸미기(옷/색) 기능 유지, `freeTree` 텍스처 keep, main.ts 갤러리 훅 |
+| S 하늘 | `render/sky.ts`, `render/apple.ts`, `systems/daynight.ts` | 하늘 돔, 낮밤 틴트, 스폰 정북에 사과 천체가 보임 |
+
+**검증 순서(여기서부터 시작)**
+1. `git checkout claude/agent-docs-planning-k6o7cf && git pull`
+2. `cd client && npx tsc --noEmit` (0이어야 함) / `wc -l` 로 모든 `src/**/*.ts` ≤ 500줄 (권장 400)
+3. E2E: 이 환경은 설치된 chromium(1243)이 Playwright 기대(1248)와 달라 기본 config가 실패함. **임시 config를 만들어 사용**: `executablePath: '/opt/pw-browsers/chromium'`, `args: ['--no-sandbox']`로 `client/playwright.config.ts`를 복사해 scratchpad에 두고 `npx playwright test -c <그 경로>`. (repo의 config는 수정하지 말 것.) 새 fixture는 `?cine=0`으로 연다. 기준선: W0에서 24/24.
+4. `tests/e2e/crowd.spec.ts`, `sky.spec.ts`, `lowpoly.spec.ts`, `world.spec.ts`를 포함해 전부 통과시킨다. 실패하면 구현 쪽을 고친다(테스트를 느슨하게 하지 않기).
+5. 스크린샷(`deviceScaleFactor:1`)을 직접 찍어 눈으로 확인: 스폰(사과 천체 보이는지), 사과 대로, 군중, 문 아치, 캐릭터 꾸미기 화면.
+6. `tests/e2e/dbg.spec.ts` 삭제.
+7. 문서 갱신(CLIENT.md "M1 이후 추가된 모듈", WORLD.md, ROADMAP W1 상태, 이 문서 9.x) → 커밋 → push → **master merge·push** (사용자가 사전 승인: "다 끝나면 master에 merge"; push는 항상 한다).
+
+**알려진 문제·주의**
+- 캐릭터 에이전트가 중단 직전 `characters*.ts` 상단 import를 잘랐다고 보고. tsc는 통과했지만 파일 머리와 export 누락을 눈으로 확인.
+- `core/terrain.ts`의 `PASSES`에 S5→S6 해협 **임시 40폭 다리**가 있음 — 우주선 구현 전까지 유지(제거 금지).
+- 섹터/행성 id는 세이브 키 → 바꾸지 말 것. 세이브 스키마 변경 시 `SAVE_VER`(현재 6)와 `STEPS` 추가.
+- 이 환경 FPS 기준선은 약 20–24(HANDOFF 원본의 ~57과 다름, 환경 차이). 성능 회귀 판단은 상대 비교로.
+- 공용 파일(`world.ts`, `loop.ts`, `types.ts`, `systems/index.ts`) 통합 줄이 서로 겹쳤을 수 있으니 diff를 확인.
+- 규칙: 한국어 소통, 파일 ≤500줄, 마일스톤마다 커밋, 사용자가 안 정한 것은 임의 결정 말고 질문(질문 목록은 §6).
