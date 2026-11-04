@@ -23,7 +23,7 @@
 ---
 ## 0.1 구현 상태 (B1 컷신 디렉터 + B7 글 없는 UI 틀) — 2장 초안과 달라진 실제값
 
-**구현됨**: 타임라인 디렉터(카메라·배우·말풍선·FX·사운드 훅·HUD 훅·UI 숨김 트랙), 건너뛰기 ⏭(최초 시청 2초 지연·`skipHold` 길게 누르기·Space/Enter/Esc), 입력 비차단 오버레이 모드(`lockInput:false`, `soft` 시선 보조, 시점 입력 시 해제), 재시청(`playCut(id,{replay:true})`: 입력 잠금·고정 카메라·`onEnd`/`seen` 불변), 컷신 C01, 포맷 검증 샘플 `x_sample`, `iconToast`, `HudWidget`, 세이브 v6 `S.story`. **미구현**: C02~C12·M4-1~5 데이터, 사과 게이지 `#appleGauge`·방향 화살표 `#dir` 요소(HUD 키는 `G.cineHooks.hud` 로 위임), 사운드 구현(큐 이름만), 사과 원경 상시 표시·금화 고리 결계 상시 표시, 날씨·낮밤 `setup`, 재시청 메뉴 🎞️, 연출 보호 구간(5.4) 알림 억제, 힌트 시스템(5.1).
+**구현됨**: 타임라인 디렉터(카메라·배우·말풍선·FX·사운드 훅·HUD 훅·UI 숨김 트랙), 건너뛰기 ⏭(최초 시청 2초 지연·`skipHold` 길게 누르기·Space/Enter/Esc), 입력 비차단 오버레이 모드(`lockInput:false`, `soft` 시선 보조, 시점 입력 시 해제), 재시청(`playCut(id,{replay:true})`: 입력 잠금·고정 카메라·`onEnd`/`seen` 불변), 컷신 C01, 포맷 검증 샘플 `x_sample`, `iconToast`, `HudWidget`, 세이브 v6 `S.story`. **미구현**: C02~C12·M4-1~5 데이터, 사과 게이지 `#appleGauge`·방향 화살표 `#dir` 요소(HUD 키는 `G.cineHooks.hud` 로 위임), 사운드 구현(큐 이름만), 사과 원경 상시 표시, 날씨·낮밤 `setup`, 재시청 메뉴 🎞️, 연출 보호 구간(5.4) 알림 억제, 힌트 시스템(5.1).
 
 | 파일 | 역할 |
 |---|---|
