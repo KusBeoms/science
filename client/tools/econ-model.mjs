@@ -16,15 +16,47 @@ export function simulate(cfg, beh, seed, opt = {}) {
     Z = cfg.zones,
     sh = cfg.shop,
     st = {
-      t: 0, cash: 0, zone: cfg.startZone, enterT: 0, spd: 0, slots: sh.slots.start, bag: 0, springN: 0, cosN: 0,
-      base: [], dex: new Set(), stolen: 0, bought: 0, spent: 0, earned: 0, mi: 0, own: new Set(),
+      t: 0,
+      cash: 0,
+      zone: cfg.startZone,
+      enterT: 0,
+      spd: 0,
+      slots: sh.slots.start,
+      bag: 0,
+      springN: 0,
+      cosN: 0,
+      base: [],
+      dex: new Set(),
+      stolen: 0,
+      bought: 0,
+      spent: 0,
+      earned: 0,
+      mi: 0,
+      own: new Set(),
     },
     r = {
-      zoneEnter: [], enterIncome: [], enterSpend: [], endT: null, firstBuyT: null, income10: null,
-      spdMaxT: null, slotMaxT: null, sinkT: null, dexWait: Z.map(() => 0), vehWait: {}, vehReady: {},
-      topShare: null, snap: null, houseT: [], zoneInc: Z.map(() => ({passive: 0, sell: 0, other: 0, sec: 0})),
+      zoneEnter: [],
+      enterIncome: [],
+      endT: null,
+      firstBuyT: null,
+      income10: null,
+      spdMaxT: null,
+      slotMaxT: null,
+      sinkT: null,
+      dexWait: Z.map(() => 0),
+      vehWait: {},
+      topShare: null,
+      snap: null,
+      houseT: [],
+      zoneInc: Z.map(() => ({passive: 0, sell: 0, other: 0, sec: 0})),
     };
-  let busy = 0, job = null, baseSec = 0, cometAt = 60 + rnd() * 30, ended = false, lastEnter = 0, examAt = 0;
+  let busy = 0,
+    job = null,
+    baseSec = 0,
+    cometAt = 60 + rnd() * 30,
+    ended = false,
+    lastEnter = 0,
+    examAt = 0;
   const pickFrom = pool => {
     let s = 0;
     for (const p of pool) s += cfg.rw[p.t];
@@ -103,7 +135,8 @@ export function simulate(cfg, beh, seed, opt = {}) {
     return Math.max(0, st.zone);
   };
   const choose = (pool, needNew) => {
-    let best = null, bs = -1;
+    let best = null,
+      bs = -1;
     for (let k = 0; k < beh.look; k++) {
       const p = pickFrom(pool),
         isNew = !st.dex.has(p.id),
@@ -121,7 +154,7 @@ export function simulate(cfg, beh, seed, opt = {}) {
       needNew = !!(g && g.dex && st.dex.size < g.dex) || !!beh.hunt,
       n = Math.min(cap(), st.slots - filled()),
       v = speed();
-    let sec = (Z[z].dist / v) * (1 + 1 / CARRY_SLOW) / beh.pace + beh.tBase;
+    let sec = ((Z[z].dist / v) * (1 + 1 / CARRY_SLOW)) / beh.pace + beh.tBase;
     const got = [];
     for (let i = 0; i < n; i++) {
       let tries = 0;
@@ -150,7 +183,8 @@ export function simulate(cfg, beh, seed, opt = {}) {
     baseSec += 6;
   };
   const sellLowest = () => {
-    let bi = -1, bv = Infinity;
+    let bi = -1,
+      bv = Infinity;
     st.base.forEach((o, i) => {
       if (o && sellVal(o) < bv) (bv = sellVal(o)), (bi = i);
     });
@@ -164,16 +198,31 @@ export function simulate(cfg, beh, seed, opt = {}) {
   // 부족한 돈을 가장 싼 행성 한두 개를 팔아 채울 수 있으면 판다 (첫 신발 등)
   const sellToBuy = want => {
     if (!beh.sellToBuy || !want) return false;
-    const vals = st.base.filter(Boolean).map(sellVal).sort((a, b) => a - b);
-    return vals.length && st.cash + vals[0] + (vals[1] || 0) >= want && st.cash < want && vals[0] <= want && sellLowest();
+    const vals = st.base
+      .filter(Boolean)
+      .map(sellVal)
+      .sort((a, b) => a - b);
+    return (
+      vals.length && st.cash + vals[0] + (vals[1] || 0) >= want && st.cash < want && vals[0] <= want && sellLowest()
+    );
   };
 
+  // 가득 찼을 때 새로 훔칠 가치가 있는가: 눈여겨본 둥지 중 가장 싼 보유 행성보다 비싼 것이 있거나 새 도감이 있다
+  const worthSwap = () => {
+    const z = stealZone(),
+      held = Math.min(...st.base.filter(Boolean).map(o => o.p.price)),
+      p = choose(Z[z].pool, false);
+    return p.price > held || !st.dex.has(p.id);
+  };
   const decide = () => {
     // 1) 구매: 싼 것부터. 시험 조건이 돈(이동 수단)만 남았으면 그 품목을 위해 저축한다
-    const miss = gateMiss(), g = nextGate();
+    const miss = gateMiss(),
+      g = nextGate();
     const saveFor = g && g.vehicle && miss === 'veh' ? sh.extras.find(e => e.name === g.vehicle) : null;
     for (let n = 0; n < 8; n++) {
-      let c = candidates().filter(x => !saveFor || x.k === saveFor.name).sort((a, b) => a.cost - b.cost)[0];
+      let c = candidates()
+        .filter(x => !saveFor || x.k === saveFor.name)
+        .sort((a, b) => a.cost - b.cost)[0];
       if (!c || c.cost > st.cash) c = saveFor ? null : cosmetic();
       if (c && c.cost <= st.cash && (c.k !== 'cos' || st.cash >= c.cost * beh.cosFactor)) {
         spend(c);
@@ -194,14 +243,16 @@ export function simulate(cfg, beh, seed, opt = {}) {
       return;
     }
     if (miss === 'dex') r.dexWait[Math.max(0, st.zone + 1)]++;
-    if (saveFor) {
-      r.vehWait[saveFor.name] = (r.vehWait[saveFor.name] || 0) + 1;
-      if (r.vehReady[saveFor.name] === undefined) r.vehReady[saveFor.name] = st.t;
-    }
+    if (saveFor) r.vehWait[saveFor.name] = (r.vehWait[saveFor.name] || 0) + 1;
     // 3) 훔치기 / 판매
     const cheap = candidates().sort((a, b) => a.cost - b.cost)[0];
     if (sellToBuy(saveFor ? saveFor.cost : cheap && cheap.cost)) return;
     if (st.slots - filled() <= 0) {
+      // 칸이 가득 차면 가장 싼 행성보다 비싼 행성(또는 새 도감)을 노릴 때만 바꿔 쓴다
+      if (!worthSwap()) {
+        busy = 5;
+        return;
+      }
       if (!sellLowest()) busy = 1;
       return;
     }
@@ -214,12 +265,13 @@ export function simulate(cfg, beh, seed, opt = {}) {
     st.enterT = st.t;
     r.zoneEnter[z] = st.t;
     r.enterIncome[z] = st.earned;
-    r.enterSpend[z] = st.spent;
   };
   const missionTick = () => {
     const m = cfg.missions[st.mi];
     if (!m) return;
-    const cur = {stolen: st.stolen, bought: st.bought, zone: st.zone + 1, dex: st.dex.size, springs: st.springN + 1}[m[0]];
+    const cur = {stolen: st.stolen, bought: st.bought, zone: st.zone + 1, dex: st.dex.size, springs: st.springN + 1}[
+      m[0]
+    ];
     if (cur >= m[1]) {
       gain(m[2] * cfg.missionMul, 'other');
       st.mi++;

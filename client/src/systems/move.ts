@@ -9,6 +9,7 @@ import {animateWalk} from '../render/characters.js';
 import {respawn} from '../game/actions.js';
 import {gravityNow} from './hazards.js';
 import {hovering, speedMul} from './registry.js';
+import {SPD_BASE, SPD_PER_LV} from '../data/pacing.js';
 
 let stamEl: HTMLElement | null = null,
   stamW = '',
@@ -51,7 +52,7 @@ export function movePlayer(dt: number, t: number) {
     mx = 0;
     mz = 0;
   }
-  let spd = (14 + 1.5 * S.spd + SPR[S.eq][4]) * speedMul();
+  let spd = (SPD_BASE + SPD_PER_LV * S.spd + SPR[S.eq][4]) * speedMul();
   if (G.carry.length) spd /= 1 + G.carry.reduce((a, c) => a + Math.min(120, P[c.id].ve), 0) / 220;
   const ml = Math.hypot(mx, mz),
     moving = ml > 0.05 && !paused();

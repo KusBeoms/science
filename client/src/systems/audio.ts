@@ -1,7 +1,7 @@
 // 오디오 시스템: 발소리·점프·포탈·밤·수호신 접근 감지, 상황별 BGM 선택, 음소거 버튼
 import {G} from '../core/runtime.js';
 import {$, dist2} from '../core/util.js';
-import {autoBgm, onPrefs, prefs, sfx, toggleMute} from '../audio/index.js';
+import {autoBgm, duck, onPrefs, prefs, setBgm, sfx, toggleMute, type SfxName} from '../audio/index.js';
 import type {GameSystem} from '../core/types.js';
 
 const STRIDE = 2.6, // 발소리 간격(월드 거리)
@@ -18,7 +18,20 @@ btn.onclick = () => {
 onPrefs(paintBtn);
 paintBtn();
 
-let px = NaN,
+/** 컷신 디렉터의 소리 큐 → BGM 지정 또는 효과음 (모르는 이름은 sfx 가 조용히 무시한다) */
+const BGM_CUE: Record<string, Parameters<typeof setBgm>[0]> = {
+  bgm_explore: null,
+  bgm_chase: 'tense',
+  bgm_happy: 'hub',
+  bgm_off: 'none',
+};
+G.cineHooks.sound = cue => {
+  if (cue in BGM_CUE) return setBgm(BGM_CUE[cue]);
+  if (cue !== 'silence') sfx(cue as SfxName);
+};
+
+let ducked = false,
+  px = NaN,
   pz = NaN,
   vy = 0,
   walked = 0,
@@ -38,6 +51,8 @@ function chaseDist() {
 export const audioSystem: GameSystem = {
   id: 'audio',
   update() {
+    const cineOn = !!G.cine;
+    if (cineOn !== ducked) duck((ducked = cineOn)); // 컷신 동안만 월드 효과음을 낮춘다
     if (!G.started || !G.me) return;
     const p = G.me.pos,
       t = now();

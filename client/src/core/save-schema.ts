@@ -3,6 +3,7 @@
 // 서버 PUT 은 256KB 상한 — 필드는 id → 작은 숫자 맵처럼 가볍게 둔다.
 import {CAPS} from '../data/shop.js';
 import {SECTORS} from '../data/sectors.js';
+import {TARGET_CUM_SPEND} from '../data/pacing-sinks.js';
 import {STORY_CUTS} from '../data/cutscene-types.js';
 import type {SaveState, StoryState} from './types.js';
 
@@ -85,6 +86,9 @@ const STEPS: Record<number, (d: Raw) => void> = {
     }
     if (st.beat !== 4) st.mid = 0; // mid≠0 이면 beat===4
     d.story = st;
+    // 새 경제 곡선에서 옛 세이브의 과잉 보유 현금이 곡선을 무너뜨리지 않게 해금 구역의 누적 지출 목표로 1회 제한
+    const z = Math.min(zoneFrom(d.unlocked || {}), TARGET_CUM_SPEND.length);
+    if (typeof d.cr === 'number') d.cr = Math.min(d.cr, TARGET_CUM_SPEND[Math.max(0, z - 1)]);
   },
 };
 /** 임의 버전 세이브 → 현재 버전. base 가 없으면 세이브가 아니므로 null */

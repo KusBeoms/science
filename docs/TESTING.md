@@ -11,6 +11,7 @@ npm run test:e2e             # tsc 빌드 -> (테스트가 정적 서버 자동 
 npx playwright test ui       # 일부만 (빌드는 먼저 npx tsc)
 ```
 - 결과물: `client/tests/out/*.png`(스크린샷, git 제외), `tests/out/results/`(실패 컨텍스트).
+- E2E는 `cutscene.spec.ts`(컷신·iconToast·HudWidget·세이브 v6·무문자 린트) 포함 17개. 신규 세이브는 기본 `?cine=0` 으로 컷신을 건너뛴다(`fixtures.ts`). 경제 시뮬: `cd client && npx tsc && node tools/econ-sim.mjs`(약 45초).
 - 현재 기준선: 8개 테스트 약 50초, FPS 기준선 약 43 (1024x640, SwiftShader. 절대값보다 변화량을 볼 것).
 
 ## 구성

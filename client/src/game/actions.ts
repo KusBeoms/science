@@ -6,7 +6,7 @@ import {SPAWN} from '../core/geometry.js';
 import {locked, reqMissing, unlockSector} from '../core/progress.js';
 import {fmt, rnd, shuffle} from '../core/util.js';
 import {MUT, P, pickFrom} from '../data/planets.js';
-import {DEX_REWARD_DIV} from '../data/pacing.js';
+import {CAUGHT_LOSS_MAX, DEX_REWARD_DIV} from '../data/pacing.js';
 import {SECTORS} from '../data/sectors.js';
 import {PQ} from '../data/quiz-planet.js';
 import {GQ, GQU} from '../data/quiz-gate.js';
@@ -84,7 +84,7 @@ export function loseCarry() {
 }
 export function caught() {
   const had = G.carry.length,
-    lost = Math.floor(S.cr * (had ? 0.15 : 0.05));
+    lost = Math.min(CAUGHT_LOSS_MAX, Math.floor(S.cr * (had ? 0.15 : 0.05)));
   S.cr -= lost;
   sfx('caught');
   toast(`잡혔다!${had ? ' 행성을 빼앗기고' : ''} -${fmt(lost)}`);

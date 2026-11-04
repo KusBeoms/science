@@ -1,14 +1,21 @@
-// 문제 은행 집계·검증·기존 코드 호환 어댑터 (구역 1~6). 구역 7~12 파일은 통합 단계에서 여기 import 에 추가한다.
+// 문제 은행 집계·검증·기존 코드 호환 어댑터 (구역 1~12).
 // 이 파일은 DOM/게임 상태에 의존하지 않는다(순수 데이터·함수) → node 로도 검증할 수 있다.
 import {UNIT_STD, type Diff, type ImgSpec, type QuizItem, type UnitId} from './types.js';
 import {ZONE01, ZONE02} from './zone01-02.js';
 import {ZONE03, ZONE04} from './zone03-04.js';
 import {ZONE05, ZONE06} from './zone05-06.js';
+import {ZONE07, ZONE08} from './zone07-08.js';
+import {ZONE09, ZONE10} from './zone09-10.js';
+import {ZONE11, ZONE12} from './zone11-12.js';
 
 export * from './types.js';
 
-/** 구역 1~6 전체 (통합 시 zone07+ 를 spread 로 이어 붙인다) */
+/** 구역 1~6 */
 export const BANK_Z01_06: QuizItem[] = [...ZONE01, ...ZONE02, ...ZONE03, ...ZONE04, ...ZONE05, ...ZONE06];
+/** 구역 7~12 */
+export const BANK_Z07_12: QuizItem[] = [...ZONE07, ...ZONE08, ...ZONE09, ...ZONE10, ...ZONE11, ...ZONE12];
+/** 전체 은행 */
+export const BANK_ALL: QuizItem[] = [...BANK_Z01_06, ...BANK_Z07_12];
 
 // ───────────── 기획 표 (QUIZ_BANK 2·3장) ─────────────
 export const ZONE_UNITS: Record<number, UnitId[]> = {

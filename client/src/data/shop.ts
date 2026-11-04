@@ -190,7 +190,7 @@ export const LOOK: Record<string, {n: string; v: [string, string, number][]}> = 
 /** 상점 상한 테이블 (비용 곡선은 data/pacing.ts). 늘릴 때: slots 는 core/geometry.ts 의 slotPos 배치도 함께 넓힐 것 */
 export const CAPS = {
   /** 기지 칸 시작/최대 (S.base 배열 길이 = max) */
-  slots: {start: 6, max: 30},
+  slots: {start: 6, max: 10}, // 현재 허브의 5×2 배치가 담는 한도. 도시 허브(docs/WORLD.md W1)에서 30으로 확장
   /** 신발(이동속도) 최대 Lv */
   spd: 30,
 };

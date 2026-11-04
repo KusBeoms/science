@@ -70,7 +70,6 @@ const SINK_TOTAL =
   sum(range(4).map(k => 1000 * 2 ** k));
 
 export const legacyConfig = () => ({
-  name: '현행(INC_DIV 25)',
   rw: [50, 28, 14, 6, 1.6, 0.4],
   grow: [8, 15, 30, 60, 120, 240],
   incDiv: 25,
@@ -81,7 +80,6 @@ export const legacyConfig = () => ({
   baseInc: 1,
   dexBonus: 0.02,
   startZone: -1,
-  planetsTotal: 25,
   zones: SECTORS.map(([pool, x, z, size, dex, spd]) => ({
     pool: pool.map(planet),
     dist: Math.max(20, Math.hypot(x, z - 17) - size / 4),

@@ -184,6 +184,18 @@ registerInteractable<T extends Target>({
    - 경제 수치: `data/pacing.ts`. 상점 상한: `data/shop.ts` 의 `CAPS`(기지 칸을 10 넘게 늘리면 `core/geometry.ts` 의 `slotPos` 배치도 넓혀야 한다 — 현재 5열×2행), 가방 단계는 `BAGS` 행 추가.
 8. **디버그**: `?debug=1` → 콘솔에서 `__game.unlockAll()`, `__game.setSector('pulsar')`, `__game.teleport(x, z)`, `__game.giveMoney(1e6)`.
 
+## M1 이후 추가된 모듈
+| 영역 | 파일 | 설명 |
+|---|---|---|
+| 컷신 | `game/cutscene*.ts`, `data/cutscenes.ts`, `data/cutscene-types.ts`, `systems/cutscene.ts`, `public/style/cine.css` | 타임라인 컷신 디렉터(카메라·배우·이모지 말풍선·FX·소리 큐·HUD 훅). 상태 변경은 `onEnd` 에서만. 데이터 포맷은 UX_CUTSCENE.md 0.1장 |
+| 글 없는 UI | `game/hud.ts` | `iconToast(icons[])`, `HudWidget`(`GameSystem.widget?()`), 기존 `toast`/`renderHudLines` 유지 |
+| 사운드 | `audio/*`, `systems/audio.ts` | Web Audio 합성 효과음·BGM, 음소거 🔊/🔇 버튼, 컷신 소리 큐는 `G.cineHooks.sound` 로 연결. [AUDIO.md](AUDIO.md) |
+| 경제 | `data/pacing.ts`, `data/pacing-sinks.ts`, `data/planet-zones.ts`, `client/tools/econ-*.mjs` | 구역×등급 가격, 새 비용 곡선, 시뮬레이터(`cd client && npx tsc && node tools/econ-sim.mjs`). [ECONOMY.md](ECONOMY.md) 9장 |
+| 문제 은행 | `data/quiz-bank/*` | 210문항(구역 1~12). `GQU` 는 `buildGQUByZone(BANK_ALL)`, 섹터 `units` 는 구역 키(`Z01`~`Z12`). 행성 문제 `PQ` 는 아직 기존 `quiz-planet.ts` |
+- 세이브 v6: `S.story`(beat·mid·seen·ended·hints). v5→v6 마이그레이션은 보유 현금을 해금 구역의 누적 지출 목표(`TARGET_CUM_SPEND`)로 1회 제한한다.
+- 기지 칸 최대는 현재 허브 배치(5×2)에 맞춰 10으로 제한(`CAPS.slots.max`). 도시 허브(WORLD.md W1)에서 30으로 확장한다.
+- 서버: 세이브 PUT 검증(`base`·`ver`, 깊이, NUL)·`If-Match` 낙관적 락·요청 제한. 클라이언트는 서버 버전을 알면 `If-Match` 를 보내고 409 면 그 세션의 서버 저장을 멈춘다.
+
 ## 서버 연동 (`net/api.ts`, 선택적)
 - pid: localStorage `science26.pid` (없으면 24자 랜덤 생성).
 - 부팅 시 **로컬 세이브가 없을 때만** `GET /api/save/{pid}` 1회(4초 타임아웃) → 성공 시 `applySave` 후 즉시 `save()`.
