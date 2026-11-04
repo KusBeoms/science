@@ -27,4 +27,4 @@
 - v3 키 `stealPlanet3` → v4 키 `stealPlanet4`. v4가 없으면 v3를 읽어 이어받는다.
 - v4 신규 필드: `ver, chapter, wanted, vehicle, ach, coins, playSec`.
 - v5 (키는 `stealPlanet4` 그대로, `ver: 5`): `unlocked, portals` + 후속용 빈 기본값 `quests, vehicles, heists, collectibles`. `zone` → `unlocked`, `notes` 키 인덱스 → 섹터 id 변환. 체인은 `client/src/core/save-schema.ts`.
-- v6 (예정, 한 번에 묶음): `S.story`(STORY 7.1), 의뢰·별조각·레이스·업적 필드(QUESTS_ACHIEVEMENTS 5장), 섹터 id 정리(폐기 id 합치기 — CONTENT_PLAN 2장 매핑표), `requires.chapter` → `requires.beat`. 이동 수단·수배·하이스트는 v5의 빈 기본값을 그대로 쓰므로 별도 버전 상승이 없다(GAMEPLAY_SYSTEMS).
+- v6 (예정, 한 번에 묶음): `S.story`(STORY 7.1), 의뢰·별조각·레이스·업적 필드(QUESTS_ACHIEVEMENTS 5장), 섹터 id 정리(폐기 id 합치기 — CONTENT_PLAN 2장 매핑표), `requires.chapter` → `requires.beat`, 신규 필드 `ach.equippedTitle`·`npc.reviewDaily`. 이동 수단·수배·하이스트는 v5의 빈 기본값을 그대로 쓰므로 별도 버전 상승이 없다(GAMEPLAY_SYSTEMS).
