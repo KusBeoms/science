@@ -49,7 +49,9 @@ export const test = base.extend<{game: Game}, {server: {url: string}}>({
       r.fulfill({path: THREE_LOCAL, contentType: 'text/javascript'}),
     );
     const open = async (query = '') => {
-      await page.goto(`${server.url}/${query}`);
+      // C01 자동 재생(20s, 입력 잠금)이 다른 E2E 를 막지 않도록 기본은 ?cine=0 — 컷신 테스트는 ?cine=1 을 직접 준다
+      const q = /cine=/.test(query) ? query : query ? `${query}&cine=0` : '?cine=0';
+      await page.goto(`${server.url}/${q}`);
       await page.waitForSelector('#menu.on');
     };
     await use({page, base: server.url, problems, open});

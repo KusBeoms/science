@@ -8,6 +8,7 @@ import {P, pickFrom} from '../data/planets.js';
 import {streamSectors, syncNests} from '../render/sectors.js';
 import {syncBase} from '../render/sync.js';
 import {deposit} from '../game/actions.js';
+import {cineCamera} from '../game/cutscene.js';
 import {flash, renderHudLines, toast} from '../game/hud.js';
 import {missionTick} from '../game/missions.js';
 import {timeNow} from './hazards.js';
@@ -87,6 +88,7 @@ export function frame() {
     G.me.pos.z + Math.cos(G.yaw) * cp * G.camDist
   );
   G.camera.lookAt(G.me.pos.x, G.me.pos.y + 2.5, G.me.pos.z);
+  cineCamera(); // 컷신 중이면 카메라 덮어쓰기
   G.starPts.position.copy(G.camera.position);
   G.renderer.render(G.scene, G.camera);
   setTxt('#cr', '✦ ' + fmt(S.cr));

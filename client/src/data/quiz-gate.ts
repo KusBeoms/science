@@ -1,3 +1,4 @@
+import {BANK_ALL, buildGQUByZone} from './quiz-bank/index.js';
 // 단계 입장 시험 문제 은행: [문제, 정답, 오답1, 오답2, 오답3, 해설]
 export const GQ: string[][] = [
   [
@@ -211,5 +212,5 @@ export const GQ: string[][] = [
     '화석 연료 사용으로 CO₂가 늘어 온실 효과가 강해진다.',
   ],
 ];
-/** 단원 태그별 입장 시험 문제 (형식은 GQ 와 같음). 섹터의 units 태그로 3문제 이상 모이면 GQ 대신 이 문제들을 낸다 */
-export const GQU: Record<string, string[][]> = {};
+/** 구역 키('Z01'~'Z12')별 입장 시험 문제 (형식은 GQ 와 같음). 섹터의 units 태그로 3문제 이상 모이면 GQ 대신 이 문제들을 낸다 */
+export const GQU: Record<string, string[][]> = buildGQUByZone(BANK_ALL);

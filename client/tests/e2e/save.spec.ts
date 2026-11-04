@@ -28,7 +28,7 @@ test('v3-only save is picked up and migrated to stealPlanet4', async ({game}) =>
   await game.page.waitForTimeout(5500); // 5초 자동저장
   const saved = await game.page.evaluate(() => JSON.parse(localStorage.getItem('stealPlanet4') || 'null'));
   expect(saved?.cr).toBeGreaterThanOrEqual(777);
-  expect(saved?.ver).toBe(5);
+  expect(saved?.ver).toBe(6);
 });
 
 test('progress survives reload (autosave -> restore)', async ({game}) => {
@@ -42,5 +42,5 @@ test('progress survives reload (autosave -> restore)', async ({game}) => {
   await game.page.evaluate(() => localStorage.getItem('stealPlanet4'));
   const after = await game.page.evaluate(() => JSON.parse(localStorage.getItem('stealPlanet4')!));
   expect(after.slots).toBe(before.slots);
-  expect(after.ver).toBe(5);
+  expect(after.ver).toBe(6);
 });

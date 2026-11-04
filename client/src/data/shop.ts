@@ -1,29 +1,59 @@
 // 상점 데이터: 스프링·가방·기지 꾸미기·캐릭터 꾸미기
+import {BAG_PRICE, SPRING_PRICE} from './pacing.js';
 type DecoRow = [string, string, ...(string | number)[]];
-// 스프링: [이름, 색, 가격, 점프 배율, 이동속도 +, 장식 이모지]
-export const SPR: [string, string, number, number, number, string][] = [
-  ['기본', '#9aa4b8', 0, 1, 0, ''],
-  ['구리', '#d2824a', 300, 1.1, 0, ''],
-  ['초록', '#5ec27a', 1200, 1.2, 1, ''],
-  ['파랑', '#4a8cff', 5000, 1.3, 2, ''],
-  ['보라', '#b36bff', 20000, 1.4, 3, '✨'],
-  ['황금', '#ffd24a', 80000, 1.5, 4, '👑'],
-  ['분홍', '#ff6fae', 300000, 1.6, 5, '💗'],
-  ['불꽃', '#ff5a2a', 1e6, 1.7, 7, '🔥'],
-  ['무지개', '#ffffff', 5e6, 1.85, 9, '🌈'],
-  ['우주', '#1c1c4a', 3e7, 2, 12, '🪐'],
+// 스프링 행: [이름, 색, 점프 배율, 이동속도 +, 장식 이모지] — 가격은 i번째(i≥1)마다 SPRING_PRICE(i). 인덱스 = 세이브 키
+const SPR_ROWS: [string, string, number, number, string][] = [
+  ['기본', '#9aa4b8', 1, 0, ''],
+  ['구리', '#d2824a', 1.1, 0, ''],
+  ['초록', '#5ec27a', 1.2, 1, ''],
+  ['파랑', '#4a8cff', 1.3, 2, ''],
+  ['보라', '#b36bff', 1.4, 3, '✨'],
+  ['황금', '#ffd24a', 1.5, 4, '👑'],
+  ['분홍', '#ff6fae', 1.6, 5, '💗'],
+  ['불꽃', '#ff5a2a', 1.7, 6, '🔥'],
+  ['무지개', '#ffffff', 1.85, 6, '🌈'],
+  ['우주', '#1c1c4a', 2, 6, '🪐'],
+  ['은하', '#8fa8ff', 2.04, 6, '🌌'],
+  ['혜성', '#7fe0ff', 2.08, 6, '☄️'],
+  ['오로라', '#5fffc0', 2.12, 6, '🌠'],
+  ['번개', '#ffe94a', 2.16, 6, '⚡'],
+  ['용암', '#ff7a3a', 2.2, 6, '🌋'],
+  ['수정', '#a0f0ff', 2.24, 6, '💎'],
+  ['달빛', '#e8ecff', 2.28, 6, '🌙'],
+  ['태양', '#ffd060', 2.32, 6, '☀️'],
+  ['성운', '#c07aff', 2.36, 6, '🔮'],
+  ['중성자', '#6affff', 2.4, 6, '⚛️'],
+  ['펄서', '#ff6aff', 2.44, 6, '📡'],
+  ['블랙홀', '#14141f', 2.48, 6, '🕳️'],
+  ['웜홀', '#4a2aff', 2.52, 6, '🌀'],
+  ['초신성', '#f4f4ff', 2.56, 6, '💥'],
+  ['빅뱅', '#ffb0ff', 2.6, 6, '✴️'],
 ];
+// 스프링: [이름, 색, 가격, 점프 배율, 이동속도 +, 장식 이모지]
+export const SPR: [string, string, number, number, number, string][] = SPR_ROWS.map((r, i) => [
+  r[0],
+  r[1],
+  i ? SPRING_PRICE(i) : 0,
+  r[2],
+  r[3],
+  r[4],
+]);
 export const sprStyle = (i: number) =>
   i === 8
     ? 'conic-gradient(#f44,#fa4,#ff4,#4f6,#4cf,#64f,#f4c,#f44)'
     : i === 9
       ? 'radial-gradient(circle at 30% 30%,#7a7aff,#1c1c4a 62%)'
       : SPR[i][1];
-export const BAGS: [string, number, number, string][] = [
-  ['봉다리', 500, 2, '#c8a46a'],
-  ['가방', 8000, 3, '#4a8cff'],
-  ['배낭', 100000, 4, '#d23a4a'],
-]; // [이름,가격,들 수 있는 수,색] — 단계는 행 추가로 늘린다 (S.bag = 산 단계 수)
+// [이름, 가격, 들 수 있는 수, 색] — 가격은 BAG_PRICE. 단계는 행 추가로 늘린다 (S.bag = 산 단계 수)
+const BAG_ROWS: [string, number, string][] = [
+  ['봉다리', 2, '#c8a46a'],
+  ['가방', 3, '#4a8cff'],
+  ['배낭', 4, '#d23a4a'],
+  ['여행 가방', 5, '#43c27a'],
+  ['우주 배낭', 6, '#b36bff'],
+  ['중력 가방', 7, '#ffd24a'],
+];
+export const BAGS: [string, number, number, string][] = BAG_ROWS.map((r, i) => [r[0], BAG_PRICE[i], r[1], r[2]]);
 export const DECO: Record<string, {n: string; v: DecoRow[]}> = {
   floor: {
     n: '바닥',
@@ -160,7 +190,7 @@ export const LOOK: Record<string, {n: string; v: [string, string, number][]}> = 
 /** 상점 상한 테이블 (비용 곡선은 data/pacing.ts). 늘릴 때: slots 는 core/geometry.ts 의 slotPos 배치도 함께 넓힐 것 */
 export const CAPS = {
   /** 기지 칸 시작/최대 (S.base 배열 길이 = max) */
-  slots: {start: 6, max: 10},
+  slots: {start: 6, max: 10}, // 현재 허브의 5×2 배치가 담는 한도. 도시 허브(docs/WORLD.md W1)에서 30으로 확장
   /** 신발(이동속도) 최대 Lv */
-  spd: 10,
+  spd: 30,
 };

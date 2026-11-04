@@ -1,7 +1,7 @@
 // 시스템 레지스트리: loop.ts 는 등록된 시스템을 등록 순서대로 호출만 한다. 등록은 systems/index.ts 한 곳에서
 import {S, loadHooks, saveHooks} from '../core/state.js';
 import {SECTORS} from '../data/sectors.js';
-import {addHudLine} from '../game/hud.js';
+import {addHudLine, addHudWidget} from '../game/hud.js';
 import type {GameSystem} from '../core/types.js';
 
 const LIST: GameSystem[] = [];
@@ -9,6 +9,7 @@ export function registerSystem(sys: GameSystem) {
   if (LIST.some(o => o.id === sys.id)) throw new Error(`system id 중복: ${sys.id}`);
   LIST.push(sys);
   if (sys.hud) addHudLine(sys.hud);
+  if (sys.widget) addHudWidget(sys.widget);
   if (sys.onSave) saveHooks.push(sys.onSave);
   if (sys.onLoad) {
     loadHooks.push(sys.onLoad);

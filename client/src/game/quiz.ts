@@ -2,6 +2,7 @@
 import {S, save} from '../core/state.js';
 import {G, releaseLock} from '../core/runtime.js';
 import {$, shuffle} from '../core/util.js';
+import {sfx} from '../audio/index.js';
 import type {QuizCtx, QuizQ} from '../core/types.js';
 
 const mkQ = (a: string[]): QuizQ => ({
@@ -16,6 +17,7 @@ export function openQuiz(ctx: Ctx0) {
   releaseLock();
   $('#qt').textContent = ctx.title;
   $('#quiz').classList.add('on');
+  sfx('open');
   showQ();
 }
 function showQ() {
@@ -50,6 +52,7 @@ export function answer(k: number) {
     c.right++;
     S.correct++;
   }
+  sfx(ok ? 'quizRight' : 'quizWrong');
   $('#qr').innerHTML = `<b class="${ok ? 'ok' : 'no'}">${ok ? '정답!' : '오답'}</b> ${q.why}`;
   const n = $('#qn');
   n.style.display = 'inline-block';

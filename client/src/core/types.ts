@@ -1,4 +1,6 @@
 // 공용 인터페이스
+import type {IconKey} from '../data/cutscene-icons.js';
+
 export interface Planet {
   id: number;
   name: string;
@@ -95,6 +97,33 @@ export interface SaveState {
   vehicles: Record<string, number>;
   heists: Record<string, number>;
   collectibles: Record<string, 1>;
+  // v6
+  story: StoryState;
+}
+/** 스토리 진행 (STORY 7.1 / UX_CUTSCENE 2장). seen = 컷신 id → 0|1, mid 는 beat===4 일 때만 1~5 */
+export interface StoryState {
+  beat: number;
+  mid: 0 | 1 | 2 | 3 | 4 | 5;
+  seen: Record<string, 0 | 1>;
+  ended?: 0 | 1;
+  hints?: Record<string, 0 | 1>;
+}
+/** 재생 중인 컷신의 공개 상태 (G.cine). lock = 입력 잠금(paused() 에 반영) */
+export interface CineState {
+  id: string;
+  lock: boolean;
+  t: number;
+  dur: number;
+}
+/** HUD 위젯 슬롯 (UX_CUTSCENE 10.3.1): 좌상·상중(주의 1개)·우상·상황 칩 2줄·우중 */
+export type HudSlot = 'TL' | 'TC' | 'TR' | 'L1' | 'L2' | 'RM';
+/** 글 없는 HUD 위젯: 아이콘 1~3개 + 선택적 게이지(0~1). priority 가 클수록 상한 초과 시 살아남는다 */
+export interface HudWidget {
+  id: string;
+  slot: HudSlot;
+  priority: number;
+  icons: IconKey[];
+  fill?: number;
 }
 export interface StarDef {
   n: string;
@@ -168,6 +197,8 @@ export interface GameSystem {
   onSectorLeave?(s: Sector, i: number): void;
   /** HUD 한 줄 (null/빈 문자열이면 숨김) */
   hud?(): string | null;
+  /** 글 없는 HUD 위젯 (null 이면 숨김). 슬롯·총량 상한은 game/hud.ts 가 강제 */
+  widget?(): HudWidget | null;
   /** 저장 직전: S 의 자기 필드에 상태를 써 넣는다 */
   onSave?(s: SaveState): void;
   /** 등록 시 1회 + 서버 세이브 복원 시: S 에서 상태를 읽는다 */

@@ -3,11 +3,12 @@ import {S, save, cap} from '../core/state.js';
 import {G, paused, releaseLock} from '../core/runtime.js';
 import {$, fmt} from '../core/util.js';
 import {BAGS, CAPS, DECO, LOOK, SPR, sprStyle} from '../data/shop.js';
-import {slotCost, spdCost} from '../data/pacing.js';
+import {COSMETIC_MUL, SPD_BASE, SPD_PER_LV, slotCost, spdCost} from '../data/pacing.js';
 import {applyLook} from '../render/characters.js';
 import {buildBag, buildSpringOnHand, syncCarry} from '../render/gear.js';
 import {applyDeco} from '../render/deco.js';
 import {toast} from './hud.js';
+import {sfx} from '../audio/index.js';
 
 let shopTab = 'spr',
   shopSub = 'floor',
@@ -17,20 +18,24 @@ export function openShop() {
   G.shopOpen = true;
   releaseLock();
   $('#shop').classList.add('on');
+  sfx('open');
   renderShop();
 }
 export function closeShop() {
   G.shopOpen = false;
   $('#shop').classList.remove('on');
+  sfx('close');
   save();
 }
 function spend(cost: number, fn: () => void) {
   if (S.cr < cost) {
     toast('돈이 부족하다');
+    sfx('deny');
     return false;
   }
   S.cr -= cost;
   S.bought++;
+  sfx('buy');
   fn();
   save();
   renderShop();
@@ -100,13 +105,14 @@ export function renderShop() {
   } else if (shopTab === 'bag') {
     hint.textContent = `가방이 있으면 행성을 여러 개 들고 올 수 있다. 지금은 최대 ${cap()}개. (잡히면 전부 잃는다!)`;
     BAGS.forEach((b, i) => {
-      const own = S.bag >= i + 1;
+      const own = S.bag >= i + 1,
+        next = i === S.bag; // 가방은 순서대로만 살 수 있다
       g.append(
         cell(
           `<i class="sw" style="background:${b[3]}">🎒</i><b>${b[0]}</b><span>최대 ${b[2]}개 들기</span><em>${own ? '보유 중' : '✦ ' + fmt(b[1])}</em>`,
           own ? 'eq' : '',
           () => {
-            if (!own)
+            if (next)
               spend(b[1], () => {
                 S.bag = i + 1;
                 buildBag();
@@ -118,11 +124,11 @@ export function renderShop() {
       );
     });
   } else if (shopTab === 'shoe') {
-    hint.textContent = '신발 레벨 하나당 이동 속도 +1.5. 구역마다 수호자가 점점 빨라진다.';
+    hint.textContent = `신발 레벨 하나당 이동 속도 +${SPD_PER_LV}. 구역마다 수호자가 점점 빨라진다.`;
     const full = S.spd >= CAPS.spd;
     g.append(
       cell(
-        `<i class="sw" style="background:#7cc4ff">👟</i><b>운동화 Lv${S.spd}/${CAPS.spd}</b><span>이동 ${(14 + 1.5 * S.spd).toFixed(1)} → ${(14 + 1.5 * (S.spd + 1)).toFixed(1)}</span><em>${full ? 'MAX' : '✦ ' + fmt(spdCost(S.spd))}</em>`,
+        `<i class="sw" style="background:#7cc4ff">👟</i><b>운동화 Lv${S.spd}/${CAPS.spd}</b><span>이동 ${(SPD_BASE + SPD_PER_LV * S.spd).toFixed(1)} → ${(SPD_BASE + SPD_PER_LV * (S.spd + 1)).toFixed(1)}</span><em>${full ? 'MAX' : '✦ ' + fmt(spdCost(S.spd))}</em>`,
         full ? 'eq' : '',
         () => {
           if (!full)
@@ -163,7 +169,7 @@ export function renderShop() {
       sub.append(b);
     });
     LOOK[lookSub].v.forEach((v, i) => {
-      const price = v[2],
+      const price = v[2] * COSMETIC_MUL,
         key = 'look' + lookSub + i,
         own = price === 0 || S.own[key],
         eq = S.look[lookSub] === i;
@@ -204,7 +210,7 @@ export function renderShop() {
       sub.append(b);
     });
     DECO[shopSub].v.forEach((v, i) => {
-      const price = v[v.length - 1] as number,
+      const price = (v[v.length - 1] as number) * COSMETIC_MUL,
         key = shopSub + i,
         own = price === 0 || S.own[key],
         eq = S.deco[shopSub] === i;

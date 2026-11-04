@@ -27,7 +27,7 @@ const ROWS: Row[] = [
     pool: idx(p => SOLAR.includes(p.name)),
     difficulty: 1,
     gate: 's',
-    units: ['물질', '태양계'],
+    units: ['Z01'],
     note: '🌍 대기가 없는 곳이 많다 — 낮밤 온도 차가 크다',
   },
   {
@@ -44,7 +44,7 @@ const ROWS: Row[] = [
     pool: idx(p => p.grp === '실제' && !SOLAR.includes(p.name)),
     difficulty: 2,
     gate: 's',
-    units: ['별'],
+    units: ['Z07'],
     note: '⭐ 쌍성·적색왜성 — 별마다 환경이 다르다',
   },
   {
@@ -62,7 +62,7 @@ const ROWS: Row[] = [
     difficulty: 3,
     timeMul: 3,
     gate: 's',
-    units: ['중력'],
+    units: ['Z11'],
     note: '⏳ 블랙홀 근처는 시간이 느리다 — 여기 있는 동안 기지가 ×3 빠르게 흐른다',
   },
   {
@@ -83,7 +83,7 @@ const ROWS: Row[] = [
     difficulty: 3,
     gravityMul: 0.8,
     gate: 's',
-    units: ['생명'],
+    units: ['Z12'],
     note: '🪐 판도라 중력 0.8g — 더 높이 뛴다',
   },
   {
@@ -102,7 +102,7 @@ const ROWS: Row[] = [
     gravityMul: 0.7,
     requires: {prev: 'alpha', dex: 10},
     gate: 'w',
-    units: ['태양계'],
+    units: ['Z02'],
     note: '🪨 소행성대 — 화성과 목성 사이, 작은 암석 천체가 모인 곳. 중력이 약하다',
   },
   {
@@ -121,7 +121,7 @@ const ROWS: Row[] = [
     gravityMul: 0.6,
     requires: {prev: 'belt', dex: 12, spd: 3},
     gate: 'w',
-    units: ['태양계'],
+    units: ['Z05'],
     note: '🧊 카이퍼대 — 해왕성 바깥, 얼음 천체의 고향. 명왕성도 여기 산다',
   },
   {
@@ -139,7 +139,7 @@ const ROWS: Row[] = [
     difficulty: 3,
     requires: {prev: 'kuiper', dex: 14, vehicle: 1},
     gate: 'e',
-    units: ['별'],
+    units: ['Z06'],
     note: '🏮 적색왜성 — 작고 어둡지만 우리은하 별의 대부분을 차지한다',
   },
   {
@@ -157,7 +157,7 @@ const ROWS: Row[] = [
     difficulty: 3,
     requires: {prev: 'reddwarf', dex: 16, vehicle: 1},
     gate: 's',
-    units: ['원소'],
+    units: ['Z10'],
     note: '💥 초신성 잔해 — 철보다 무거운 원소는 이런 폭발에서 만들어졌다',
   },
   {
@@ -175,7 +175,7 @@ const ROWS: Row[] = [
     difficulty: 4,
     requires: {prev: 'supernova', dex: 18, vehicle: 1, chapter: 1},
     gate: 's',
-    units: ['별'],
+    units: ['Z09'],
     note: '🌌 성운 — 가스와 먼지가 모여 새 별이 태어나는 곳',
   },
   {
@@ -194,7 +194,7 @@ const ROWS: Row[] = [
     gravityMul: 1.4,
     requires: {prev: 'nebula', dex: 20, vehicle: 2, chapter: 2},
     gate: 's',
-    units: ['중력', '파동'],
+    units: ['Z10'],
     note: '📡 펄서 — 1초에 수백 번 도는 중성자별. 등대처럼 전파를 쏜다 · 중력 1.4g',
   },
   {
@@ -214,7 +214,7 @@ const ROWS: Row[] = [
     timeMul: 2,
     requires: {prev: 'pulsar', dex: 22, vehicle: 2},
     gate: 's',
-    units: ['중력'],
+    units: ['Z10'],
     note: '⚛️ 중성자별 — 각설탕 한 조각이 수억 톤. 중력 1.8g, 시간 ×2',
   },
   {
@@ -232,7 +232,7 @@ const ROWS: Row[] = [
     difficulty: 5,
     requires: {prev: 'neutron', dex: 24, vehicle: 3, chapter: 3},
     gate: 'w',
-    units: ['생명', '환경'],
+    units: ['Z11'],
     note: '🌱 에드먼즈 행성 — 인류의 새 보금자리 후보 (영화 설정)',
   },
 ];

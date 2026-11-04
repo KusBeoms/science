@@ -1,7 +1,9 @@
-// 행성 데이터. DB 행: [이름, 분류, 질량(M⊕), 반지름(R⊕), 등급, 가격, 색1, 색2, 설명, 효과]
+// 행성 데이터. DB 행: [이름, 분류, 질량(M⊕), 반지름(R⊕), 등급, (구)가격, 색1, 색2, 설명, 효과]
+// 가격 열은 더 이상 쓰지 않는다 — 실제 가격은 priceOf(소속 구역, 등급) (data/pacing.ts, data/planet-zones.ts)
 // id = DB 인덱스 (세이브의 dex·base 키) → 행은 **끝에만 추가**한다. 새 행은 planets-more.ts 의 DB_MORE 에.
 import type {DbRow, Planet} from '../core/types.js';
-import {INC_DIV, PRICE_MUL, RW} from './pacing.js';
+import {INC_DIV, RW, priceOf} from './pacing.js';
+import {zoneOfPlanet} from './planet-zones.js';
 import {DB_MORE} from './planets-more.js';
 export const R = ['실제', '인터스텔라', '아바타'];
 const DB_BASE: DbRow[] = [
@@ -103,22 +105,25 @@ export const MUT: [string, number][] = [
   ['고온 ×2', 2],
   ['거대 ×3', 3],
 ];
-export const P: Planet[] = DB.map((d, i) => ({
-  id: i,
-  name: d[0],
-  grp: R[d[1]],
-  M: d[2],
-  R: d[3],
-  t: d[4],
-  price: d[5] * PRICE_MUL,
-  c1: d[6],
-  c2: d[7],
-  fact: d[8],
-  fx: d[9] || '',
-  g: d[2] / (d[3] * d[3]),
-  ve: 11.186 * Math.sqrt(d[2] / d[3]),
-  inc: (d[5] * PRICE_MUL) / INC_DIV,
-}));
+export const P: Planet[] = DB.map((d, i) => {
+  const price = priceOf(zoneOfPlanet(d[0], d[4]), d[4]);
+  return {
+    id: i,
+    name: d[0],
+    grp: R[d[1]],
+    M: d[2],
+    R: d[3],
+    t: d[4],
+    price,
+    c1: d[6],
+    c2: d[7],
+    fact: d[8],
+    fx: d[9] || '',
+    g: d[2] / (d[3] * d[3]),
+    ve: 11.186 * Math.sqrt(d[2] / d[3]),
+    inc: price / INC_DIV,
+  };
+});
 export const SOLAR = ['태양', '명왕성', '수성', '화성', '금성', '지구', '천왕성', '해왕성', '토성', '목성'];
 /** 이름 → id 목록 (없는 이름은 건너뛴다) */
 export const ids = (...names: string[]) => names.map(n => P.findIndex(p => p.name === n)).filter(i => i >= 0);

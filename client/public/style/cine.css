@@ -1,0 +1,300 @@
+/* 컷신 레이어(#cine, z 8: 오버레이 5 위·#flash 9 아래) · 글 없는 알림(#itoast) · HUD 위젯 슬롯(#widgets) */
+#cine {
+  inset: 0;
+  z-index: 8;
+  display: none;
+  pointer-events: none;
+  overflow: hidden;
+}
+#cine.on {
+  display: block;
+}
+#cine.lock {
+  pointer-events: auto;
+}
+.lbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 12%;
+  background: #000;
+  transition: transform 0.4s;
+}
+.lbar.t {
+  top: 0;
+  transform: translateY(-100%);
+}
+.lbar.b {
+  bottom: 0;
+  transform: translateY(100%);
+}
+#cine.lb .lbar {
+  transform: none;
+}
+@media (orientation: portrait) {
+  .lbar {
+    height: 8%;
+  }
+}
+#cineFx,
+#cineBub {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.fx {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+.fx.fade,
+.fx.dim {
+  background: #000;
+}
+.fx.vig {
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(255, 40, 50, 0.8) 100%);
+}
+.fx.flash {
+  background: #fff;
+}
+.fx.rain {
+  background: repeating-linear-gradient(105deg, transparent 0 7px, rgba(160, 190, 255, 0.35) 7px 8px);
+  background-size: 120px 120px;
+  animation: rain 0.5s linear infinite;
+}
+.fx.spot {
+  background: radial-gradient(circle at var(--sx, 70px) var(--sy, 60px), transparent 0 70px, rgba(0, 0, 0, 0.65) 160px);
+}
+.spk {
+  position: absolute;
+  font-size: 22px;
+  translate: -50% -50%;
+  animation: spk 0.9s ease-out forwards;
+}
+.bub {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #fff;
+  color: #000;
+  border: 2px solid #111;
+  font-size: 28px;
+  line-height: 1;
+  margin-top: -8px;
+  animation: pop 0.35s ease-out;
+}
+.bub.pop-shake {
+  animation: pop 0.35s ease-out, shake 0.25s 0.35s 3;
+}
+.bub.pop-pulse {
+  animation: pop 0.35s ease-out, pulse 0.8s 0.35s infinite;
+}
+.bub[data-shape='round'] {
+  border-radius: 24px;
+}
+.bub[data-shape='spike'] {
+  border-radius: 4px;
+  border-style: dashed;
+}
+.bub[data-shape='square'] {
+  border-radius: 3px;
+}
+.bub[data-shape='hex'] {
+  border-radius: 10px;
+  border-style: double;
+  border-width: 5px;
+}
+#cineSkip {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 24px;
+  display: none;
+  pointer-events: auto;
+  background: conic-gradient(var(--acc) calc(var(--hold, 0) * 360deg), var(--card) 0);
+}
+#cineSkip.on {
+  display: block;
+}
+#cine.lb #cineSkip {
+  bottom: calc(12% + 12px);
+}
+#cineSkip.chip,
+body.touch #cineSkip {
+  bottom: auto;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+}
+body.cine-nohud :is(#top, #stamBox, #mission, #tag, #carryTag, #lines, #cross, #joy, #jump, #run, #btns, #bottom, #keys, #toast, #itoast, #widgets) {
+  visibility: hidden;
+}
+/* 글 없는 알림 */
+.ic {
+  display: inline-block;
+}
+#itoast {
+  left: 50%;
+  bottom: 28%;
+  z-index: 7;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.it {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  font-size: 30px;
+  line-height: 1.1;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 24px;
+  animation: pop 0.3s ease-out;
+}
+.it .cnt {
+  font-size: 16px;
+  color: var(--fg);
+}
+/* HUD 위젯 슬롯 (임시 좌표 — HUD 슬롯 격자 도입 시 재배치) */
+#widgets {
+  inset: 0;
+  pointer-events: none;
+}
+.slot {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.slot[data-slot='TL'] {
+  top: 150px;
+  left: 14px;
+}
+.slot[data-slot='TC'] {
+  top: 8px;
+  left: 50%;
+  translate: -50% 0;
+}
+.slot[data-slot='TR'] {
+  top: 56px;
+  right: 12px;
+}
+.slot[data-slot='L1'] {
+  left: 14px;
+  bottom: 210px;
+}
+.slot[data-slot='L2'] {
+  left: 14px;
+  bottom: 250px;
+}
+.slot[data-slot='RM'] {
+  right: 12px;
+  top: 40%;
+}
+.wg {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 22px;
+  line-height: 1.1;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+}
+.wg .fill {
+  width: 60px;
+  height: 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--acc) calc(var(--f, 0) * 100%), transparent 0);
+}
+.ic-spike {
+  border-bottom: 2px dashed currentColor;
+}
+@keyframes pop {
+  0% {
+    scale: 0.3;
+    opacity: 0;
+  }
+  60% {
+    scale: 1.15;
+    opacity: 1;
+  }
+  100% {
+    scale: 1;
+  }
+}
+@keyframes shake {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  25% {
+    rotate: -7deg;
+  }
+  75% {
+    rotate: 7deg;
+  }
+}
+@keyframes pulse {
+  50% {
+    scale: 1.12;
+  }
+}
+@keyframes spk {
+  to {
+    transform: translate(var(--dx), var(--dy));
+    opacity: 0;
+  }
+}
+@keyframes rain {
+  to {
+    background-position: -40px 120px;
+  }
+}
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+}
+/* 모션 감소: 팝은 페이드 0.15s, 흔들림·맥동·비 이동 정지 */
+@media (prefers-reduced-motion: reduce) {
+  .bub,
+  .bub.pop-shake,
+  .bub.pop-pulse,
+  .it {
+    animation: fadein 0.15s;
+  }
+  .fx.rain {
+    animation: none;
+  }
+  .spk {
+    animation-duration: 0.2s;
+  }
+  .lbar {
+    transition: none;
+  }
+}
+body.rm .bub,
+body.rm .bub.pop-shake,
+body.rm .bub.pop-pulse,
+body.rm .it {
+  animation: fadein 0.15s;
+}
+body.rm .fx.rain {
+  animation: none;
+}

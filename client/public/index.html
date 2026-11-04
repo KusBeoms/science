@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="style/hud.css">
 <link rel="stylesheet" href="style/overlays.css">
 <link rel="stylesheet" href="style/responsive.css">
+<link rel="stylesheet" href="style/cine.css">
 </head>
 <body>
 <div class="hud" id="top"><span id="cr">✦ 0</span><span id="inc"></span></div>
@@ -16,7 +17,7 @@
 <div class="hud" id="cross"></div>
 <div class="hud tc" id="joy"><div id="knob"></div></div>
 <div class="hud rb" id="jump">점프</div><div class="hud rb" id="run">달리기</div>
-<div class="hud" id="btns"><button id="dexBtn">📖</button><button id="shopBtn">🛒 상점</button><button id="lockBtn">🔒 시점</button></div>
+<div class="hud" id="btns"><button id="dexBtn">📖</button><button id="shopBtn">🛒 상점</button><button id="lockBtn">🔒 시점</button><button id="muteBtn" title="소리 켜기/끄기" aria-label="소리 켜기/끄기">🔊</button></div>
 <div class="hud" id="bottom"><div id="info"></div><div id="prompt"></div></div>
 <div class="hud" id="keys">WASD 이동 · Shift 달리기 · Space 점프 · 클릭=시점 고정(Esc 해제) · 두 손가락 스크롤=회전 · 핀치=줌 · E 상호작용 · F 판매 · B 도감</div>
 <div class="hud ov on" id="menu"><h1>🪐 행성을 훔치다</h1><div class="sub">고1 통합과학으로 우주의 행성을 훔치는 3D 게임</div>
@@ -27,6 +28,9 @@
 <div class="hud ov" id="shop"><div class="card"><div class="row"><b>🛒 우주 잡화점 <span id="sc" style="color:var(--acc);margin-left:8px"></span></b><button id="sx">✕</button></div><div id="stabs"></div><div id="ssub"></div><div id="shint"></div><div id="sgrid"></div></div></div>
 <div class="hud ov" id="portal"><div class="card"><div class="row"><b>🌀 포탈 — 어디로 갈까?</b><button id="px">✕</button></div><div id="plist"></div></div></div>
 <div class="hud" id="toast"></div>
+<div class="hud" id="itoast"></div>
+<div class="hud" id="widgets"></div>
+<div class="hud" id="cine"><div class="lbar t"></div><div class="lbar b"></div><div id="cineFx"><i class="fx fade"></i><i class="fx dim"></i><i class="fx vig"></i><i class="fx flash"></i><i class="fx rain"></i><i class="fx spot"></i></div><div id="cineBub"></div><button id="cineSkip" aria-label="skip">⏭</button></div>
 <div class="hud" id="flash"></div>
 <div class="hud" id="err"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
