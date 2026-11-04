@@ -1,11 +1,19 @@
-// 세이브 스키마: 필드 기본값 + 버전 마이그레이션 체인 (v3 → v4 → v5)
+// 세이브 스키마: 필드 기본값 + 버전 마이그레이션 체인 (v3 → v4 → v5 → v6)
 // 새 필드 추가: SaveState(core/types.ts) 에 선언 → defaults() 에 기본값 → 기존 필드 의미가 바뀌면 SAVE_VER 를 올리고 STEPS 에 변환 추가.
 // 서버 PUT 은 256KB 상한 — 필드는 id → 작은 숫자 맵처럼 가볍게 둔다.
 import {CAPS} from '../data/shop.js';
 import {SECTORS} from '../data/sectors.js';
-import type {SaveState} from './types.js';
+import {STORY_CUTS} from '../data/cutscene-types.js';
+import type {SaveState, StoryState} from './types.js';
 
-export const SAVE_VER = 5;
+export const SAVE_VER = 6;
+export const defaultStory = (): StoryState => ({
+  beat: 0,
+  mid: 0,
+  seen: Object.fromEntries(STORY_CUTS.map(k => [k, 0])),
+  ended: 0,
+  hints: {},
+});
 export function defaults(): SaveState {
   return {
     cr: 0,
@@ -40,6 +48,8 @@ export function defaults(): SaveState {
     vehicles: {},
     heists: {},
     collectibles: {},
+    // v6
+    story: defaultStory(),
   };
 }
 /** 앞에서부터 연속으로 해금된 섹터 수 (= 구버전의 S.zone, 미션 "N단계 시험 통과" 기준) */
@@ -63,6 +73,18 @@ const STEPS: Record<number, (d: Raw) => void> = {
       notes[s ? s.id : k] = d.notes[k];
     });
     d.notes = notes;
+  },
+  // v5 → v6: story 만 (다른 v6 필드는 각 기능이 자기 줄을 추가). 이미 진행한 세이브는 첫 만남(C01)을 본 것으로 친다
+  5: d => {
+    const st = defaultStory(),
+      old = d.story && typeof d.story === 'object' ? d.story : {};
+    Object.assign(st, old, {seen: Object.assign(st.seen, old.seen)});
+    if (d.stolen || d.zone || d.bought || d.cr > 10) {
+      st.seen.c01_love = 1;
+      st.beat = Math.max(st.beat, 1);
+    }
+    if (st.beat !== 4) st.mid = 0; // mid≠0 이면 beat===4
+    d.story = st;
   },
 };
 /** 임의 버전 세이브 → 현재 버전. base 가 없으면 세이브가 아니므로 null */

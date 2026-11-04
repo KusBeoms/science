@@ -1,6 +1,6 @@
 // 여러 모듈이 공유하는 가변 런타임 상태 (원본의 전역 let 변수들). ES 모듈은 import 한 let 에 대입할 수 없으므로 하나의 객체 G 로 묶는다.
 // THREE 객체와 라이벌은 경계 타입이라 any.
-import type {Carry, Chunk, Pick, QuizCtx, Target} from './types.js';
+import type {Carry, Chunk, CineState, Pick, QuizCtx, Target} from './types.js';
 
 export const G = {
   // 입력/플레이어
@@ -29,6 +29,14 @@ export const G = {
   modal: null as string | null,
   modalClose: null as (() => void) | null,
   quizCtx: null as QuizCtx | null,
+  /** 재생 중인 컷신(game/cutscene.ts). lock 이면 paused() */
+  cine: null as CineState | null,
+  /** 컷신 → 다른 모듈 느슨한 훅 (사운드·HUD 게이지·종료 효과). 구현하는 쪽이 대입한다 */
+  cineHooks: {} as {
+    sound?: (cue: string, o: {vol?: number; pan?: number; duck?: boolean}) => void;
+    hud?: (k: {target: string; set?: number; from?: 'cur' | number; preview?: boolean; spotlight?: boolean} | null) => void;
+    effect?: (e: {do: string; [k: string]: any}) => void;
+  },
   /** 플레이어가 서 있는 섹터 인덱스 (-1 = 허브/허공) */
   curZone: -1,
   /** 일시정지를 뺀 누적 게임 시간(초) — 둥지 시간 보정 기준 */
@@ -60,7 +68,7 @@ export const G = {
   pads: {} as Record<string, {grp: any; x: number; z: number}>,
   baseMesh: [] as {ped: any; id: number; grp: any; mut?: number}[],
 };
-export const paused = () => !G.started || G.quizOpen || G.dexOpen || G.shopOpen || G.modal !== null;
+export const paused = () => !G.started || G.quizOpen || G.dexOpen || G.shopOpen || G.modal !== null || (G.cine !== null && G.cine.lock);
 export function releaseLock() {
   if (document.pointerLockElement) document.exitPointerLock();
   Object.keys(G.keys).forEach(k => (G.keys[k] = false));
