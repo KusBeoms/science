@@ -22,13 +22,13 @@
 
 ### 1.1 고정 NPC (14)
 
-상호작용은 기존 `interact-core.ts`의 `kind` 레지스트리에 등록한다. 모든 NPC는 머리 위 **아이콘 하나**로 역할을 알린다.
+상호작용은 `game/interactables.ts` 의 `registerInteractable`(kind 레지스트리, 등록 위치 `systems/index.ts`)에 등록한다. 현행 kind 는 `nest`·`base`·`npc`(상점 점원)·`gate`·`portal` 이라 N01 은 기존 `npc` 를 그대로 쓰고 나머지 NPC 는 새 kind 를 추가한다. 모든 NPC는 머리 위 **아이콘 하나**로 역할을 알린다.
 
 | # | 이름 | 아이콘 | 위치 구역 | 역할 | 상호작용 |
 |---|---|---|---|---|---|
 | N01 | 잡화점 사장 | 🛒 | S1 기지 | 상점 | E키 → 상점 오버레이(기존). 새 품목은 섹터 해금 시 진열 |
 | N02 | 암시장 상인 | 💰 | S1 암시장(기지 옆 골목) | 행성 판매 | 행성을 들고 E → 금화 애니메이션. 행인 군중 속 위장 수호신 섞임(STORY 5.2) |
-| N03 | 정비사 렌치 | 🔧 | S1 기지 격납고 | 이동 수단 수리·업그레이드 | E → 차량 3트랙(속도/연료/적재) 업그레이드 UI. 점프팩 이후 등장 |
+| N03 | 정비사 렌치 | 🔧 | S1 기지 격납고 | 이동 수단 판매·업그레이드 | E → 이동 수단 구매 + 수단별 3트랙(속도/연료/적재) 업그레이드 UI(GAMEPLAY 1.4, ECONOMY 4.3). S2 해금 후 등장(점프팩 구매 창구) |
 | N04 | 정보상 스펙트럼 | 🕶️ | S1 기지 뒷문 | 하이스트 정찰·퀴즈 힌트 판매 | E → 하이스트 지도 아이콘. 힌트 구매 시 보기 1개 지움(코인) |
 | N05 | 교수 케플러 | 🎓 | S1 기지 관측소 | 오답 복습·도감 해설 | E → 틀린 문제 재도전, 정답 시 코인(**일 20회까지**, 7장 #11). 도감 해설 열람 |
 | N06 | 의뢰 게시판 | ❗ | S1 기지 광장 | 의뢰 모아보기 | E → 수락한 의뢰·완료 스탬프 목록(사과 도장 UI). 구역 의뢰인 위치 지도 표시 |
@@ -73,7 +73,7 @@
 
 | ID | 구역 | 의뢰인 | 요구 시퀀스 | 유형 | 보상 | 교육 연결 |
 |---|---|---|---|---|---|---|
-| Q01 | S1 | 📮 | 🌍→📦→🌙 (지구에서 달 포탈로 소포 배달) | 배달 | 🪙20% | 단위/측정: 거리 비교 |
+| Q01 | S1 | 📮 | 🌍→📦→🌙 (지구에서 달 포탈로 소포 배달) | 배달 | 🪙20% | sci1-1-1 단위/측정: 거리 비교 |
 | Q02 | S1 | 📮 | 🪐🔴(화성) 훔치기 → 🔥 색 확인 퀴즈 | 훔치기+❓ | 🪙30% ⭐1 | sci2-1-3 화성 붉은색=산화철 |
 | Q03 | S1 | 📮 | 🌙 중력 6분의 1 → ⬆️ 점프 높이 비교(달에서 점프 3회) | 체험 | 🪙30% 🎁장식 | sci1-3-3 중력 |
 | Q04 | S2 | ⛏️ | 🧪×3 (베스타·팔라스·세레스 샘플) → 🏠 | 수집 | 🪙40% ⭐1 | sci1-2-5 규산염 |
@@ -82,22 +82,22 @@
 | Q07 | S3 | ☢️ | 🌙×4 위성 순서대로 방문 (이오→유로파→가니메데→칼리스토) | 배달 | 🪙50% ⭐2 | sci1-3-3 궤도 |
 | Q08 | S3 | ☢️ | 📷 유로파 얼음 → ❓ ("바다는 추정") | 관측 | 🪙50% | 상태변화, 표현 주의 |
 | Q09 | S4 | 🎣 | 🧊 빙판 위 호버 코스 ➰ → 🐟 | 이동 | 🪙50% 🎁호버 스킨 | 마찰·미끄러짐(체험) |
-| Q10 | S4 | 🎣 | 🪐🪐 토성 훔치기 + ⚖️ 물 위 뜨는 그림 선택 | 훔치기+❓ | 🪙50% ⭐2 | 밀도 개념 |
-| Q11 | S5 | ☄️ | ☄️ 핼리 추격 → 📸 3회 포획 | 추격 | 🪙60% ⭐2 | 승화(상태변화) |
+| Q10 | S4 | 🎣 | 🪐🪐 토성 훔치기 + ⚖️ 물 위 뜨는 그림 선택 | 훔치기+❓ | 🪙50% ⭐2 | sci1-1-2 밀도 개념 |
+| Q11 | S5 | ☄️ | ☄️ 핼리 추격 → 📸 3회 포획 | 추격 | 🪙60% ⭐2 | sci2-1-5 상태 변화(승화) |
 | Q12 | S5 | ☄️ | 🌑 어둠 구간 💡 → 🏠 귀환 | 이동 | 🪙60% 🎁랜턴 | 시야·광원 |
-| Q13 | S5 | 🛠️ | 🔧×3 부품 수집 → 🚀 조립 (S6 진입 퀘스트) | 메인 연결 | 🎁소형 우주선 | 에너지 전환(정성) |
-| Q14 | S6 | 🏘️ | ☀️↔❄️ 조석 고정 마을: 뜨거운 쪽·차가운 쪽 물 🌊 위치 맞히기 | 관측 | 🪙60% ⭐2 | sci2-2 비열·액체 물 |
+| Q13 | S5 | 🛠️ | 🔧×3 부품 수집 → 🚀 조립 (S6 진입 퀘스트) | 메인 연결 | 🎁소형 우주선 **해금**(구매 60,000은 N03 렌치, ECONOMY 4.3) | sci2-2-6 에너지 전환(정성) |
+| Q14 | S6 | 🏘️ | ☀️↔❄️ 조석 고정 마을: 뜨거운 쪽·차가운 쪽 물 🌊 위치 맞히기 | 관측 | 🪙60% ⭐2 | sci2-1-5 상태 변화(액체 물). 비열은 curriculum-units.json 키워드에 없어 출제하지 않음 |
 | Q15 | S6 | 🏘️ | 🪐×3 (트라피스트-1 e·f·g) 중 거주 가능 후보 고르기 | ❓ | 🪙70% | 거주 가능 조건 |
-| Q16 | S7 | 🌱 | 🌑 그림자 ×3 은신 → 🌿 씨앗 배달 | 은신 | 🪙70% ⭐2 | 광합성 |
+| Q16 | S7 | 🌱 | 🌑 그림자 ×3 은신 → 🌿 씨앗 배달 | 은신 | 🪙70% ⭐2 | sci2-1-3 광합성(산화·환원) |
 | Q17 | S7 | 🌱 | 📷 흡수선 그래프 → 대기 성분 고르기 | 관측 | 🪙70% 🎁스펙트럼 도감 | sci1-2-1 스펙트럼 |
-| Q18 | S8 | 🔥 | ⏱️ 열 구역 🔥→🧊 쿨링 포인트 연속 3곳 | 시간제 | 🪙80% 🎁방열 코팅 | 대류·열 이동 |
+| Q18 | S8 | 🔥 | ⏱️ 열 구역 🔥→🧊 쿨링 포인트 연속 3곳 | 시간제 | 🪙80% 🎁방열 코팅 | sci2-1-5 발열·흡열(열 이동은 정성만 — '대류'는 2015 개정 소재라 정답 근거로 쓰지 않음, QUIZ_BANK 7장) |
 | Q19 | S8 | 🔥 | 🪐(WASP-76b) 훔치기 → ❓ 철 비 (관측 시사 수준) ⚠ | 훔치기+❓ | 🪙80% ⭐2 | 산화, CURRICULUM 7.3 |
 | Q20 | S8 | 🔥 | 🏆 2019 노벨상 🔭 → 🪐(페가수스자리 51b) ⚠ | 훔치기+❓ | 🪙90% ⭐3 | 외계행성 탐사 |
 | Q21 | S9 | 🍳 | 🌫️ 안개 길 🧭×3 비콘 점등 | 이동 | 🪙90% ⭐2 | 성운·시야 |
 | Q22 | S9 | 🍳 | 🧂 탄소🔵→철🔴 별 요리 순서 맞추기 | ❓ | 🪙100% 🎁요리 장식 | sci1-2-2 원소 생성 |
 | Q23 | S10 | ⚰️ | ⭐→🌀→💥→💀 별의 일생 순서 배열 | ❓ | 🪙100% ⭐3 | 별의 일생 |
-| Q24 | S10 | ⚰️ | 🌀 워프 포탈 ×4 순회 (🌍까지 귀환) | 이동 | 🪙100% 🎁워프 쿨다운 -10% | 거리 척도(정성) |
-| Q25 | S10 | ⚰️ | 🧲 자기장 구간 조작 교란 💫 통과 → 🪐(펄서 행성) | 이동 | 🪙110% ⭐3 | 전기·자기(정성) |
+| Q24 | S10 | ⚰️ | 🌀 워프 포탈 ×4 순회 (🌍까지 귀환) | 이동 | 🪙100% 🎁워프 쿨다운 -10% | sci1-1-1 거리 척도(정성) |
+| Q25 | S10 | ⚰️ | 🧲 자기장 구간 조작 교란 💫 통과 → 🪐(펄서 행성) | 이동 | 🪙110% ⭐3 | sci2-2-5 전자기 유도(정성) |
 | Q26 | S11 | 🧭 | 🕳️ 중력 파동: 🌊 3번 피해 🪐(밀러) 도달 | 이동 | 🪙110% | 중력 개념 (계산 금지) |
 | Q27 | S11 | 🧭 | ❓ 빛이 못 빠져나오는 그림 고르기 🕳️ | ❓ | 🪙120% ⭐3 | 중력(사실 선택지만) |
 | Q28 | S12 | 🦋 | 🌿→🐛→🦋→🦅 생태 피라미드 순서 | ❓ | 🪙120% | sci2-2-2 생태 피라미드 |
@@ -108,7 +108,7 @@
 
 ### 2.3 설계 메모
 - 퀴즈형(❓·📷)은 **15개** (Q02·Q05·Q08·Q10·Q14·Q15·Q17·Q19·Q20·Q22·Q23·Q27·Q28·Q29·Q30), 이동·시간제·배달 등 비퀴즈형이 15개 — 학습과 액션의 균형.
-- 의뢰마다 **정답 틀려도 재시도 가능**(오답은 `S.notes`로 적재 → 교수 케플러 복습).
+- 의뢰마다 **정답 틀려도 재시도 가능**(오답은 `S.review[문항 id]`로 적재 → 교수 케플러 복습. 기존 `S.notes` 는 `Record<섹터 id, 1>` 구역 안내문 표시 플래그라 충돌하므로 쓰지 않는다 — QUIZ_BANK 6.4).
 - Q13은 S6 진입 조건(CONTENT_PLAN 2장 "우주선 퀘스트")이므로 **필수 의뢰**, 나머지는 선택.
 - 숨김 의뢰는 두지 않는다(무문자 게임에서 발견 난이도가 높음). 대신 N14 방랑 수집가가 하루 1회(로컬 날짜 기준) 보너스 의뢰를 준다.
 
@@ -124,7 +124,7 @@
 | 숨김(수호신 위장물 근처) | 2 | 시선 숨바꼭질과 연동 |
 - 보상(별지기 N07): 구역 5/10/15/20개 달성 시 🎁장식 → 20개 완성 시 도감 해당 구역 보너스 +1%, 구역 칭호 아이콘. 240 전체 달성 시 업적 A22.
 - 감지 힌트: **근접 시 반짝임만** 제공, 레이더·지도 표시 없음(7장 #8 확정).
-- 한 번 먹으면 영구 소실(`S.collectibles.stars[sector]` 비트마스크, 5장).
+- 한 번 먹으면 영구 소실(`S.collectibles.stars[섹터 id]` 비트마스크 — 키는 **섹터 id 문자열**, M5 의 배열 재정렬에도 안전, 5장).
 
 ### 3.2 링 레이스 (12코스)
 링 개수 12~20, 모든 링 통과 + 시간 기록. 메달: 🥉 기준 시간 ×1.5 / 🥈 ×1.2 / 🥇 ×1.0 (기준은 `pacing.ts`에 둠, M7에서 보정).
@@ -140,11 +140,12 @@
 | R07 | S7 쌍성 | 소형 우주선 | 16 | 두 태양 그림자 사이 | 90 |
 | R08 | S8 뜨거운 목성 | 소형 우주선 | 18 | 열기류로 상승 | 100 |
 | R09 | S9 성운 | 소형 우주선 | 18 | 안개, 기둥 사이 | 105 |
-| R10 | S10 초신성 잔해 | 워프+우주선 | 18 | 자기장으로 조작 교란 | 110 |
-| R11 | S11 가르강튀아 | 중력 글라이더 | 20 | 중력 파동 회피 | 120 |
+| R10 | S10 초신성 잔해 | 소형 우주선(`ship`) | 18 | 자기장으로 조작 교란 | 110 |
+| R11 | S11 가르강튀아 | 중력 글라이더(`glider`, H4 클리어 후 구매 가능) | 20 | 중력 파동 회피 | 120 |
 | R12 | S12 판도라 | 글라이더 | 20 | 하늘섬 사이, 야간 발광 링 | 130 |
 
-- 기록은 **업그레이드 단계별로 분리하지 않는다**(7장 #3 확정). 코스마다 이동 수단이 고정이므로 순위판은 **차량 종류별**로 표시하고, 업그레이드로 인한 기록 향상은 보상으로 허용한다.
+- `RaceDef.vehicle` 은 코스당 1개라 R10 은 `ship` 으로 고정한다(워프는 순간이동이라 레이스 수단이 아니고, 워프 해금은 H3 클리어 이후라 "워프+우주선"을 요구하면 R10 이 H3 뒤로 잠긴다). R11·R12 는 글라이더가 H4(S11) 클리어 + 구매 후에만 가능하므로 **R11 은 H4 클리어 전에는 완주할 수 없다** → 레이스 완주 업적(A30·A31)은 H4 이후로 안내하거나 R11 만 우주선 허용(기록은 차량 종류별이라 문제 없음).
+- 기록은 **업그레이드 단계별로 분리하지 않는다**(7장 #3 확정). 코스마다 이동 수단이 고정이므로 순위판은 **차량 종류별**로 표시하고, 업그레이드로 인한 기록 향상은 보상으로 허용한다. 서버 순위판(`/api/score`, `/api/leaderboard`)은 현재 **보드 1개 · `name`→최고 점수(큰 값 우선, Redis `ZADD GT`) · 이름 1~20자 · 점수 ≥0 유한수**뿐이라 코스/차량별 보드를 만들 수 없다 → 서버 확장 전에는 `S.races` 로컬 기록과 로컬 순위판만 구현하고, 서버에 낼 때는 시간이 짧을수록 점수가 커지도록 `score = 1e6 − bestMs` 처럼 뒤집어 제출한다(이름 20자 제한 때문에 `R03·ship·이름` 식 접두어 인코딩도 길이가 모자란다).
 
 ## 4. 업적 50개
 
@@ -183,7 +184,7 @@
 |---|---|---|---|---|---|
 | A17 | 📖 | 도감 시작 | 도감 6종 | 🪙 | 아니오 |
 | A18 | 📚 | 도감 절반 | 도감 40종(80의 50%) | 🪙🎁 | 아니오 |
-| A19 | 🏛️ | 도감 완성 | 도감 80종 100% | 🎁🏷️ | 아니오 |
+| A19 | 🏛️ | 도감 완성 | 도감 80종 100%(분모는 일반 80종 — 특수 행성 id 80~83은 제외, 현행 `dexN()/P.length` 분모와 미션 "도감 완성"(`P.length`)도 같이 고쳐야 함, PLANET_CATALOG 5장) | 🎁🏷️ | 아니오 |
 | A20 | ✨ | 별 줍기 | 별조각 20개 | ⭐ | 아니오 |
 | A21 | 🌠 | 별 부자 | 별조각 120개 | 🎁 | 아니오 |
 | A22 | 🌟 | 별 마스터 | 별조각 240개 전부 | 🎁🏷️ | 아니오 |
@@ -250,7 +251,7 @@ export interface QuestStep {
 }
 export interface QuestDef {
   id: string;                      // 'Q01'..'Q30'
-  sector: number;                  // 0..11
+  sector: string;                  // 섹터 id ('solar'…) — S번호(1~12)나 SECTORS 인덱스는 M5 재정렬로 바뀌므로 id 로 참조(CONTENT_PLAN 2장 매핑표)
   giver: string;                   // NPC id ('N06' 등)
   kinds: QuestKind[];
   steps: QuestStep[];              // 순서대로 진행
@@ -265,24 +266,27 @@ export interface AchDef {
   name: string;                    // 짧은 이름 (<= 8자)
   hidden: boolean;
   reward: { coinPct?: number; stars?: number; item?: string; title?: string }; // item = 기존 장식 시스템의 아이템 id (별도 cosmetics 없음)
-  check: (s: SaveV6) => number;    // 현재 진행값
+  check: (s: SaveState) => number; // 현재 진행값 (v6 에서 SaveState 에 아래 필드를 합친다)
   goal: number;                    // check() >= goal 이면 달성
 }
 export interface RaceDef {
   id: string;                      // 'R01'..'R12'
-  sector: number;
-  vehicle: 'foot' | 'jetpack' | 'hover' | 'ship' | 'warp' | 'glider';
+  sector: string;                  // 섹터 id
+  vehicle: 'walk' | 'jetpack' | 'hoverboard' | 'ship' | 'warp' | 'glider'; // GAMEPLAY 5장 VehicleDef.id 와 동일
   rings: [number, number, number][]; // 월드 좌표
   goldSec: number;
 }
 ```
 
 ```ts
-// core/save-schema.ts — 세이브 v6 추가 필드
+// core/save-schema.ts — 세이브 v6 추가 필드 (types.ts 의 SaveState 에 합쳐 선언한다. 아래 SaveV6 는 변경분만 보이기 위한 별칭)
+// ⚠ 현행 v5 SaveState: quests/ach/coins/vehicles/heists: Record<string, number>, collectibles: Record<string, 1>, playSec: number.
+//   아래 quests·ach·collectibles 는 **모양이 다른 객체**이므로 단순 필드 추가가 아니다 → STEPS[5] 가 반드시 덮어써야 한다
+//   (migrate() 의 "없는 필드만 defaults 로 채움" 규칙은 v5 의 빈 `{}` 를 그대로 두어 `S.quests.active` 가 undefined 가 된다).
 export interface SaveV6 {
   ver: 6;
   // ...기존 v5 필드 유지...
-  story: { beat: number; seen: Record<string, boolean> };       // STORY 7.1
+  story: { beat: number; seen: Record<string, 0 | 1>; ended?: 0 | 1; hints?: Record<string, 0 | 1> }; // STORY 7.1 + UX_CUTSCENE 2·5장(seen 은 0|1, ended, hints)
 
   quests: {
     active: Record<string, { step: number; progress: number; startedAt: number }>;
@@ -291,7 +295,7 @@ export interface SaveV6 {
   };
 
   collectibles: {
-    stars: Record<number, number>;               // sectorId -> 20비트 마스크(획득한 별)
+    stars: Record<string, number>;               // 섹터 id -> 20비트 마스크(획득한 별)
     starsSpent: number;                          // 별지기에서 교환한 수
   };
 
@@ -301,7 +305,7 @@ export interface SaveV6 {
     got: Record<string, number>;                 // 업적 id -> 달성 playSec
     equippedTitle: string | null;                // 머리 위에 표시할 칭호 이모지 1개
     counters: {                                  // 누적형 업적용 카운터
-      stolenTotal: number;
+      // 누적 훔침 수는 기존 S.stolen 을 그대로 쓴다(A10·A11) — 중복 카운터를 두지 않음
       quizStreak: number; quizStreakBest: number;
       reviewCount: number;
       watcherLooks: number;                      // 시선 수호신 숨김 횟수
@@ -309,26 +313,28 @@ export interface SaveV6 {
       warpUses: number;
       wandererQuests: number;
       perfectDoors: number;
-      noHitSector: Record<number, boolean>;      // 섹터별 무피격 유지 여부
+      noHitSector: Record<string, boolean>;      // 섹터 id별 무피격 유지 여부
       slowSteals: number;
     };
   };
 
   npc: {
     spoke: Record<string, boolean>;              // 첫 대화 연출 1회성
-    wandererSector: number;                      // N14 현재 위치
-    wandererDay: number;                         // 마지막 변경 일자(로컬 날짜 YYYYMMDD)
-    reviewDaily: { day: number; n: number };     // 케플러 복습 보상 일일 카운트(YYYYMMDD, 한도 20)
+    wandererSector: string;                      // N14 현재 위치(섹터 id)
+    wandererDay: number;                         // 마지막 변경 일자 = 로컬 날짜의 epoch-day 정수(YYYYMMDD 정수는 "7일 경과"를 뺄셈으로 못 구한다)
+    reviewDaily: { day: number; n: number };     // 케플러 복습 보상 일일 카운트(같은 epoch-day, 한도 20)
   };
 
   home?: { owned: ('tent' | 'cabin' | 'space' | 'castle')[]; sprout: boolean };
-  playSec: number;                               // 기존
+  ui?: { seen: Record<string, 0 | 1> };           // UX_CUTSCENE 10.2 규칙 1(HUD 점진 공개 플래그). 기존 v5 세이브는 마이그레이션 때 전부 켠 값으로 채운다
+  review: Record<string, { miss: number; box: number; last: number }>; // 오답 복습 목록(QUIZ_BANK 6.3~6.4, 상한 60개)
+  playSec: number;                               // 기존 필드지만 **현재 어디서도 증가시키지 않는다**(grep: save-schema/types 선언뿐) — A50·`quests.done` 시각이 쓰므로 loop.ts 에서 `S.playSec += dt` (일시정지 제외) 추가 필요
 }
 ```
 
-- **마이그레이션**: v5 → v6에서 `quests: {active:{},done:{},failed:{}}`, `collectibles.stars = {}`, `races = {}`, `ach = {got:{}, equippedTitle:null, counters:{...0}}`, `npc.reviewDaily = {day:0, n:0}`로 초기화. 기존 `S.mi`(미션 진행)는 유지하고, 도감·`S.stolen`으로 일부 업적(A09, A17)을 **소급 달성**시킨다.
+- **마이그레이션**: `STEPS[5]` 에서 v5 의 빈 맵을 새 모양으로 **교체**한다 — `quests = {active:{},done:{},failed:{}}`, `collectibles = {stars:{}, starsSpent:0}`(v5 `collectibles` 는 `Record<string, 1>` 빈 맵), `races = {}`, `ach = {got:{}, equippedTitle:null, counters:{...0}}`, `npc = {spoke:{}, wandererSector:…, wandererDay:0, reviewDaily:{day:0, n:0}}`, `review = {}`, `story = {beat:0, seen:{}}`. 단, v5 에서 이 필드에 이미 값이 들어 있는 세이브(개발 중 수동 주입 등)가 있으면 `typeof v === 'object' && !Array.isArray(v) && 'active' in v` 로 모양을 검사해 보존한다. 기존 `S.mi`(미션 진행)는 유지하고, 도감·`S.stolen`으로 일부 업적(A09, A17)을 **소급 달성**시킨다.
 - 업적 달성 판정은 미션처럼 매 프레임이 아니라 **이벤트 훅**(훔침·퀴즈·획득 시)에서만 `checkAch()`를 부른다(성능).
-- 세이브 용량: 별조각 마스크 12개 + 소량 카운터 → 1KB 미만 증가 예상.
+- 세이브 용량: 최악(업적 50·의뢰 30 완료·레이스 12·복습 60·집 4 모두 채움) 직접 직렬화하면 v6 신규 필드가 **약 8KB**(QUESTS 계열 ≈5KB + `review` 60개 ≈2.7KB), 전체 세이브 약 12KB 로 서버 PUT 상한 256KB 의 약 5% 다. 클라이언트 `queueRemoteSave` 는 상한을 `json.length`(UTF-16 코드 단위)로 재고 서버는 본문 **바이트**(`req.body.size()`)로 재므로 한글·이모지 문자열이 늘면 둘이 어긋난다 — 칭호 이모지 외에는 id·숫자만 저장하는 현재 규칙을 유지한다. 서버(`handlers.cpp`)는 본문이 JSON 객체이고 ≤256KB 이면 필드 구성을 검사하지 않고 저장하므로 새 필드가 거부될 일은 없다.
 
 ## 6. 마일스톤별 QA 체크리스트와 수용 기준
 

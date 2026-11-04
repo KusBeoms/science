@@ -16,20 +16,21 @@
 | 티어 `S.vehicle` | 수단 | 해금 조건 | 속도 배율 `speedMul` | `hover()` | 핵심 효과 | 소모 자원 |
 |---|---|---|---|---|---|---|
 | 0 | 걷기 | 시작 | ×1.0 | false | 현행(스태미나 달리기 ×1.7) | 스태미나 |
-| 1 | 점프팩 | S2 퀘스트(렌치의 부품 3개 수집) + 구매 | ×1.0 | 홀드 중만 true | 2단 점프, Space 길게 = 짧은 호버(최대 2.0초) | 연료 |
+| 1 | 점프팩 | S2 해금 + 렌치 구매(전용 퀘스트 없음 — QUESTS에 점프팩 퀘스트가 없다) | ×1.0 | 홀드 중만 true | 2단 점프, Space 길게 = 짧은 호버(최대 2.0초) | 연료 |
 | 2 | 호버보드 | S4 진입 + 렌치 구매 + 점프팩 보유 | ×2.2 (지상) | false | 빙판 마찰 무시, 강풍 저항, 허공은 못 건넘(낙하 → `respawn()`) | 연료(부스트만) |
-| 3 | 소형 우주선 | S6 우주선 퀘스트 + 구매 | 순항 ×3.0 / 부스트 ×4.5 | **true** | 고도 6~40, **허공 횡단**, 섹터 간 직선 이동 | 연료 |
-| 4 | 워프 드라이브 | H3(S10) 클리어 보상 "워프 코어" 장착 | 우주선과 동일 | 우주선과 동일 | 방문한 포탈로 즉시 이동(기존 포탈 UI 재사용) + 허공 중간 워프 불가 | 워프 충전 1칸(쿨다운 90초만, 충전 아이템 없음 ✅ 결정 10) |
-| 5 | 중력 글라이더 | H4(S11) 클리어 보상 | 순항 ×3.4 | **true** | 강중력(×1.4 이상)·시간 지연 구역에서 우주선의 페널티 제거 | 연료 |
+| 3 | 소형 우주선 | Q13(우주선 퀘스트, S5 N09 — QUESTS 2.2) 완료로 해금 + 렌치 구매(60,000, ECONOMY 4.3) | 순항 ×3.0 / 부스트 ×4.5 | **true** | 고도 6~40, **허공 횡단**, 섹터 간 직선 이동 | 연료 |
+| 4 | 워프 드라이브 | H3(S10) 클리어 보상 "워프 코어"로 **해금** + 렌치 구매(250,000, ECONOMY 4.3 — S10 진입 조건이 아니라 H3 이후 구매) | 우주선과 동일 | 우주선과 동일 | 방문한 포탈로 즉시 이동(기존 포탈 UI 재사용) + 허공 중간 워프 불가 | 워프 충전 1칸(쿨다운 90초만, 충전 아이템 없음 ✅ 결정 10) |
+| 5 | 중력 글라이더 | H4(S11) 클리어 보상으로 **해금** + 렌치 구매(400,000, ECONOMY 4.3) | 순항 ×3.4 | **true** | 강중력(×1.4 이상)·시간 지연 구역에서 우주선의 페널티 제거 | 연료 |
 
 - **누적 규칙**: 상위 티어를 얻어도 하위 수단은 유지, 장착 선택 가능(`vehicles.eq`). `S.vehicle` = 보유 최고 티어(섹터 `requires.vehicle` 판정용).
-- **섹터 `requires.vehicle` 정렬**: CLIENT.md 표는 `이동 수단 1/2/3`으로 쓰고 있다. 티어 숫자를 `requires.vehicle`에 **직접 사용**한다(✅ 결정 2). 즉 7·8·9 → 1, 10·11 → 2, 12 → 3으로 읽힌다. **하이스트 보상 티어(4, 5)는 섹터 조건에 쓰지 않는다**(편의 수단이지 필수 관문이 아님).
+- **섹터 `requires.vehicle` 정렬**: 티어 숫자를 `requires.vehicle`에 **직접 사용**한다(✅ 결정 2). 다만 CONTENT_PLAN 2장의 최종 해금 조건표에서 이동 수단이 걸리는 곳은 **S6 하나**(`vehicle: 3` = 우주선 보유 = Q13 완료 + 구매)뿐이다. 현행 `data/sectors.ts` 의 `requires.vehicle`(적색왜성 1 · 초신성 1 · 성운 1 · 펄서 2 · 중성자별 2 · 에드먼즈 3)은 M5 재배치 전의 **임시값**이라 M5 에서 CONTENT_PLAN 표로 교체한다. S7 이후는 어차피 티어 3을 보유하므로 vehicle 조건을 달지 않는다. **하이스트 보상 티어(4, 5)는 섹터 조건에 쓰지 않는다**(편의 수단이지 필수 관문이 아님).
 - **우주선 제약(밸런스)**:
-  - 강중력 섹터(`gravityMul ≥ 1.4`, S10·S11): 순항 ×2.2, 연료 소모 ×2, 최대 고도 20. 글라이더는 제한 없음.
+  - 강중력/시간 지연 섹터(`gravityMul ≥ 1.4` **또는** `timeMul ≥ 3`, S10·S11): 순항 ×2.2, 연료 소모 ×2, 최대 고도 20. 글라이더는 제한 없음. ⚠ 현행 `sectors.ts` 의 `gargantua`(S11)는 `gravityMul`이 기본값 1이고 `timeMul: 3`뿐이며(중력 1.4 이상은 `pulsar` 1.4 · `neutron` 1.8), S10 `supernova` 로 흡수될 때 어느 값을 물려받을지도 미정이다 → M5 에서 S10 `gravityMul 1.4`, S11 `gravityMul 1.4`(중력 파동 연출용)를 데이터로 부여하거나 위 OR 조건을 판정식으로 채택한다.
   - **잠긴 섹터 위는 못 난다**: `blockedAt` 벽은 비행에도 적용(고도 무관 투명 벽, 닿으면 튕김 + 잠금 아이콘 깜빡). 문 시험을 우회 불가.
   - 들고 있는 행성이 있으면 속도 페널티 `1 + ve/220`은 우주선에서 **절반**만 적용(배달 보상).
   - 비행 중 행성 훔치기/내려놓기 불가 — 착륙(`V`) 후에만 상호작용(수호자와 거리 두고 훔치는 "착륙 → 훔치기 → 이륙" 리듬 유도).
-- **업그레이드**(상점 sink, 렌치): `spd`(속도 +5%/Lv, 최대 Lv5), `fuel`(연료 통 +20%/Lv), `cargo`(비행 중 운반 가능 칸 수 +1, 최대 Lv3). 가격은 `pacing.ts`.
+- **업그레이드**(상점 sink, 렌치): **수단별** 3트랙 × 3단계(ECONOMY 4.3: 가격 = 수단 가격 × 0.03/0.06/0.11, 트랙당 0.2P). `spd`(속도 +5%/Lv, **최대 Lv3**), `fuel`(연료 통 +20%/Lv, 최대 Lv3), `cargo`(비행 중 운반 가능 칸 수 +1, 최대 Lv3). 워프(티어 4)는 연료가 없으므로 `fuel` 트랙 = **워프 쿨다운 −10%/Lv**(QUESTS Q24 보상 "워프 쿨다운 −10%"와 같은 척도). 점프팩·호버보드의 `cargo`는 해당 없음이면 구매 목록에서 숨긴다. 가격은 `pacing.ts`(`VEHICLE_UPG`).
+- 비행 중 운반 칸 수는 `cap()`(`1 + S.bag`)과 별개로 우주선 `cargo` Lv을 **더한다**: `capNow = cap() + (탑승 중 ? cargoLv : 0)`. 현행 `cap()` 은 `core/state.ts` 한 줄이라 시스템 훅(`capBonus?(): number`)으로 더하는 것이 안전하다(5.1).
 
 ### 1.2 조작
 | 동작 | PC | 모바일(아이콘 버튼) |
@@ -42,7 +43,7 @@
 | 워프(티어4) | 포탈 패드 없이 `G` → 포탈 목록 오버레이 | 🌀 버튼 |
 
 - 탑승 중에는 **스태미나 달리기 비활성**(배율 이중 곱 방지). 점프팩은 지상 달리기 가능(속도 ×1.0이므로).
-- 키는 `V`/`C`/`G`로 확정(✅ 결정 3). 구현 단계에서 `input.ts` 충돌 점검 후 충돌 시에만 대체 키를 배정한다. 모바일 비행 버튼은 **우하단 세로 배치**.
+- 키는 `V`/`C`/`G`로 확정(✅ 결정 3). `systems/input.ts` 점검 결과 현재 쓰는 키는 `E`·`F`·`B`(도감)·`Space`·`Shift`·`W A S D`·방향키·`Enter`·`Esc`·퀴즈 중 `Digit1~4` 뿐이라 `V/C/G` 는 비어 있다(충돌 없음). 키 처리는 `G.keys[e.code]` 맵에 `KeyV`/`KeyC`/`KeyG` 로 들어오며, 일회성 동작(탑승 토글·워프 목록)은 keydown 에서 `act()` 처럼 별도 분기가 필요하다(현재 `E`/`F`/`B` 만 keydown 분기). 모바일 비행 버튼은 **우하단 세로 배치**.
 
 ### 1.3 연출 (글 없음)
 - **탑승**: 0.4초 소환 이펙트(바닥에 원형 파동 → 기체가 캐릭터 아래에서 펼쳐짐). 하차는 역재생.
@@ -51,10 +52,10 @@
 - **우주선**: 이륙 시 카메라 거리 +30%·FOV 상승, 속도선(streak) 파티클. 고도계는 숫자 없이 **지면 그림자 크기**와 우측 세로 막대(고도 위치 점).
 - **연료 부족**: 게이지가 비면 붉은 깜빡임 + 경고음 3회 → 강제 하강(우주선은 활강 속도 ×0.6로 가장 가까운 지면으로 자동 조향). **허공 위에서 연료가 다 떨어지면** 활강으로 지면에 닿지 못하면 `respawn()`(돈 손실 없음, 행성 제자리).
 - **워프**: 화면 가운데로 빨려드는 줄무늬 0.6초 → 도착 지점에서 역재생. 쿨다운은 🌀 아이콘이 시계 방향으로 채워짐.
-- **정비사 렌치(NPC)**: 머리 위 🔧 아이콘, 구매는 기존 상점 UI(품목명·가격만 글). 부품 퀘스트는 아이콘 요구 3개(⚙⚙⚙)가 칸에 채워지는 방식.
+- **정비사 렌치(NPC, QUESTS N03)**: 머리 위 🔧 아이콘, 구매는 기존 상점 UI(품목명·가격만 글). 부품 수집은 우주선 퀘스트 **Q13**(S5 우주선 수리공 N09, 🔧×3)이며 아이콘 요구 3개(⚙⚙⚙)가 칸에 채워지는 방식. 점프팩·호버보드는 퀘스트 없이 렌치에서 구매.
 
 ### 1.4 상태 `S.vehicle` / `S.vehicles` / 런타임
-- 저장: `S.vehicle`(보유 최고 티어, 숫자), `S.vehicles`(맵: `own1..own5`=보유 1, `eq`=장착 티어, `spd/fuel/cargo`=업그레이드 Lv, `warp`=워프 마지막 사용 시각의 분 단위 절대값이 아니라 **0/1 충전 여부**).
+- 저장: `S.vehicle`(보유 최고 티어, 숫자), `S.vehicles`(`Record<string, number>`, 희소 맵 — 기본값 `{}`: `own1..own5`=보유 1, `eq`=장착 티어, `up{티어}{s|f|c}`=수단별 업그레이드 Lv(속도/연료/적재, 예 `up3f`; 1.1 업그레이드는 ECONOMY 4.3 에 따라 **수단별**이라 전역 `spd/fuel/cargo` 3개로는 표현 불가), `warp`=**0/1 충전 여부**(시각을 저장하지 않으므로 재접속하면 항상 충전 상태 — 쿨다운 90초는 비저장 `warpCd`)). `S.vehicle` 은 `own*` 에서 파생되는 값이므로 `onSave` 에서 `max(own 티어)` 로 재계산해 불일치를 막는다.
 - 런타임(비저장): `mounted`, `fuel`(0~100), `alt`(우주선 고도), `warpCd`(초), `boosting`.
 - 로드 시: 항상 **하차 상태**로 시작, 연료 가득(저장 복원이 어색한 위치 문제 방지).
 ---
@@ -63,7 +64,7 @@
 ### 2.1 모델
 - `S.wanted` = **열기(heat) 0~500의 정수**. 별 수 `stars = ceil(heat / 100)` (0이면 0성). 숫자 구간으로 저장해 시간 경과 감쇠를 연속 처리하고, UI는 별(눈) 단계만 보인다.
 - 상승은 이벤트 가산, 하락은 초당 감쇠 + 특수 행동. 하이스트·보스는 **하한(floor)** 을 걸어 내려가지 않게 한다.
-- 잡힘(`caught()`) 손실률: 기존 5%/15% × `(1 + 0.25 × stars)`, 상한 40%. 잡히면 열기는 **한 단계 내려간다**(`heat = max(0, (stars-1)*100)`)가 하이스트 중이면 하한 유지.
+- 잡힘(`caught()`) 손실률: 기존 5%/15%(현행 `actions.ts`: 빈손 5%, 행성 소지 15%) × `(1 + 0.25 × stars)`, 상한 40%. 현 수치로는 최대 15% × 2.25 = **33.75%** 라 상한 40%는 도달하지 않는 안전장치일 뿐이다. 잡히면 열기는 **한 단계 내려간다**(`heat = max(floor, (stars-1)*100)`, ★1 이하에서 잡히면 0). 하이스트 하한(`floor`)은 ★3 = 201 · ★4 = 301 · ★5 = 401(= 해당 별의 최소 열기)이고, 하이스트가 일시 중지(구역 이탈)되거나 끝나면 0 으로 푼다.
 
 ### 2.2 단계별 규칙 표
 | 별 | 열기 구간 | 상승 조건 | 하락 조건 | 수호신/적 반응 | 시각 표현 |
@@ -81,7 +82,7 @@
 - **라이벌 침입**(`rival`)과 독립. 라이벌을 막으면 열기 -30(작은 보상, 선택).
 
 ### 2.3 HUD 레이아웃
-- 좌상단 `#lines`에 **눈 아이콘 줄**(`wantedSystem.hud()`): 5칸 눈꺼풀 막대. 칸 수 = 별 수, 아이콘 내부 홍채 크기 = 구간 내 열기 비율(다음 별까지 얼마나 남았는지).
+- 좌상단 `#lines`에 **눈 아이콘 줄**(`wantedSystem.hud()`): 5칸 눈꺼풀 막대. 칸 수 = 별 수, 아이콘 내부 홍채 크기 = 구간 내 열기 비율(다음 별까지 얼마나 남았는지). ⚠ 현행 `hud(): string | null` 은 `renderHudLines()` 가 `#lines.textContent` 에 문자열을 합쳐 넣으므로(`game/hud.ts`) **이모지·기호 문자열만** 표현할 수 있다(👁️👁️○○○ 수준). 홍채 크기·눈 모양 애니메이션·SVG 게이지는 불가 → UX_CUTSCENE 10.3.2 가 제안한 `hud()` 반환형 `HudWidget{slot, priority, icons[], fill?}`(문자열 줄 폐지)로 확장해야 한다(5.1). 문자열 방식으로 갈 경우 단계 구분은 이모지 개수(👁️ 칸 수)로만 한다.
 - 하락 중이면 눈이 **서서히 감기는 애니메이션**, 상승 시 번쩍 + 소리. 기지 위에서는 눈에 🏠 배지.
 - 접근성: 별마다 **눈 모양이 달라진다**(반개 → 전개 → 충혈선 → 불꽃 눈동자) — 색을 못 봐도 모양으로 구분.
 ---
@@ -90,12 +91,13 @@
 ### 3.1 공통 구조
 - **4단계**: 정찰 → 잠입 → 연속 퀴즈 금고 → 탈출 추격. 각 단계 약 3분, 합계 **약 12분**(**이동 제외 순수 플레이**, ✅ 결정 12. 구역까지의 이동은 각 구역 수단으로 별도).
 - **시작**: 구역 안 **정보상 NPC**(머리 위 🕶)에게 말을 걸면 시작. 정보상은 아이콘 지도(핀 3개)만 보여준다.
+- **임시 보호 장비(H1·H2)**: H1(방사선)·H2(고온)는 그 구역 환경이 방호복/방열복 1등급을 요구하지만 1등급은 클리어 보상(ECONOMY 4.4)이므로, 정보상이 정찰 단계 시작 때 **하이스트 전용 임시 보호 게이지**를 지급하고 클리어 시 영구 1등급으로 전환한다. 이 장치가 없으면 "보상으로 받는 장비가 있어야 시작할 수 있는" 순환이 생긴다.
 - **정찰**: 월드 위 핀 3개(🔍)를 모두 방문(근접 3m + E). 순서 무관. 핀마다 간단한 관찰 과제(경비 패턴을 눈으로 보기)가 있어 **잠입 시 경로 힌트**가 된다(다음 단계의 안전 경로 표시 선이 부분 노출).
 - **잠입**: 하이스트 전용 구역(`HeistZone`, 구역 안의 사각형)에 진입. 열기 하한 ★3(H6는 ★4).
 - **금고**: 잠금 3개. 잠금마다 퀴즈 1문(연속 3문). 오답 1회 = 경보(열기 +100, 경비 증원 1) 후 같은 잠금에서 다른 문제 재시도, 오답 **누적 3회 = 락다운**(✅ 결정 9: 3회 확정, `pacing.ts`의 `maxWrong`로 조정 가능)(금고 닫힘, 탈출 단계 강제 시작 + 전리품 없음, "실패" 처리 → 3.8).
 - **탈출**: 금고에서 가져온 보상 오브젝트(빛나는 상자)를 들고(운반 규칙은 행성과 같음 → 속도 페널티) **출구 마커(🚪)** 까지 가야 한다. 열기 ★4, 추격 연출.
-- **퀴즈 연동**: `QuizCtx`에 `heist: id` 컨텍스트를 추가해 기존 퀴즈 UI 재사용. 문제는 `GQU` 중 해당 `units` 태그에서 뽑되 **이미지 문제 우선**(STORY 10장), 해설 1문장. 정답 시 자물쇠가 풀리는 애니메이션(열쇠 구멍 모양이 문제 주제와 연관된 도형).
-- **보상**: 1회성 보상(최초 클리어) + 재도전 모드 보상(코인 `S.coins` 소량 + 하이스트별 수집품 1개(`collectibles`, M6와 함께 활성), 도감 진행 없음)(✅ 결정 11).
+- **퀴즈 연동**: `QuizCtx`에 `heist: id` 컨텍스트를 추가해 기존 퀴즈 UI 재사용. 문제는 `GQU` 중 해당 `units` 태그에서 뽑되 **이미지 문제 우선**(STORY 10장), 해설 1문장. 정답 시 자물쇠가 풀리는 애니메이션(열쇠 구멍 모양이 문제 주제와 연관된 도형). ⚠ 현행 `openQuiz` 로는 부족한 점 3가지: ① `QuizCtx` 는 **끝날 때 한 번** `onDone(ok)`만 부르고(`need` 개 이상 맞히면 ok) 문항별 콜백이 없어 "오답 1회 = 경보·다른 문제 재시도"를 표현할 수 없다 → `onAnswer?(ok: boolean, i: number)` 와 `retry?: () => string[]`(같은 잠금에서 새 문제) 필요. ② `closeQuiz(false)`(✕/Esc)는 "한 문제라도 답했으면 결과를 반영"하므로 금고 퀴즈에서는 닫기를 **오답 1회로 간주**하거나 닫기 불가로 해야 경보를 회피하지 못한다. ③ 문제 행이 `string[]`(`[문제, 정답, 오답×3, 해설]`)뿐이라 이미지 문제(`img`, QUIZ_BANK 1장)를 실을 자리가 없다 → `QuizCtx.qs` 를 `QuizRow = string[] & {img?: …}` 같은 확장형으로 바꾸는 것이 `heist` 필드보다 먼저다.
+- **보상**: 1회성 보상(최초 클리어) + 재도전 모드 보상(코인 소량 + 하이스트별 수집품 1개(`S.collectibles`, M6와 함께 활성), 도감 진행 없음)(✅ 결정 11). "코인" = `S.cr` 에 가산하는 금화(금액은 ECONOMY의 구역 평균 행성 가격 %, QUESTS 2.1과 같은 척도)다. 기존 `S.coins`(`Record<string, number>`)는 키 규약이 없는 빈 맵이므로 통화로 쓰지 않는다(필요하면 `S.coins['H1r']`처럼 재도전 수령 기록 용도).
 - **세이브 체크포인트**: `S.heists[id]`(진행도) — 3.8 참고.
 
 ### 3.2 H1 — 목성 방사선 터널 (S3 · `jovian`)
@@ -105,9 +107,9 @@
 | 구역 | 목성계 S3(`jovian`), 위성 사이의 터널형 구간(길쭉한 `HeistZone`) |
 | 단계 | ① 정찰 핀 3개(터널 입구·중간 점검구·금고 문)에서 방사선 파동 주기 관찰 ② 잠입: 터널을 파동 사이 틈으로 통과(방사선 구간 = 회전 부채꼴, 닿으면 화면 흰 번쩍 + 속도 ×0.5, 3초 누적 시 `caught`) ③ 금고 3문 ④ 탈출: 같은 터널을 역주행, 파동 속도 +30% + 수호자 추격 |
 | 위험요소 | 회전 방사선 부채꼴, 방호복 게이지(시간제 피해), 점프팩으로만 오르는 단차 |
-| 퀴즈 | 중력·궤도: 위성 궤도 그림 고르기, 케플러 법칙 그림(속도↔거리 선택) |
+| 퀴즈 | 중력·궤도(`sci1-3-3`): 위성 궤도 그림 고르기, "궤도 = 낙하" 그림(ISS 무중력 느낌) — **케플러 법칙은 교육과정 밖이라 출제 금지**(CURRICULUM 8.4, QUIZ_BANK 4.3) |
 | 필요 이동 수단 | 점프팩(티어 1) |
-| 보상 | 방호복 업그레이드(방사선 면역 시간 +50%), 최초 클리어 코인 |
+| 보상 | 방호복 **1등급 지급**(방사선 면역 시간 +50%; ECONOMY 4.4 — 이후 2·3등급만 구매), 최초 클리어 코인 |
 
 ### 3.3 H2 — 뜨거운 비 속의 금고 (S8 · `hotjup`)
 | 항목 | 내용 |
@@ -118,7 +120,7 @@
 | 위험요소 | 뜨거운 비(시간제 피해), 증발 구름(시야), 미끄러운 젖은 바닥(호버보드 유리) |
 | 퀴즈 | 산화·상태 변화: 얼음→물→수증기 순서 카드, 열 이동 그림 |
 | 필요 이동 수단 | 호버보드(티어 2) 권장(필수 아님: 걸어서도 가능하나 제한 시간 빡빡) |
-| 보상 | 방열복, 유니크 행성 1종("증발하지 않는 유리 행성" 가칭, ✅ 결정 5: M5 행성 80종 확정 시 `hotjup` 행성 중 하나를 배정, 그 전까지 가칭 유지) |
+| 보상 | 방열복 **1등급 지급**(ECONOMY 4.4 — 이후 2·3등급만 구매), 유니크 행성 1종("증발하지 않는 유리 행성" 가칭, ✅ 결정 5: M5 행성 80종 확정 시 `hotjup` 행성 중 하나를 배정, 그 전까지 가칭 유지 — PLANET_CATALOG S8 후보: HD 189733b "유리 비") |
 
 ### 3.4 H3 — 펄서의 심장 (S10 · `supernova`)
 | 항목 | 내용 |
@@ -138,7 +140,7 @@
 | 구역 | 가르강튀아 S11(`gargantua`), 블랙홀 + 고리형 플랫폼 |
 | 단계 | ① 정찰: 고리 회전 방향·속도를 핀에서 관찰 ② 잠입: 회전하는 고리 플랫폼을 건너뜀(타이밍 점프), 가장자리에서 **중력 파동**(주기적 끌림), 구역 내 `timeMul ×3`이라 기지 수익은 빠르지만 하이스트 타이머도 빠르게 흐르는 연출 ③ 금고: 중력 개념 퀴즈 ④ 탈출: 고리가 빨라지고 파동 강해짐 |
 | 위험요소 | 회전 플랫폼, 중력 파동(밀림 벡터), 낙하 = `respawn()` |
-| 퀴즈 | 중력 개념: 질량·거리에 따른 힘 크기 그래프 고르기, 탈출 속도 그림 |
+| 퀴즈 | 중력 개념(`sci1-3-3`, QUIZ_BANK `alsoZones:[11]`): 행성별 중력 가속도 g 비교 그림, "중력을 이겨야 벗어난다"는 **개념** 그림 고르기. 거리 제곱 반비례 그래프·탈출 속도 공식·시간 지연 계산은 교육과정 밖이라 금지(CURRICULUM 6.1·8.4, QUIZ_BANK 4.3) |
 | 필요 이동 수단 | 우주선(티어 3) — 우주선은 강중력 페널티를 받으므로 **불편함 자체가 보상 동기** |
 | 보상 | **중력 글라이더(티어 5)** |
 
@@ -158,16 +160,18 @@
 |---|---|
 | 목표 | 3연 행성 둥지(`kind: 'triple'`)에서 3개를 한 번에 훔쳐 기지에 도착 |
 | 구역 | 마지막 섹터 S12 `alpha`(STORY 9장), 삼연 둥지 구역 |
-| 단계 | ① 정찰: 전용 가방 확인(요구: 운반 `cap ≥ 3` — 선행 가방 업그레이드) + 경로 핀 3개 ② 잠입: 둥지까지 접근. 열기 하한 ★4, 하이스트 최종 구역은 이전 하이스트 장치(빔·회전·시선) **혼합** ③ 금고 대신 **연속 퀴즈 3문**(에너지 종합, 잠금 3개) — 정답마다 3개 행성 중 하나가 둥지에서 풀림 ④ 탈출: **전용 추격전**(수호자 속도 배수, 사령관 ★5), 성공 조건 = 기지 도착 |
+| 단계 | ① 정찰: 전용 가방 확인(요구: 운반 `cap ≥ 3` — 선행 가방 업그레이드) + 경로 핀 3개 ② 잠입: 둥지까지 접근. 열기 하한 ★4, 하이스트 최종 구역은 이전 하이스트 장치(빔·회전·시선) **혼합** ③ 금고 대신 **연속 퀴즈 3문**(에너지 종합, 잠금 3개) — 정답마다 둥지 잠금 1개씩 풀리고, **3번째 잠금이 풀리는 순간 3개 행성이 한꺼번에 풀리며 STORY 비트 6(추격전 컷신) 발동, 열기 ★5로 점프** ④ 탈출: **전용 추격전**(수호자 속도 배수, 사령관 ★5), 성공 조건 = **S12 포탈 패드를 통과해 허브 기지에 도착**(STORY 5.4 — 이 포탈만 하이스트 포탈 차단의 예외로 열린다) |
 | 위험요소 | 모든 위험 혼합, 추격 중 장애물 연출(STORY 5.4), 사령관 순간이동 |
 | 퀴즈 | 에너지 종합(핵융합·발전·보존) 이미지 문제 위주 |
 | 필요 이동 수단 | 우주선 이상 권장, 추격 중엔 **하차 불가**(기체 고정) |
-| 보상 | 스토리 진행: `S.story.beat` +1(추격 → 기지 도착 비트로 컷신 연결). 행성 3개는 컷신 후 STORY 규칙대로 처리 |
+| 보상 | 스토리 진행: `S.story.beat` 5 → 6(3번째 잠금 해제 = 추격 개시 컷신 C06) → 7(S12 포탈 패드 통과·허브 도착 = C07 "안전 확보"). 행성 3개는 컷신 후 STORY 규칙대로 처리(기지에 놓이고 암시장 판매는 비트 8) |
 
 ### 3.8 실패 / 재시도 규칙
 | 상황 | 처리 | 진행 보존 |
 |---|---|---|
-| 정찰·잠입 중 `caught()` | 기지로 복귀, 기존 돈 손실 규칙 적용 | 정찰 완료 상태 유지(핀 재방문 불필요) |
+| 정찰·잠입 중 `caught()` | 기지로 복귀, 기존 돈 손실 규칙 적용 | 정찰 완료 상태 유지(핀 재방문 불필요). 정찰 중 잡히면 방문한 핀(`HeistRuntime.pins` 비트마스크)은 유지하고 진행도는 0 그대로 |
+| 금고 퀴즈 중 `caught()`(경보로 증원이 온 경우) | 기지로 복귀 | 진행도를 잠입 완료(2)로 되돌림, 열린 잠금·누적 오답은 초기화(4.3의 `Vault → Infiltrating`) |
+| 락다운 후 탈출 중 `caught()` | 기지로 복귀(전리품이 없으므로 상자 복귀 없음) | 진행도 2, 같은 락다운 재개 없음 — 정보상에서 다시 시작 |
 | 금고 오답 누적 3회(락다운) | 금고 닫힘 → 탈출 단계 강제 시작(보상 없음). 탈출 성공해도 "실패" | 진행도를 잠입 완료(2)로 되돌림, 퀴즈 문제 재추첨 |
 | 탈출 중 `caught()` | 전리품 상자 둥지로 복귀(금고 앞에 다시 생성) | 금고 해제 상태(3) 유지: 상자만 다시 들고 탈출 |
 | 제한 시간(단계 타이머) 초과 | 단계 시작점으로 순간 복귀(감점 없음) | 단계 진행 유지 |
@@ -175,7 +179,7 @@
 | 클리어 후 | 정보상에서 **재도전 모드**(보상 = 코인 + 수집품 1개, 도감·유니크 없음, 열기 규칙 동일) | `H#` 클리어 횟수 +1 |
 
 - 하이스트 중 `respawn()`(허공 낙하)은 하이스트 단계 시작점으로 복귀(허브 스폰 아님).
-- 하이스트 활성 중에는 **포탈·워프 사용 불가**(아이콘 🚫), 이탈 사유 최소화.
+- 하이스트 활성 중에는 **포탈·워프 사용 불가**(아이콘 🚫), 이탈 사유 최소화. **예외: H6 탈출 단계의 S12 포탈 패드 → 허브 이동**(STORY 5.4: 성공 조건). 현행 `portalIt.find`/`openPortal`은 패드 목록 전체를 보여 주므로 `portalBlocked?()` 가 `{allow: string[]}`(허용 패드 id)를 돌려줄 수 있어야 한다.
 ---
 
 ## 4. 상태 머신
@@ -185,24 +189,30 @@ stateDiagram-v2
   [*] --> Stowed
   Stowed --> Mounting: V (보유+장착, 일시정지 아님)
   Mounting --> Active: 0.4s
-  Active --> Dismounting: V / 포탈 사용 / caught()
+  Active --> Dismounting: V(Ground 에서만) / 포탈 사용 / caught() / respawn()
   Dismounting --> Stowed: 0.3s
   state Active {
     [*] --> Ground
-    Ground --> Boost: Shift && fuel>0
-    Boost --> Ground: Shift 해제 / fuel=0
-    Ground --> Takeoff: 우주선 && Space (티어3+)
+    Ground --> Hop: Space 홀드 && fuel>0 (티어1 점프팩, 최대 2.0s)
+    Hop --> Ground: Space 해제 / fuel=0 / 착지
+    Ground --> Takeoff: Space (티어3+ 우주선, fuel>0)
     Takeoff --> Cruise: alt>=6
     Cruise --> Landing: V / C 지속
     Landing --> Ground: alt<=0 && 지면
+    Landing --> Fallen: alt<=0 && 허공
     Cruise --> Glide: fuel=0
     Glide --> Landing: 지면 도달
     Glide --> Fallen: 허공에서 alt<=0
+    Ground --> Fallen: 허공으로 걸어감 (호버보드 등, y<-45)
+    Hop --> Fallen: 허공 위에서 호버 종료 (y<-45)
   }
-  Active --> Stowed: Fallen → respawn()
+  Active --> Stowed: Fallen → respawn() (탑승 해제)
 ```
 
-- `speedMul()` = Stowed 1.0 / Active는 티어표 × `spd` 업그레이드 / Glide ×0.6. `hover()` = Cruise·Takeoff·Landing·Glide 중 true.
+- 부스트(`Shift && fuel>0`)는 상태가 아니라 `boosting` 플래그다 — Ground·Cruise 어디서든 켜지고(우주선 순항 ×3.0 → 부스트 ×4.5) `Shift` 해제 / `fuel=0` 으로 꺼진다.
+- `speedMul()` = Stowed 1.0 / Active는 티어표 × `spd` 업그레이드 / Glide ×0.6. `hover()` = Hop·Takeoff·Cruise·Landing·Glide 중 true(**Ground·Fallen 은 false** — Fallen 은 중력으로 떨어져야 `movePlayer` 의 `y < -45 → respawn()` 이 발동한다.).
+- **연료 회복**: 연료 0 에서 `Glide → Landing → Ground` 로 내려온 뒤 회복 규칙이 없으면 "로드 시 연료 가득"(1.4) 외에 채울 길이 없어 우주선·점프팩이 새로고침 전까지 못 뜬다(소프트락). 따라서 `Stowed`·`Ground`(정지) 에서 초당 `fuelRegen`(데이터 `VehicleDef`, 초안 8/s ≈ 12초 만충), `inBase` 위에서는 ×3 로 회복하고, `Takeoff`·`Hop` 은 `fuel > 0`(회복 중 최소 5)일 때만 허용한다.
+- `Dismounting` 진입 사유 중 `caught()`·`respawn()`·`warpTo()` 는 시스템이 호출 시점을 알 수 없다 → 5.1 의 `onReset(reason)` 훅이 필요하다(좌표가 `SPAWN`/패드로 순간 이동하므로 위치 변화 감지로는 구분이 안 된다).
 
 ### 4.2 수배
 ```mermaid
@@ -218,29 +228,46 @@ stateDiagram-v2
   Star4 --> Star3: 장애물 숨기 (하이스트 클리어 시 Star2)
   Star4 --> Star5: H6 / 보스 구역
   Star5 --> Clear: 보스 퀴즈 성공 / H6 완료
+  Clear --> Caught: caught()
   Star1 --> Caught: caught()
   Star2 --> Caught
   Star3 --> Caught
   Star4 --> Caught
-  Caught --> Star1: 한 단계 하락 후 재시작(하이스트 하한 유지)
+  Star5 --> Caught
+  Caught --> Clear: 직전 Clear/Star1 (heat 0)
+  Caught --> Star1: 직전 Star2
+  Caught --> Star2: 직전 Star3
+  Caught --> Star3: 직전 Star4
+  Caught --> Star4: 직전 Star5
 ```
+
+- `Caught` 는 **복귀 상태가 직전 별 −1** 이다(`heat = max(floor, (stars-1)*100)`). 0성에서도 `caught()` 는 5% 손실이 발생하므로 `Clear → Caught` 전이가 있어야 하고, `Star5` 에서도 잡힐 수 있다. 하이스트 하한(`floor`)이 걸려 있으면 위 표의 결과 상태보다 `floor` 가 우선한다(예: H1~H5 잠입 중 ★3 하한이면 `Caught → Star3` 유지).
+- `Star5 → Clear` 는 H6 완료/보스 격파로만 가능하고 `Star5` 에는 시간 감쇠가 없다. H6 가 중도 실패(= `Caught`)해 `Star4` 로 내려가도 하한이 풀려 있어야 **교착이 없다**(H6 재시도 때 정보상에서 다시 ★5 로 점프).
 
 ### 4.3 하이스트
 ```mermaid
 stateDiagram-v2
   [*] --> Locked
   Locked --> Idle: 조건(섹터 해금+티어) 충족
-  Idle --> Scouting: 정보상 E
+  Idle --> Scouting: 정보상 E (진행도 0)
+  Idle --> Infiltrating: 정보상 E (진행도 1·2 — 핀/잠입 완료 재개)
+  Idle --> Escaping: 정보상 E (진행도 3 — 금고 해제 상태, 상자만 다시 들고 탈출)
   Scouting --> Infiltrating: 핀 3/3
+  Scouting --> Idle: caught / 구역 이탈 (핀 유지)
   Infiltrating --> Vault: 금고 도달
-  Infiltrating --> Idle: caught (진행도 1 유지)
+  Infiltrating --> Idle: caught / 구역 이탈 (진행도 1 유지)
   Vault --> Escaping: 3잠금 해제
   Vault --> Escaping: 락다운(보상 없음 표시)
+  Vault --> Infiltrating: caught (진행도 2, 잠금·오답 초기화)
   Escaping --> Cleared: 출구 도착 (보상 지급)
-  Escaping --> Vault: caught (상자 복귀, 진행도 3)
-  Escaping --> Idle: 락다운 후 도착 (실패)
+  Escaping --> Idle: caught (상자 금고 앞 복귀, 진행도 3 / 락다운 탈출이면 진행도 2)
+  Escaping --> Idle: 락다운 후 도착 (실패, 진행도 2)
   Cleared --> Idle: 재도전 모드(보상 축소)
 ```
+
+- 탈출 중 `caught` 는 3.8("금고 해제 상태(3) 유지: 상자만 다시 들고 탈출")에 따라 `Vault`(퀴즈 재풀이)가 아니라 기지(`Idle`)로 복귀했다가 정보상 E 로 `Escaping` 에 바로 재진입한다. `Idle → Infiltrating/Escaping` 재개 전이와 `Scouting`·`Vault` 중 `caught` 전이가 있어야 진행도 1~3 에서 정보상이 정찰부터 다시 시작하는 모순(3.8 "핀 재방문 불필요", 수용 기준 C8)이 생기지 않는다.
+- 구역 이탈 = 일시 중지는 별도 상태 대신 `Idle`(진행도 유지)로 본다. 재개 위치는 항상 단계 시작점이다.
+
 ---
 
 ## 5. 데이터 구조 초안 (TypeScript)
@@ -260,16 +287,18 @@ export interface VehicleDef {
   ignoreIce: boolean;
   fuelMax: number;                   // 0 = 연료 없음
   fuelDrain: {idle: number; boost: number};   // 초당
+  fuelRegen: number;                 // 초당 회복(Stowed·Ground 정지 시, inBase 는 ×3) — 4.1 소프트락 방지
   heavyGravPenalty: {speedMul: number; drainMul: number; altCap?: number};  // gravityMul>=1.4
   cargoSlots: number;
   unlock: {sector: string; quest?: string; heist?: string; price: number};
 }
-// S.vehicles 키 규약 (값은 모두 작은 정수)
-export type VehiclesSave = Record<
-  'own1' | 'own2' | 'own3' | 'own4' | 'own5' | 'eq' | 'spd' | 'fuel' | 'cargo' | 'warp', number>;
+// S.vehicles 키 규약 (값은 모두 작은 정수). 기본값 {} 인 희소 맵이라 Partial — 없는 키는 0
+// up{티어}{s|f|c} = 수단별 업그레이드 Lv(속도/연료·워프는 쿨다운/적재), 예 'up3f'
+export type VehiclesSave = Partial<Record<
+  'own1' | 'own2' | 'own3' | 'own4' | 'own5' | 'eq' | 'warp' | `up${1 | 2 | 3 | 4 | 5}${'s' | 'f' | 'c'}`, number>>;
 export interface VehicleRuntime {
   mounted: boolean; fuel: number; alt: number; boosting: boolean; warpCd: number;
-  phase: 'stowed'|'mounting'|'ground'|'boost'|'takeoff'|'cruise'|'landing'|'glide'|'dismounting';
+  phase: 'stowed'|'mounting'|'ground'|'hop'|'takeoff'|'cruise'|'landing'|'glide'|'fallen'|'dismounting'; // 4.1 상태와 1:1 (boost 는 boosting 플래그)
 }
 
 // ── 수배 (data/wanted.ts) ───────────────────────────────
@@ -277,7 +306,7 @@ export type Stars = 0 | 1 | 2 | 3 | 4 | 5;
 export interface WantedTier {
   stars: Stars;
   maxHeat: number;                         // 100*stars
-  decay: {time: number; shadow: number; hideout: number; hidden: number};  // /s, 0 = 없음
+  decay: {time: number; shadow: number; hideout: number; hidden: number; home: number};  // /s, 0 = 없음. home = 기지 안 감쇠(★2 이하는 즉시 규칙이라 별도 처리, ★3+ 는 −1/s)
   guardMul: number;                        // 수호자 속도 배율
   spawn: ('drone'|'chaser'|'patrol'|'commander')[];
   lossRate: number;                        // caught() 손실 배율
@@ -318,18 +347,25 @@ export interface HeistRuntime {
   wrong: number; locksOpen: number; loot: boolean; t: number;
 }
 type Pt = {x: number; z: number}; type Rect = {cx: number; cz: number; w: number; h: number};
+// 아래 두 타입은 이 문서 어디에도 정의되지 않았던 이름이라 최소형을 둔다
+type HazardDef = {kind: 'sweep' | 'rain' | 'beam' | 'ring' | 'statue' | 'gas'; rect: Rect; speed?: number; period?: number; dmg?: number};
+type RewardDef = {coinPct?: number; gear?: string; vehicle?: VehicleTier; planet?: number; collectible?: string; story?: number};
 ```
 
 ### 5.1 `GameSystem` 확장 포인트 사용 / 필요한 추가
+현행 `GameSystem`(core/types.ts)의 훅은 `update(dt, raw)` · `onSectorEnter/Leave(s, i)` · `hud()` · `onSave/onLoad(s)` · `speedMul()` · `hover()` 뿐이다. 아래 "필요한 최소 추가"는 **전부 현재 존재하지 않는 훅**이며 `systems/registry.ts` 에 집계 함수(`speedMul()`/`hovering()` 처럼 `LIST.reduce/some`)를 함께 추가해야 한다.
+
 | 시스템 | 현재 훅으로 되는 것 | **필요한 최소 추가**(코드 변경은 구현 단계에서) |
 |---|---|---|
-| `vehicle` | `speedMul()`(속도), `hover()`(비행), `update`(고도·연료, `G.me.pos.y`), `onSave/onLoad`, `hud`(연료 아이콘) | 이동 보정 훅 `moveMod?(): {ice?: boolean; jump?: number; noRun?: boolean}` — `movePlayer`가 빙판 무시·점프 배율·스태미나 달리기 차단을 읽는다 |
-| `wanted` | `update`(감쇠·액터 AI), `hud`, `onSectorEnter/Leave`(드론 생성/해제), `onSave/onLoad` | ① `guardMul?(): number` — `updateGuardians`가 `s.guard.speed`에 곱 ② `onCaught?(): void` — `caught()`가 호출(손실률 배율은 `lossMul?()`) ③ 훔침 이벤트 `onSteal?` — `nest` 상호작용 성공 지점에서 |
-| `heist` | `update`(단계 타이머·위험요소), `onSectorEnter`, 상호작용 `informant/pin/vault/exit`, `hud`(단계 아이콘) | 퀴즈 컨텍스트에 `heist` 필드 + 포탈 차단 `portalBlocked?(): boolean` |
+| `vehicle` | `speedMul()`(속도), `hover()`(비행), `update`(고도·연료, `G.me.pos.y`), `onSave/onLoad`, `hud`(연료 아이콘) | ① 이동 보정 훅 `moveMod?(): {jump?: number; extraJump?: boolean; noRun?: boolean; ice?: boolean}` — `movePlayer`가 점프 초속(현행 `14 * SPR[S.eq][3]`)·2단 점프·스태미나 달리기 차단(`wantRun` 분기)을 읽는다. **빙판(`ice`)·강풍은 현재 코드에 개념이 없다**(S4 신규 구현 때 함께 만든다) ② `onReset?(reason: 'caught' \| 'respawn' \| 'portal'): void` — `caught()`·`respawn()`·`warpTo()` 가 호출(탑승 해제·연료 보존, 4.1) ③ `capBonus?(): number` — `cap()` 에 우주선 `cargo` 가산(1.1) ④ `hud()` 반환형을 `string \| null` → `HudWidget`(UX_CUTSCENE 10.3.2: `{slot, priority, icons[], fill?}`)으로 확장(연료 호 아이콘 — 문자열로는 불가) |
+| `wanted` | `update`(감쇠·액터 AI), `hud`, `onSectorEnter/Leave`(드론 생성/해제), `onSave/onLoad` | ① `guardMul?(): number` — `updateGuardians`가 `s.guard.speed`에 곱 ② `onCaught?(): void` — `caught()`가 호출(손실률 배율은 `lossMul?()` — `caught()` 의 `S.cr * (had ? 0.15 : 0.05)` 에 곱) ③ 훔침 이벤트 `onSteal?` — `tryGrab` 의 `onDone(ok)` 성공 분기(`G.carry.push`)에서(`deposit` 이 아니라 **집어 든 순간**이어야 도망 중 열기가 오른다) ④ `HudWidget` 반환 — 눈꺼풀 SVG·홍채 `fill`(2.3) |
+| `heist` | `update`(단계 타이머·위험요소), `onSectorEnter`, 상호작용 `informant/pin/vault/exit`, `hud`(단계 아이콘) | ① 퀴즈 확장: `heist` 필드 + 문항별 `onAnswer`/`retry` + 이미지 문항 행(3.1 ⚠) ② 포탈 차단 `portalBlocked?(): false \| {allow: string[]}`(H6 탈출은 S12 패드 허용) ③ `onReset` (하이스트 중 `respawn()` → 단계 시작점, 3.8) |
 
-- 등록 순서(`systems/index.ts`): `hazards → rival → portal → vehicle → wanted → heist`. `vehicle`이 `wanted`보다 앞(비행 상태를 먼저 갱신), `heist`가 마지막(둘의 값을 읽어 하한·차단을 적용).
-- 상호작용 kind: `mechanic`(렌치), `informant`, `pin`, `vault`, `exit`, `fixer`(벌금 해결사). 모두 `registerInteractable`, 메시에 `userData.pick`.
-- 디버그: `?debug=1` `__game`에 `setVehicle(tier)`, `setWanted(heat)`, `startHeist(id, stage?)`, `forceWrong(n)` 추가.
+- 등록 순서(`systems/index.ts`, 현재 `hazards → rival → portal`): 뒤에 `vehicle → wanted → heist` 를 잇는다. `update` 는 등록 순서대로 호출되므로 `vehicle`이 `wanted`보다 앞(비행 상태를 먼저 갱신), `heist`가 마지막(둘의 값을 읽어 하한·차단을 적용). `onSectorEnter` 도 같은 순서라 `hazards` 의 구역 안내 토스트 → 드론 생성 순이다.
+- **프레임 내 호출 순서(core `systems/loop.ts`)**: `sectorChanged` → 수입 → `movePlayer`(여기서 `speedMul()`/`hovering()` 을 읽음) → 청크/둥지 → **`updateGuardians`(여기서 `caught()` 발생)** → `deposit` → **`updateSystems`** → 대상/카메라. 따라서 ① `vehicle.update` 가 정한 `speedMul`/`hover`/고도는 **다음 프레임**의 `movePlayer` 에 반영된다(1프레임 지연, 무해) ② `wanted.guardMul()` 은 직전 프레임 열기를 읽는다 ③ `caught()` 의 `onCaught` 는 `wanted.update` 보다 먼저 같은 프레임에 호출된다 — 감쇠 로직이 방금 낮춘 열기를 되돌리지 않도록 `onCaught` 안에서 `lastCaughtAt` 을 기록한다.
+- 세이브 훅: `onSave(s)` 는 `save()` 직전 `saveHooks` 전체가 호출된 뒤 JSON 이 만들어지므로(라이벌 도주 중이면 `d` 사본에 슬롯만 복원) 시스템은 자기 필드(`s.wanted = Math.round(heat)`, `s.vehicles`, `s.heists`)만 쓴다. `registerSystem` 이 등록 즉시 `onLoad(S)` 를 1회 부르고, 서버 복원(`applySave`)이 뒤늦게 오면 `loadHooks` 로 다시 부르므로 `onLoad` 는 **멱등**이어야 한다(런타임 상태 초기화 포함).
+- 상호작용 kind: `mechanic`(렌치), `informant`, `pin`, `vault`, `exit`, `fixer`(벌금 해결사). 현행 등록된 kind 는 `nest`·`base`·`npc`·`gate`·`portal` 이라 이름 충돌은 없다(`registerInteractable` 은 중복 시 예외). 모두 `game/interactables.ts` 의 `registerInteractable`(등록 위치 `systems/index.ts`), 메시에 `userData.pick`, `tier: 1`(시설).
+- 디버그: `?debug=1` 의 `__game`(현재 `S`·`G`·`SECTORS`·`systems`·`teleport`·`giveMoney`·`unlockAll`·`setSector`)에 `setVehicle(tier)`, `setWanted(heat)`, `startHeist(id, stage?)`, `forceWrong(n)` 추가.
 ---
 
 ## 6. 구현 순서와 수용 기준
@@ -357,6 +393,7 @@ type Pt = {x: number; z: number}; type Rect = {cx: number; cz: number; w: number
 - A6. 탑승 중에는 `Shift`를 눌러도 `G.stam`이 감소하지 않는다.
 - A7. 세이브 후 새로고침하면 `vehicles.eq`/`vehicle`은 유지되고 `mounted`는 false다.
 - A8. `S.vehicle` 값을 올리면 `requires.vehicle`이 해당 값인 섹터의 `reqMissing`에서 vehicle 항목이 사라진다.
+- A9. 우주선 연료가 0 인 채 착륙한 뒤 `Stowed`/`Ground` 에서 `fuelRegen` 으로 연료가 차올라 다시 이륙할 수 있다(소프트락 없음). 허공에서 `caught()` 되면 하차 상태로 `SPAWN` 에 서고 `mounted === false`.
 
 **수배**
 - B1. 행성을 훔치면 `S.wanted`가 100 이상이 되고 HUD 눈이 1칸이다.
@@ -365,7 +402,8 @@ type Pt = {x: number; z: number}; type Rect = {cx: number; cz: number; w: number
 - B4. ★4에서는 시간이 지나도 `S.wanted`가 감소하지 않는다(숨기 제외).
 - B5. 같은 상태에서 `caught()` 시 손실액이 `floor(cr * base * (1 + 0.25*stars))`(상한 40%)와 일치한다.
 - B6. 해결사에게 벌금을 내면 `S.cr`이 3% 줄고 열기가 100이 된다(★3 이상에서만).
-- B7. HUD에 문자가 렌더되지 않는다(`#lines`의 wanted 줄에 텍스트 노드 없음).
+- B7. HUD에 **글자(한글·영문·숫자)**가 렌더되지 않는다(`#lines`/wanted 슬롯에 이모지·기호 외 문자 없음). `hud()` 문자열 방식은 `textContent` 라 이모지도 텍스트 노드이므로 "텍스트 노드 0개" 대신 문자 범위로 검사하거나 `HudWidget` 방식으로 SVG/DOM 요소를 쓴다.
+- B8. `caught()` 직후 열기는 직전 별−1(`max(floor, (stars-1)*100)`)이다: ★1→0, ★2→100, ★5→400. 0성에서 잡혀도 5% 손실, 열기는 0 유지.
 
 **하이스트**
 - C1. 정보상 상호작용으로 `S.heists.H1`이 0 → 시작되고 핀 3개 방문 후 1이 된다.
@@ -375,7 +413,8 @@ type Pt = {x: number; z: number}; type Rect = {cx: number; cz: number; w: number
 - C5. 하이스트 활성 중 포탈 사용이 차단된다.
 - C6. H3 클리어 직후 `S.vehicle >= 4`, H4 클리어 직후 `S.vehicle === 5`.
 - C7. 사전 정의된 봇(정답 경로 + 이상적 이동)이 각 하이스트를 270~900초(목표 720초)에 클리어한다(E2E 하네스, 수치 보정용).
-- C8. 로드된 세이브에서 하이스트 진행도 1~3은 해당 단계 시작점에서 재개된다(위치 복원 아님).
+- C8. 로드된 세이브에서 하이스트 진행도 1~3은 해당 단계 시작점에서 재개된다(위치 복원 아님). 진행도 3 에서 정보상 E 는 `Escaping` 으로 곧바로 들어가고 정찰/금고를 다시 요구하지 않는다.
+- C9. H6 탈출 중에는 S12 패드→허브 이동만 허용되고 다른 패드/워프는 🚫 이다(STORY 5.4 예외).
 ---
 
 ## 7. 결정 사항 (전부 ✅ 확정)
