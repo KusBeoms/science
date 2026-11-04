@@ -322,3 +322,19 @@ science/
 | G1 | **구현** | Web Audio 합성 효과음·BGM, 컷신 소리 큐 연결. 귀로 확인한 음색 검증은 안 됨 |
 | 서버 | 보강 | 세이브 검증·`If-Match` 낙관적 락·요청 제한 등 ([SERVER.md](SERVER.md)) |
 | 검증 | tsc 0, E2E 17/17 | FPS 기준선은 환경에 따라 20~57 (이 환경 24) |
+
+### 9.x W1 진행 현황 (토큰 소진으로 에이전트 중단 시점, 미검증)
+
+| 영역 | 상태 | 비고 |
+|---|---|---|
+| W0 기반(terrain, 섹터 재배치, 저폴리 헬퍼) | ✅ 검증됨 | tsc 0, E2E 24/24 |
+| T 지형(`core/heightmap.ts`, 원경, 문 아치 개구 40) | 🟡 코드 일부 들어감 | 아치·이름표 아이콘화 미확인 |
+| C 도시(`data/city.ts`, `render/city/*`) | 🟡 파일 생성됨 | 광장·사과 대로·상점가 동작/스크린샷 미확인 |
+| K 군중(`render/crowd.ts`, `systems/crowd.ts`, `data/citygraph.ts`) | 🟡 파일 생성됨 | `crowd.spec.ts` 미실행 |
+| A 캐릭터(`render/characters-look.ts` 등) | 🟡 중단 시 import 손상 보고 | tsc는 통과, 동작 미확인, 꾸미기 유지·`main.ts` 갤러리 미확인 |
+| S 하늘(`render/sky.ts`, `render/apple.ts`, `systems/daynight.ts`) | 🟡 파일 생성됨 | `sky.spec.ts` 미실행, 사과 천체 정북 노출 미확인 |
+
+- 마지막 확인: `tsc --noEmit` 오류 0. E2E·줄 수(≤500)·스크린샷은 **아직 안 함**.
+- `tests/e2e/dbg.spec.ts`는 에이전트 디버그용 임시 파일 → 검증 후 삭제.
+- 다음: ① E2E 전체 실행(임시 config) ② 실패·미완 부분 수정 ③ CLIENT/WORLD/ROADMAP 갱신 ④ 커밋 → master merge·push.
+- master는 W0 이전(4360b6e)에서 멈춰 있음. W1 검증 전에는 merge하지 않음.
