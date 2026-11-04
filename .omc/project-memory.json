@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1793679992686,
+  "lastScanned": 1793779603682,
   "projectRoot": "/Users/dalgsiki/Developer/science",
   "techStack": {
     "languages": [],
@@ -36,7 +36,7 @@
       "path": "previous",
       "purpose": null,
       "fileCount": 5,
-      "lastAccessed": 1793679992680,
+      "lastAccessed": 1793779603676,
       "keyFiles": [
         "index.html",
         "package.json",
@@ -48,7 +48,7 @@
       "path": "previous/data",
       "purpose": "Data files",
       "fileCount": 1,
-      "lastAccessed": 1793679992681,
+      "lastAccessed": 1793779603676,
       "keyFiles": [
         "best.json"
       ]
@@ -57,7 +57,7 @@
       "path": "previous/dist",
       "purpose": "Distribution/build output",
       "fileCount": 1,
-      "lastAccessed": 1793679992682,
+      "lastAccessed": 1793779603677,
       "keyFiles": [
         "types.js"
       ]
@@ -66,7 +66,7 @@
       "path": "previous/src",
       "purpose": "Source code",
       "fileCount": 2,
-      "lastAccessed": 1793679992682,
+      "lastAccessed": 1793779603677,
       "keyFiles": [
         "types.ts"
       ]
@@ -75,8 +75,14 @@
   "hotPaths": [
     {
       "path": "index.html",
+      "accessCount": 13,
+      "lastAccessed": 1793779939016,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
       "accessCount": 1,
-      "lastAccessed": 1793680602949,
+      "lastAccessed": 1793779798736,
       "type": "file"
     }
   ],
