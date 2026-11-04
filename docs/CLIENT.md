@@ -193,6 +193,7 @@ registerInteractable<T extends Target>({
 | 경제 | `data/pacing.ts`, `data/pacing-sinks.ts`, `data/planet-zones.ts`, `client/tools/econ-*.mjs` | 구역×등급 가격, 새 비용 곡선, 시뮬레이터(`cd client && npx tsc && node tools/econ-sim.mjs`). [ECONOMY.md](ECONOMY.md) 9장 |
 | 문제 은행 | `data/quiz-bank/*` | 210문항(구역 1~12). `GQU` 는 `buildGQUByZone(BANK_ALL)`, 섹터 `units` 는 구역 키(`Z01`~`Z12`). 행성 문제 `PQ` 는 아직 기존 `quiz-planet.ts` |
 | 월드 W1 | `core/heightmap.ts`, `core/terrain.ts`, `data/world-map.ts`, `data/city.ts`, `data/citygraph.ts`, `render/city/*`, `render/crowd.ts`, `systems/crowd.ts`, `render/sky.ts`, `render/apple.ts`, `systems/daynight.ts`, `render/characters-look.ts` | 5u 격자 높이 지도(부팅 1회 굽기)·`groundH`, 도시 광장·사과 대로·상점가, 보행 그래프 군중(≤24, 말풍선 `.bub.crowd`), 하늘 돔·사과 천체, 로우폴리 캐릭터. 설계는 [WORLD.md](WORLD.md) |
+| 월드 W2 | `data/city-w2.ts`, `render/city/landmarks2.ts`, `render/city/tradeline.ts` (+ `data/city.ts`·`layout.ts`·`citygraph.ts` 확장) | 도시 8구역 완성: 건물 82채(암시장 노점 28·정비 창고 3·우주항 창고 6·연구동 8·주거 8 추가), 랜드마크 L4 관제탑·L5 격납고·L6 천문대 돔·L7 성(언덕 위 y=12), 거래의 선(바닥 인레이 + 금빛 기둥띠, 북쪽 사과 대로만 개구), 우주항 패드 4·정비소 착륙대 2, 군중 8구역 그래프·데스크톱 66/모바일 24. **상점 노점·점원은 `SHOP_AT=(47,−10)`(상점가 입구)로 이전**, 기지에는 받침대·포탈 패드만 남음 |
 - 세이브 v6: `S.story`(beat·mid·seen·ended·hints). v5→v6 마이그레이션은 보유 현금을 해금 구역의 누적 지출 목표(`TARGET_CUM_SPEND`)로 1회 제한한다.
 - 기지 칸 최대는 현재 허브 배치(5×2)에 맞춰 10으로 제한(`CAPS.slots.max`). 도시 허브(WORLD.md W1)에서 30으로 확장한다.
 - 서버: 세이브 PUT 검증(`base`·`ver`, 깊이, NUL)·`If-Match` 낙관적 락·요청 제한. 클라이언트는 서버 버전을 알면 `If-Match` 를 보내고 409 면 그 세션의 서버 저장을 멈춘다.

@@ -1,8 +1,10 @@
 // 도시 지면: 1u 칸마다 용도(아스팔트·보도·광장·잔디)를 정해 같은 색 칸을 큰 사각형으로 합친 정점색 평면 1장 + 소품(가로등·나무·벤치) 배치 계획
 import {
-  CITY_BUILDINGS, CITY_LANDMARKS, CITY_PLAZAS, CITY_ROADS, CITY_SIDEWALKS, footprint,
+  CITY_BUILDINGS, CITY_LANDMARKS, CITY_PADS, CITY_PLAZAS, CITY_ROADS, CITY_SIDEWALKS, footprint,
   type CityRect, type CityRoad,
 } from '../../data/city.js';
+import {CITY_HILL} from '../../data/world-map.js';
+import {TRADE_EDGE} from './tradeline.js';
 import {CITY_HALF} from '../../core/terrain.js';
 import {PAL, mix} from '../lowpoly/palette.js';
 import {hash2} from '../lowpoly/rng.js';
@@ -14,7 +16,8 @@ const LAWN_A = mix(PAL.green, PAL.stone, 0.5),
   PAVE_B = mix(PAL.paving, PAL.bone, 0.4),
   PROM = mix(PAL.paving, PAL.brick, 0.28),
   LINE_Y = mix(PAL.amber, PAL.asphalt, 0.2),
-  LINE_W = mix(PAL.cloud, PAL.asphalt, 0.15);
+  LINE_W = mix(PAL.cloud, PAL.asphalt, 0.15),
+  GOLD = mix(PAL.amber, PAL.brick, 0.18);
 
 const inRect = (x: number, z: number, r: CityRect, m = 0) => x >= r[0] - m && x < r[2] + m && z >= r[1] - m && z < r[3] + m;
 /** 도로 포장 부분의 사각형 */
@@ -28,9 +31,20 @@ const ROAD_RECTS = CITY_ROADS.map(roadRect);
 const FOOTPRINTS = CITY_BUILDINGS.map(b => footprint(b));
 /** 분수(L2) 둘레 정사각 바닥 */
 const FOUNTAIN = CITY_LANDMARKS.find(l => l.kind === 'orrery')!;
+/** 큰 랜드마크(발자국 사각형) 둘레는 포장 */
+const LM_RECTS: CityRect[] = CITY_LANDMARKS.filter(l => l.kind !== 'orrery' && l.kind !== 'arch').map(l => [
+  l.x - (l.w ?? 2 * l.r) / 2, l.z - (l.d ?? 2 * l.r) / 2, l.x + (l.w ?? 2 * l.r) / 2, l.z + (l.d ?? 2 * l.r) / 2,
+]);
 
 /** 칸 (cx,cz 는 칸 중심 좌표) 의 지면색. 도로 > 보도 > 광장 > 건물 마당 > 잔디 */
 export function surfaceAt(cx: number, cz: number): number {
+  // 거래의 선 인레이: 도시 둘레 1u 폭 금빛 띠
+  if (Math.floor(Math.max(Math.abs(cx), Math.abs(cz)) - (TRADE_EDGE - 0.5)) === 0) return GOLD;
+  // 우주항 패드: 원 무늬 (바깥 테두리 노랑, 안쪽 아스팔트)
+  for (const p of CITY_PADS) {
+    const d = Math.hypot(cx - p.x, cz - p.z);
+    if (d < 5.5) return d > 4.3 ? LINE_Y : PAL.asphalt;
+  }
   if (Math.abs(cx - FOUNTAIN.x) < FOUNTAIN.r + 3 && Math.abs(cz - FOUNTAIN.z) < FOUNTAIN.r + 3) return PAL.ash;
   for (let i = 0; i < CITY_ROADS.length; i++) {
     if (!inRect(cx, cz, ROAD_RECTS[i])) continue;
@@ -46,8 +60,15 @@ export function surfaceAt(cx: number, cz: number): number {
   }
   if (CITY_SIDEWALKS.some(s => inRect(cx, cz, s))) return PAVE_A;
   for (const p of CITY_PLAZAS) {
-    if (inRect(cx, cz, p.rect)) return p.id === 'central' && (Math.floor(cx / 10) + Math.floor(cz / 10)) % 2 === 0 ? PAVE_B : PAVE_A;
+    if (!inRect(cx, cz, p.rect)) continue;
+    if (p.id.startsWith('pad-')) {
+      const [x0, z0, x1, z1] = p.rect;
+      return cx < x0 + 1 || cx > x1 - 1 || cz < z0 + 1 || cz > z1 - 1 ? LINE_Y : PAL.asphalt; // 착륙대: 노란 테두리
+    }
+    const chk = p.id === 'central' || p.id === 'dome-court' || p.id === 'port';
+    return chk && (Math.floor(cx / 10) + Math.floor(cz / 10)) % 2 === 0 ? PAVE_B : PAVE_A;
   }
+  if (LM_RECTS.some(r => inRect(cx, cz, r, 1.5))) return PAVE_A;
   if (FOOTPRINTS.some(f => inRect(cx, cz, f, 1.2))) return PAVE_A;
   return hash2(Math.floor(cx / 8), Math.floor(cz / 8), 3) < 0.5 ? LAWN_A : LAWN_B;
 }
@@ -135,6 +156,14 @@ export function planProps(): PropPlan {
   for (const x of [60, 80, 100, 120, 140]) {
     lamps.push({x, y: 0, z: -6.6, ry: -Math.PI / 2}, {x, y: 0, z: 6.6, ry: Math.PI / 2});
   }
+  // W2 구역: 항구 도로 · 정비소 도로/시험로 · 과학관 도로 · 주거 도로 · 우주항/앞뜰 모서리
+  for (const z of [62, 82, 102]) lamps.push({x: -10.8, y: 0, z, ry: 0}, {x: 10.8, y: 0, z, ry: Math.PI});
+  for (const z of [-60, -90, -120, -140]) lamps.push({x: 54.2, y: 0, z, ry: 0}, {x: 69.8, y: 0, z, ry: Math.PI});
+  for (const x of [80, 100, 120, 140]) lamps.push({x, y: 0, z: -78.2, ry: -Math.PI / 2}, {x, y: 0, z: -61.8, ry: Math.PI / 2});
+  for (const x of [60, 80, 100, 120, 140]) lamps.push({x, y: 0, z: 53.8, ry: -Math.PI / 2}, {x, y: 0, z: 70.2, ry: Math.PI / 2});
+  for (const x of [-60, -80, -100, -120]) lamps.push({x, y: 0, z: 91.8, ry: -Math.PI / 2}, {x, y: 0, z: 108.2, ry: Math.PI / 2});
+  for (const sx of [-1, 1]) lamps.push({x: sx * 40, y: 0, z: 116, ry: 0}, {x: sx * 40, y: 0, z: 144, ry: 0});
+  for (const [x, z] of [[80, 84], [120, 84], [80, 128], [120, 128]]) lamps.push({x, y: 0, z, ry: 0});
   for (const sx of [-1, 1]) {
     lamps.push({x: sx * 30, y: 0, z: -36, ry: 0}, {x: sx * 30, y: 0, z: 36, ry: 0}, {x: sx * 45, y: 0, z: 45, ry: 0});
   }
@@ -148,7 +177,7 @@ export function planProps(): PropPlan {
     for (let gz = -140; gz <= 140; gz += 14) {
       const x = gx + (hash2(gx, gz, 5) - 0.5) * 8,
         z = gz + (hash2(gx, gz, 6) - 0.5) * 8;
-      if (hash2(gx, gz, 7) > 0.2 || !openLawn(x, z)) continue;
+      if (hash2(gx, gz, 7) > 0.2 || !openLawn(x, z) || Math.hypot(x - CITY_HILL.x, z - CITY_HILL.z) < CITY_HILL.foot) continue;
       (hash2(gx, gz, 8) < 0.45 ? pines : trees).push({x, y: 0, z, ry: hash2(gx, gz, 9) * 6, s: 0.9 + hash2(gx, gz, 4) * 0.5});
     }
   }

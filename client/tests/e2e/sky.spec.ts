@@ -5,9 +5,9 @@ const W = 256,
   H = 160;
 
 /** 캔버스를 256x160 으로 줄여 붉은(사과·후광) 픽셀의 개수와 중심(0..1)을 돌려준다 */
-async function redBlob(page: any) {
+async function redBlob(page: any, maxY = 1) {
   return page.evaluate(
-    ([w, h]: number[]) =>
+    ([w, h, my]: number[]) =>
       new Promise<{n: number; cx: number; cy: number; top: number[]}>(res =>
         requestAnimationFrame(() => {
           const src = document.querySelector('canvas') as HTMLCanvasElement,
@@ -19,6 +19,7 @@ async function redBlob(page: any) {
           const d = x.getImageData(0, 0, w, h).data;
           let n = 0, sx = 0, sy = 0;
           for (let i = 0; i < d.length; i += 4) {
+            if (i / 4 / w >= h * my) break; // 아래쪽(건물 지붕)은 세지 않는다
             if (d[i] > 70 && d[i] > d[i + 1] * 2 && d[i] > d[i + 2] * 2) {
               n++;
               sx += (i / 4) % w;
@@ -29,7 +30,7 @@ async function redBlob(page: any) {
           res({n, cx: n ? sx / n / w : -1, cy: n ? sy / n / h : -1, top: p(w / 2, 4)});
         }),
       ),
-    [W, H],
+    [W, H, maxY],
   );
 }
 
@@ -53,7 +54,7 @@ test('spawn north view: the apple sits at the top centre of the frame, in day an
 
   await look(page, 'g.yaw = Math.PI'); // 정남: 사과가 없다
   await page.waitForTimeout(400);
-  expect((await redBlob(page)).n).toBeLessThan(5);
+  expect((await redBlob(page, 0.35)).n).toBeLessThan(5); // 하늘 영역만: 남쪽 건물의 붉은 기와는 제외
 
   await look(page, 'g.yaw = 0; g.cycT = 5; g.night = 6');
   await page.waitForTimeout(600);

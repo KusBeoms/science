@@ -32,14 +32,14 @@ test('citygraph is connected, has no dead ends, and keeps clear of buildings', a
   expect(r.blocked).toBe(0);
 });
 
-test('crowd fills to 24, never enters solids, and reacts with at most 6 emoji bubbles', async ({game}) => {
+test('crowd fills to 66, never enters solids, and reacts with at most 6 emoji bubbles', async ({game}) => {
   const {page, problems} = game;
   await game.open('?debug=1');
   await page.click('#mstart');
   await page.waitForTimeout(1500);
   const count = () => page.evaluate(async u => (await import(u)).crowdApi.count(), CROWD);
-  expect(await count()).toBeGreaterThanOrEqual(20);
-  expect(await count()).toBeLessThanOrEqual(24);
+  expect(await count()).toBeGreaterThanOrEqual(50);
+  expect(await count()).toBeLessThanOrEqual(66);
   expect(await canvasColors(page)).toBeGreaterThan(8);
 
   // 상점가 입구(동쪽 보도 고리 ↔ 도로)에 건물 벽을 세우고 6초 동안 모든 행인 위치를 표본 조사

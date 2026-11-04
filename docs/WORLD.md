@@ -439,7 +439,7 @@ blockedAt(x, z): boolean                    // 기존: 잠긴 섹터 사각형(�
   | S 하늘 | `render/sky.ts` |
   | **I 통합** | `world.ts`, `loop.ts`, `core/types.ts`, `systems/index.ts`, `render/sectors.ts`, `core/geometry.ts`, `systems/move.ts` |
 
-### W2 · 도시 완성 · 낮밤 (3~4일, 에이전트 3~4) — W1 이후
+### W2 · 도시 완성 · 낮밤 (3~4일, 에이전트 3~4) — W1 이후 · **✅ 구현됨(2026-11-05, 좌표 차이는 HANDOFF 9.w)**
 - 정비소·항구/우주항·과학관·주거·북서 언덕 구역 건물/소품 완성, 암시장 골목(네온·좌판·밀집 군중 20), 거래의 선(금빛 띠), 잡화점을 상점가로 이전(`SHOP_AT`), 포탈 허브 이전(선택), 군중 66명·전 구역 경로, 낮밤 시각화(6.4), 창문/네온 점등.
 - **수용**: 도시 전 구역 방문 가능, 암시장 군중 체감 밀도(스크린샷), 밤 전환 시 창문 점등, Q2 95k tris 이내, 모바일 Q0 군중 24 유지 시 ≥ 30fps.
 - **소유**: C(`render/city/*`, `data/city.ts`), K(`systems/crowd.ts`, `data/citygraph.ts`), S(`render/sky.ts`, `systems/daynight.ts`), I(`world.ts` 상점 이전 줄).

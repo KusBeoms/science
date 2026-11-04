@@ -8,8 +8,8 @@ import {ARCHETYPES, HEAD_TOP, SHIRTS, createCrowdView} from '../render/crowd.js'
 import type {CrowdSprite, CrowdView} from '../render/crowd.js';
 import type {GameSystem} from '../core/types.js';
 
-/** 동시 최대 인원: 데스크톱 / 모바일(pointer:coarse). W1 의 Q0 상한 24 가 데스크톱 값이다 */
-export const CROWD_MAX = {desktop: 24, mobile: 14};
+/** 동시 최대 인원: 데스크톱 / 모바일(pointer:coarse). W2 에서 데스크톱 66, 모바일 Q0 24 */
+export const CROWD_MAX = {desktop: 66, mobile: 24};
 const CAP = matchMedia('(pointer:coarse)').matches ? CROWD_MAX.mobile : CROWD_MAX.desktop;
 /** 플레이어가 도시 경계에서 이만큼 안에 있을 때만 시뮬레이션 */
 const ACTIVE_MARGIN = 60,
@@ -90,7 +90,7 @@ const blockedNode = (n: number) => solidAt(GR.x[n], GR.z[n], BODY_R);
 function spawn(minDist: number): boolean {
   const fx = -Math.sin(G.yaw),
     fz = -Math.cos(G.yaw);
-  const zoneCount = [0, 0, 0];
+  const zoneCount = ZONE_SHARE.map(() => 0);
   agents.forEach(p => zoneCount[GR.zone[p.a]]++);
   let best = -1,
     bestK = Infinity;

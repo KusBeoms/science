@@ -8,6 +8,8 @@ import type {GameSystem} from '../../core/types.js';
 import {makeBuilding} from './building.js';
 import {barrierGeo, benchGeo, lampGeo, pineGeo, roundTreeGeo} from './props.js';
 import {clockTower, marketArch, orrery} from './landmarks.js';
+import {castle, controlTower, hangar, observatory} from './landmarks2.js';
+import {tradeLine} from './tradeline.js';
 import {groundGeometry, planProps} from './layout.js';
 
 const FACE_RY: Record<Facing, number> = {s: 0, n: Math.PI, e: Math.PI / 2, w: -Math.PI / 2};
@@ -53,7 +55,7 @@ export function buildCity(): any {
   grp.add(ground);
 
   const where = (b: CityBuilding) => (b.district === 'avenue' ? (b.x < 0 ? 'w' : 'e') : b.district);
-  for (const key of ['w', 'e', 'shops', 'alley']) addBuildings(grp, CITY_BUILDINGS.filter(b => where(b) === key));
+  for (const key of ['w', 'e', 'shops', 'alley', 'market', 'garage', 'port', 'science', 'resi']) addBuildings(grp, CITY_BUILDINGS.filter(b => where(b) === key));
 
   // 랜드마크
   const [L1, L2, L3] = CITY_LANDMARKS,
@@ -69,11 +71,21 @@ export function buildCity(): any {
   addMesh(grp, arch.solid, false, L3.x, L3.z);
   addMesh(grp, arch.lit, true, L3.x, L3.z);
   for (const s of [-1, 1]) addSolid(L3.x - 1.1, L3.z + s * 6.8 - 1.1, L3.x + 1.1, L3.z + s * 6.8 + 1.1);
+  // W2 랜드마크: 관제탑 · 격납고 · 천문대 돔 · 성(언덕 위). 충돌체는 w·d 가 있으면 그 크기, 없으면 반폭 r
+  const big: [string, {solid: any; lit: any}][] = [['L4', controlTower()], ['L5', hangar()], ['L6', observatory()], ['L7', castle()]];
+  for (const [id, lm] of big) {
+    const L = CITY_LANDMARKS.find(l => l.id === id)!,
+      y = L.y ?? 0;
+    for (const lit of [false, true]) addMesh(grp, lit ? lm.lit : lm.solid, lit, L.x, L.z).position.y = y;
+    addSolid(L.x - (L.w ?? 2 * L.r) / 2, L.z - (L.d ?? 2 * L.r) / 2, L.x + (L.w ?? 2 * L.r) / 2, L.z + (L.d ?? 2 * L.r) / 2);
+  }
   // 골목 막다른 곳의 공사 울타리
   const fence = new THREE.Mesh(barrierGeo(12), lowMat());
-  fence.position.set(-112, 0, 0);
+  fence.position.set(-140, 0, 0);
   grp.add(fence);
-  addSolid(-112.4, -6, -111.6, 6);
+  addSolid(-140.4, -6, -139.6, 6);
+  // 거래의 선: 도시 둘레 금빛 기둥 띠 (바닥 인레이는 layout.ts)
+  addMesh(grp, tradeLine(), false);
 
   // 소품(인스턴싱)
   const plan = planProps(),

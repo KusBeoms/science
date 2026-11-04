@@ -4,7 +4,7 @@ import {PAD_IN} from '../data/world-map.js';
 import {locked} from './progress.js';
 import {G} from './runtime.js';
 
-export const SHOP_AT = {x: -15, z: -13},
+export const SHOP_AT = {x: 47, z: -10}, // W2: 상점가 입구(중앙 광장 동쪽 끝)로 이전
   SPAWN = {x: 0, z: 17},
   HUB_PAD = {x: 15, z: -13};
 /** 허브 타일 안 (m = 여유, 음수면 안쪽으로 좁힘) */

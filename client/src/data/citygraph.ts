@@ -1,12 +1,12 @@
-// 도시 보행 경로 그래프 (WORLD.md 5.2, W1 범위: 중앙 광장 · 사과 대로 · 상점가). 군중(systems/crowd.ts)이 이 위를 걷는다.
+// 도시 보행 경로 그래프 (WORLD.md 5.2): 중앙 광장 · 사과 대로 · 상점가 (W1) + 암시장 · 우주항 · 정비소 · 과학관 · 주거 (W2). 군중(systems/crowd.ts)이 이 위를 걷는다.
 // 보도 중심선은 data/city.ts 의 도로·광장 데이터에서 구하고, 걷는 도중 건물과의 충돌은 solidAt 으로 막는다.
 // 좌표: x 동, z 남 (사과 대로는 정북 = −z).
 import {CITY_PLAZAS, CITY_ROADS} from './city.js';
 
 /** 구역 id (ZONE_SHARE 의 인덱스) */
-export const Zone = {Plaza: 0, Avenue: 1, Shops: 2} as const;
-/** 구역별 군중 목표 비율 (WORLD 5.1 도시 구역별 목표의 광장 10 · 북문 6 · 상점가 12) */
-export const ZONE_SHARE = [10, 6, 12] as const;
+export const Zone = {Plaza: 0, Avenue: 1, Shops: 2, Market: 3, Harbor: 4, Garage: 5, Science: 6, Resi: 7} as const;
+/** 구역별 군중 목표 비율 (WORLD 5.1: 광장 10 · 북문 6 · 상점가 12 · 암시장 20 · 우주항 4 · 정비소 3 · 과학관 5 · 주거 6 = 66) */
+export const ZONE_SHARE = [10, 6, 12, 20, 4, 3, 5, 6] as const;
 
 export interface CityGraph {
   x: Float32Array;
@@ -78,6 +78,8 @@ function build(): CityGraph {
   }
   for (const x of [58, 95, 143]) link(Zone.Shops, [[x, -ST], [x, 0], [x, ST]]);
 
+  buildW2(link);
+
   return {
     x: Float32Array.from(xs),
     z: Float32Array.from(zs),
@@ -85,6 +87,50 @@ function build(): CityGraph {
     idle: Uint8Array.from(idle),
     adj: nb.map(s => Uint16Array.from(s)),
   };
+}
+
+/** W2 구역 보도(경로) 그래프. 좌표는 data/city.ts 도로·건물 문 앞 기준 (문 앞 1.5u 이내가 보도 중심선) */
+function buildW2(link: (z: number, pts: Pt[]) => void) {
+  const R = CITY_PLAZAS[0].rect[2] - 9;
+  // --- 암시장 골목: 바깥 고리(x −54/−126, z ±30) + 가운데 골목 양옆(z ±4.5) ---
+  const M = Zone.Market;
+  link(M, [[-R, 0], [-54, -4.5]]);
+  link(M, [[-R, 0], [-54, 4.5]]);
+  link(M, [[-R, -21], [-54, -30]]);
+  link(M, [[-R, 21], [-54, 30]]);
+  for (const x of [-54, -126]) link(M, [[x, -30], [x, -4.5], [x, 4.5], [x, 30]]);
+  for (const z of [-30, 30]) link(M, [[-54, z], [-72, z, 1], [-90, z], [-108, z, 1], [-126, z]]);
+  for (const z of [-4.5, 4.5]) link(M, [[-54, z], [-74, z, 1], [-98, z, 1], [-126, z]]);
+  // --- 우주항: 항구 도로 양옆 보도 → 광장 둘레 + 가운데 줄 ---
+  const H = Zone.Harbor;
+  for (const s of [-1, 1]) {
+    link(H, [[s * 21, R], [s * 9.5, R], [0, R]]);
+    link(H, [[s * 9.5, R], [s * 9.5, 70], [s * 9.5, 95, 1], [s * 9.5, 116]]);
+  }
+  link(H, [[-36, 116], [-9.5, 116], [0, 116], [9.5, 116], [36, 116]]);
+  link(H, [[0, 116], [0, 130, 1], [0, 146]]);
+  link(H, [[-36, 146], [0, 146], [36, 146]]);
+  for (const x of [-36, 36]) link(H, [[x, 116], [x, 131, 1], [x, 146]]);
+  // --- 정비소: 도로 서쪽 보도 + 시험로 양옆 보도 + 북쪽·동쪽 고리 ---
+  const G = Zone.Garage;
+  link(G, [[R, -R], [55.5, -R], [55.5, -63.5], [55.5, -76.5], [55.5, -100, 1], [55.5, -145]]);
+  link(G, [[55.5, -63.5], [75, -63.5, 1], [95, -63.5], [115, -63.5, 1], [140, -63.5]]);
+  link(G, [[55.5, -76.5], [78, -76.5], [110, -76.5, 1], [140, -76.5]]);
+  link(G, [[140, -63.5], [140, -76.5], [140, -110, 1], [140, -145]]);
+  link(G, [[55.5, -145], [100, -145, 1], [140, -145]]);
+  // --- 과학관: 도로 양옆 보도 + 돔 앞뜰 고리 ---
+  const S = Zone.Science;
+  link(S, [[R, R], [R, 55.5], [55.5, 55.5], [80, 55.5, 1], [110, 55.5], [144, 55.5]]);
+  link(S, [[55.5, 55.5], [55.5, 68.5], [80, 68.5], [100, 68.5, 1], [120, 68.5], [144, 68.5]]);
+  link(S, [[144, 55.5], [144, 68.5]]);
+  link(S, [[100, 68.5], [100, 78]]);
+  link(S, [[72, 78], [100, 78], [128, 78], [128, 106, 1], [128, 134], [100, 134, 1], [72, 134], [72, 106, 1], [72, 78]]);
+  // --- 주거: 도로 양옆 보도 ---
+  const Z = Zone.Resi;
+  link(Z, [[-R, R], [-R, 93.5], [-52, 93.5]]);
+  for (const z of [93.5, 106.5]) link(Z, [[-52, z], [-64, z, 1], [-82, z], [-100, z, 1], [-118, z], [-136, z]]);
+  link(Z, [[-R, 93.5], [-R, 106.5], [-52, 106.5]]);
+  link(Z, [[-136, 93.5], [-136, 106.5]]);
 }
 
 export const CITY_GRAPH = build();

@@ -1,6 +1,7 @@
 // 도시 허브 1차(W1) 배치 데이터: 도로·보도·광장·건물·랜드마크 (docs/WORLD.md 3장). 순수 데이터라 렌더(render/city/*)와 군중 경로(data/citygraph.ts)가 같이 쓴다.
 // 좌표계: x 동(+), z 남(+). 사과 대로는 x=0 에서 정북(−z)으로 뻗는다. 기지(0,0)·상점·포탈 패드 좌표는 core/geometry.ts 그대로.
 import type {PalName} from '../render/lowpoly/palette.js';
+import {BUILDINGS_W2} from './city-w2.js';
 
 /** [x0, z0, x1, z1] */
 export type CityRect = readonly [number, number, number, number];
@@ -18,9 +19,17 @@ export interface CityRoad {
 }
 export const CITY_ROADS: readonly CityRoad[] = [
   {id: 'apple', x0: 0, z0: -50, x1: 0, z1: -150, w: 24, sidewalk: 3, car: true}, // 사과 대로: 광장 북변 → 도시 북단 → S1 문
-  {id: 'harbor', x0: 0, z0: 50, x1: 0, z1: 150, w: 16, sidewalk: 3, car: true}, // 항구 가는 길(W2 에서 건물이 들어선다)
+  {id: 'harbor', x0: 0, z0: 50, x1: 0, z1: 112, w: 16, sidewalk: 3, car: true}, // 항구 가는 길 → 우주항 광장
   {id: 'promenade', x0: 50, z0: 0, x1: 150, z1: 0, w: 10, sidewalk: 3, car: false}, // 상점가 보행 도로
-  {id: 'alley', x0: -50, z0: 0, x1: -112, z1: 0, w: 8, sidewalk: 2, car: true}, // 암시장 골목
+  {id: 'alley', x0: -50, z0: 0, x1: -138, z1: 0, w: 8, sidewalk: 2, car: true}, // 암시장 골목(가운데 줄)
+  // --- W2: 나머지 구역 ---
+  {id: 'market-n', x0: -54, z0: -30, x1: -126, z1: -30, w: 6, sidewalk: 1, car: false}, // 암시장 위 골목
+  {id: 'market-s', x0: -54, z0: 30, x1: -126, z1: 30, w: 6, sidewalk: 1, car: false}, // 암시장 아래 골목
+  {id: 'market-x', x0: -126, z0: -30, x1: -126, z1: 30, w: 6, sidewalk: 1, car: false}, // 세 골목을 잇는 안쪽 세로 골목
+  {id: 'garage', x0: 62, z0: -50, x1: 62, z1: -146, w: 10, sidewalk: 3, car: true}, // 정비소 구역 세로 도로
+  {id: 'testrun', x0: 62, z0: -70, x1: 146, z1: -70, w: 10, sidewalk: 3, car: true}, // 시험로(격납고 앞)
+  {id: 'sci-east', x0: 50, z0: 62, x1: 150, z1: 62, w: 10, sidewalk: 3, car: true}, // 과학관 구역 가로 도로
+  {id: 'resi', x0: -50, z0: 100, x1: -138, z1: 100, w: 10, sidewalk: 3, car: true}, // 주거 지구 도로
 ];
 
 /** 광장·마당(보행 전용 포장 사각형). 중앙 광장은 한가운데 기지 부지(±22)를 품는다 */
@@ -31,7 +40,13 @@ export interface CityPlaza {
 export const CITY_PLAZAS: readonly CityPlaza[] = [
   {id: 'central', rect: [-50, -50, 50, 50]},
   {id: 'clock-court', rect: [-36, -116.3, -15, -105.4]}, // 시계탑 앞마당
+  {id: 'port', rect: [-44, 112, 44, 148]}, // 우주항 광장 (착륙 패드 4: CITY_PADS)
+  {id: 'dome-court', rect: [80, 84, 120, 128]}, // 천문대 돔 앞뜰
+  {id: 'pad-w', rect: [72, -116, 84, -84]}, // 정비소 착륙대 2곳
+  {id: 'pad-e', rect: [132, -116, 148, -84]},
 ];
+/** 우주항 발착 패드 4개 (바닥에 원 무늬로 그린다, 반지름 5) */
+export const CITY_PADS: readonly {x: number; z: number}[] = [-30, -10, 10, 30].map(x => ({x, z: 128}));
 
 /** 보도 사각형 (도로 양옆 띠). 군중이 걷는 곳 */
 export const CITY_SIDEWALKS: readonly CityRect[] = CITY_ROADS.flatMap(r => {
@@ -53,7 +68,7 @@ export type BuildingStyle = 'shop' | 'house' | 'office' | 'neon';
 export type SignIcon = 'gem' | 'planet' | 'cube' | 'cone' | 'cross';
 export interface CityBuilding {
   id: string;
-  district: 'avenue' | 'shops' | 'alley';
+  district: 'avenue' | 'shops' | 'alley' | 'market' | 'garage' | 'port' | 'science' | 'resi';
   face: Facing;
   /** 발자국 중심 */
   x: number;
@@ -148,19 +163,27 @@ export const CITY_BUILDINGS: readonly CityBuilding[] = [
       roof: 'slate',
     }))
   ),
+  ...BUILDINGS_W2,
 ];
 
-/** 랜드마크 (WORLD 3.2). 높이 h, 충돌 반폭 r */
+/** 랜드마크 (WORLD 3.2). 높이 h, 충돌 반폭 r. w·d 가 있으면 충돌체는 그 크기의 직사각형, y 는 바닥 높이(언덕 위 성) */
 export interface CityLandmark {
-  id: 'L1' | 'L2' | 'L3';
-  kind: 'clock' | 'orrery' | 'arch';
+  id: 'L1' | 'L2' | 'L3' | 'L4' | 'L5' | 'L6' | 'L7';
+  kind: 'clock' | 'orrery' | 'arch' | 'tower' | 'hangar' | 'dome' | 'castle';
   x: number;
   z: number;
   h: number;
   r: number;
+  w?: number;
+  d?: number;
+  y?: number;
 }
 export const CITY_LANDMARKS: readonly CityLandmark[] = [
   {id: 'L1', kind: 'clock', x: -30, z: -110.9, h: 48, r: 5},
   {id: 'L2', kind: 'orrery', x: 0, z: -40, h: 6, r: 4.5},
   {id: 'L3', kind: 'arch', x: -60, z: 0, h: 12, r: 7},
+  {id: 'L4', kind: 'tower', x: 43, z: 136, h: 36, r: 5},
+  {id: 'L5', kind: 'hangar', x: 108, z: -110, h: 26, r: 22, w: 44, d: 32},
+  {id: 'L6', kind: 'dome', x: 100, z: 106, h: 22, r: 14},
+  {id: 'L7', kind: 'castle', x: -105, z: -105, h: 30, r: 15, w: 28, d: 28, y: 12},
 ];
