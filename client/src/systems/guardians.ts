@@ -2,9 +2,11 @@
 import {G} from '../core/runtime.js';
 import {clamp, dist2} from '../core/util.js';
 import {inSector} from '../core/geometry.js';
+import {heightAt} from '../core/heightmap.js';
 import {isNext, locked, reqMissing} from '../core/progress.js';
 import {SECTORS} from '../data/sectors.js';
 import {animateWalk} from '../render/characters.js';
+import {animateGate, setGateState} from '../render/gates.js';
 import {caught} from '../game/actions.js';
 
 export function updateGuardians(dt: number, t: number) {
@@ -12,18 +14,9 @@ export function updateGuardians(dt: number, t: number) {
     if (!c) return;
     const s = SECTORS[i],
       lk = locked(i),
-      next = isNext(i),
-      ready = next && !reqMissing(i).length,
-      key = `${lk ? (next ? (ready ? 'r' : 'n') : 'l') : 'o'}${i}`,
-      gl = c.gate.gl;
-    c.gate.panel.visible = lk;
-    if (gl.userData.txt !== key) {
-      gl.userData.txt = key;
-      gl.userData.setText(
-        !lk ? `🔓 ${i + 1}단계` : ready ? `🔒 ${i + 1}단계 시험 — E` : next ? `🔒 ${i + 1}단계 · 조건 필요` : `🔒 ${i + 1}단계`,
-        lk ? '#ff8aa0' : '#9dffb0'
-      );
-    }
+      next = isNext(i);
+    setGateState(c.gate, lk ? (next ? (reqMissing(i).length ? 'next' : 'ready') : 'far') : 'open', i);
+    animateGate(c.gate, t);
     const g = c.guard,
       gp = g.m.position,
       h = s.size / 2,
@@ -39,12 +32,13 @@ export function updateGuardians(dt: number, t: number) {
       g.m.rotation.y = Math.atan2(dx, dz);
       animateWalk(g.m, t * sp * 0.22);
     } else if (d <= 0.8) animateWalk(g.m, 0);
+    gp.y = heightAt(gp.x, gp.z); // 기복 위를 걷는다
     const gu = g.m.userData,
       hot = new THREE.Color(s.guard.glow).lerp(new THREE.Color(0xffffff), g.chase ? 0.55 : 0);
     gu.eyes.color.copy(hot);
     gu.glow.color.copy(hot);
     gu.aura.scale.setScalar(1 + Math.sin(t * 3 + i) * 0.06);
     gu.aura.material.opacity = g.chase ? 0.9 : 0.5;
-    if (g.chase && dist2(G.me.pos, gp) < 3 && G.me.pos.y < 3.2 && dt > 0) caught();
+    if (g.chase && dist2(G.me.pos, gp) < 3 && G.me.pos.y - gp.y < 3.2 && dt > 0) caught();
   });
 }

@@ -1,5 +1,6 @@
-// 지도 판정 (2D): 허브/섹터 안·바닥·막힘·문·포탈 패드·슬롯 좌표
+// 지도 판정 (2D): 허브/섹터 안·잠긴 구역 막힘·문·포탈 패드·슬롯 좌표 (바닥 높이는 core/terrain.ts)
 import {H, SECTORS} from '../data/sectors.js';
+import {PAD_IN} from '../data/world-map.js';
 import {locked} from './progress.js';
 import {G} from './runtime.js';
 
@@ -19,8 +20,6 @@ export const sectorDist = (x: number, z: number, i: number) => {
     h = s.size / 2;
   return Math.hypot(Math.max(0, Math.abs(x - s.center.x) - h), Math.max(0, Math.abs(z - s.center.z) - h));
 };
-export const onGround = (x: number, z: number) =>
-  inBase(x, z) || SECTORS.some((_, i) => !locked(i) && inSector(x, z, i));
 export const blockedAt = (x: number, z: number) => SECTORS.some((_, i) => locked(i) && inSector(x, z, i));
 export const slotPos = (i: number) => ({x: -16 + 8 * (i % 5), z: 2 + 8 * Math.floor(i / 5)});
 export const zoneAt = () => {
@@ -44,9 +43,9 @@ export function nearGate(i: number, x: number, z: number, d: number) {
     dz = z - f.z;
   return Math.abs(dx * f.ix + dz * f.iz) < d && Math.abs(dx * f.lx + dz * f.lz) < SECTORS[i].size / 2 + 2;
 }
-/** 섹터 포탈 패드: 문에서 안쪽으로 8, 옆으로 반변의 절반 */
+/** 섹터 포탈 패드: 문에서 안쪽으로 PAD_IN(둘레 능선 안쪽 평지), 옆으로 반변의 절반 */
 export function padPos(i: number) {
   const f = gateFrame(i),
     o = SECTORS[i].size / 4;
-  return {x: f.x + f.ix * 8 + f.lx * o, z: f.z + f.iz * 8 + f.lz * o};
+  return {x: f.x + f.ix * PAD_IN + f.lx * o, z: f.z + f.iz * PAD_IN + f.lz * o};
 }

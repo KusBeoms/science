@@ -49,7 +49,6 @@ export const G = {
   resetting: false,
   saveI: 0,
   // three.js 객체
-  starPts: null as any,
   renderer: null as any,
   scene: null as any,
   camera: null as any,

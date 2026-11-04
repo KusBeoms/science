@@ -44,12 +44,14 @@ export function freePlanet(g: any) {
     }
   });
 }
+/** 트리의 지오메트리·재질·텍스처를 해제한다. userData.keep 인 공유 지오메트리/재질은 남긴다 */
 export function freeTree(o: any) {
   o.traverse((c: any) => {
-    if (c.geometry) c.geometry.dispose();
+    if (c.geometry && !c.geometry.userData.keep) c.geometry.dispose();
     if (c.material) {
       const ms = Array.isArray(c.material) ? c.material : [c.material];
       ms.forEach((m: any) => {
+        if (m.userData.keep) return;
         if (m.map) m.map.dispose();
         m.dispose();
       });

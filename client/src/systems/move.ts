@@ -1,8 +1,12 @@
 // 플레이어 이동: 입력 → 걷기/달리기(스태미나) → 막힘 판정 → 점프·중력·바닥 (속도 배율·비행은 시스템 레지스트리 훅)
+/** 몸 반지름 (충돌체 판정) · 내리막에서 떨어지지 않고 바닥에 붙는 최대 낙차 */
+const BODY_R = 0.6,
+  SNAP_DOWN = 2.5;
 import {S} from '../core/state.js';
 import {G, paused} from '../core/runtime.js';
 import {$} from '../core/util.js';
-import {blockedAt, onGround} from '../core/geometry.js';
+import {blockedAt} from '../core/geometry.js';
+import {groundH, solidAt, walkable} from '../core/terrain.js';
 import {P} from '../data/planets.js';
 import {SPR} from '../data/shop.js';
 import {animateWalk} from '../render/characters.js';
@@ -69,7 +73,8 @@ export function movePlayer(dt: number, t: number) {
     if (G.tired && G.stam >= 30) G.tired = false;
   }
   setStam(Math.round(G.stam) + '%', G.tired);
-  const hold = G.carry.length > 0;
+  const hold = G.carry.length > 0,
+    wasOn = G.me.pos.y <= groundH(G.me.pos.x, G.me.pos.z) + 0.02; // 이번 프레임 시작에 땅에 서 있었나
   if (moving) {
     mx /= ml;
     mz /= ml;
@@ -77,11 +82,13 @@ export function movePlayer(dt: number, t: number) {
       oz = G.me.pos.z,
       nx = ox + mx * spd * dt,
       nz = oz + mz * spd * dt;
-    if (!blockedAt(nx, nz)) {
+    const blocked = (x: number, z: number) =>
+      blockedAt(x, z) || solidAt(x, z, BODY_R) || !walkable(ox, oz, G.me.pos.y, x, z);
+    if (!blocked(nx, nz)) {
       G.me.pos.x = nx;
       G.me.pos.z = nz;
-    } else if (!blockedAt(nx, oz)) G.me.pos.x = nx;
-    else if (!blockedAt(ox, nz)) G.me.pos.z = nz;
+    } else if (!blocked(nx, oz)) G.me.pos.x = nx;
+    else if (!blocked(ox, nz)) G.me.pos.z = nz;
     G.me.rotation.y = Math.atan2(mx, mz);
     animateWalk(G.me, t * spd * 0.22, hold);
   } else animateWalk(G.me, 0, hold);
@@ -89,8 +96,8 @@ export function movePlayer(dt: number, t: number) {
     G.me.vy = 0; // 비행 중: 높이는 그 시스템이 정한다
     return;
   }
-  const gnd = onGround(G.me.pos.x, G.me.pos.z);
-  if (!paused() && (G.keys.Space || G.jumpHeld) && G.me.pos.y <= 0.02 && gnd) {
+  const gnd = groundH(G.me.pos.x, G.me.pos.z);
+  if (!paused() && (G.keys.Space || G.jumpHeld) && G.me.pos.y <= gnd + 0.02 && gnd > -Infinity) {
     G.me.vy = 14 * SPR[S.eq][3];
   }
   const prevY = G.me.pos.y;
@@ -98,9 +105,10 @@ export function movePlayer(dt: number, t: number) {
     G.me.vy -= 34 * gravityNow() * dt;
     G.me.pos.y += G.me.vy * dt;
   }
-  if (gnd && G.me.pos.y < 0 && prevY > -1.2 && G.me.vy <= 0) {
-    G.me.pos.y = 0;
+  // 땅에 서 있던 몸은 낙차 SNAP_DOWN 안이면 내리막에 붙고, 공중에서 내려오는 몸은 바닥을 뚫지 않는다 (이전 프레임 높이로 판정 — 저프레임·높은 점프 대비)
+  if (gnd > -Infinity && G.me.vy <= 0 && (wasOn ? G.me.pos.y - gnd <= SNAP_DOWN : G.me.pos.y < gnd && prevY > gnd - 1.2)) {
+    G.me.pos.y = gnd;
     G.me.vy = 0;
-  } // 이전 프레임 높이로 판정 — 저프레임·높은 점프에서 바닥을 뚫지 않게
+  }
   if (G.me.pos.y < -45) respawn();
 }

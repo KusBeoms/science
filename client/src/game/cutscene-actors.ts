@@ -2,6 +2,7 @@
 import {G} from '../core/runtime.js';
 import {animateWalk, blocky} from '../render/characters.js';
 import {makeGuardian} from '../render/guardian.js';
+import {buildApple, pulseHalo} from '../render/apple.js';
 import {freeTree} from '../render/textures.js';
 import type {ActKey, ActorKind, Anim, Setup, Vec3} from '../data/cutscene-types.js';
 import {num, step, vec} from './cutscene-track.js';
@@ -23,29 +24,12 @@ const basic = (c: number) => new THREE.MeshBasicMaterial({color: c, fog: false})
     o.position.set(x, y, z);
     return o;
   };
-/** 사과 후광: 붉은 방사형 그라디언트 */
-function glowTex() {
-  const c = document.createElement('canvas');
-  c.width = c.height = 128;
-  const x = c.getContext('2d')!,
-    g = x.createRadialGradient(64, 64, 4, 64, 64, 64);
-  g.addColorStop(0, 'rgba(255,110,120,0.7)');
-  g.addColorStop(1, 'rgba(255,60,80,0)');
-  x.fillStyle = g;
-  x.fillRect(0, 0, 128, 128);
-  return new THREE.CanvasTexture(c);
-}
 const BUILD: Record<ActorKind, () => Built> = {
   player: () => ({obj: G.me, top: 4.2}),
   apple: () => {
-    const g = new THREE.Group(),
-      halo = new THREE.Sprite(new THREE.SpriteMaterial({map: glowTex(), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false})),
-      body = mesh(new THREE.SphereGeometry(22, 32, 24), lit(0xd8232a, 0x5a0c10));
-    body.scale.y = 0.94;
-    halo.scale.setScalar(84);
-    g.add(halo, body, mesh(new THREE.BoxGeometry(1.6, 6, 1.6), lit(0x5a3a1a, 0x1a1008), 0, 22, 0), mesh(new THREE.SphereGeometry(4.5, 12, 8), lit(0x4caf50, 0x103a14), 4, 24, 0));
-    g.children[3].scale.set(1.6, 0.5, 0.9);
-    return {obj: g, top: 30, tick: t => halo.scale.setScalar(84 + 5 * Math.sin(t * 3))};
+    const a = buildApple();
+    a.group.scale.setScalar(22);
+    return {obj: a.group, top: 30, tick: t => pulseHalo(a, t)};
   },
   ring: () => {
     const g = new THREE.Group(),

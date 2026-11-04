@@ -28,7 +28,8 @@ export interface SectorReq {
   spd?: number;
   vehicle?: number;
   dex?: number;
-  chapter?: number;
+  /** S.story.beat (+ mid/10) 이상, 예: 4.1 = 중간 비트 4-1 */
+  beat?: number;
 }
 export interface Sector {
   id: string;
