@@ -31,6 +31,7 @@ science/
 | [CONTENT_PLAN.md](CONTENT_PLAN.md) | **콘텐츠 기획서** — 12개 구역·행성 80종·이야기·이동 수단·하이스트·NPC 등 구체 내용과 결정할 것 |
 | [AUDIO.md](AUDIO.md) | 사운드 시스템 구조, `sfx` 이름표, BGM, 접근성 |
 | [WORLD.md](WORLD.md) | **월드 설계(제안)** — 도시 허브 + 이어진 대륙(사용자 확정) · 로우폴리(사용자 확정), 지도·도시·집·군중·아트 규칙·마일스톤 W0~W7 |
+| [WEB_ROOT_README.md](WEB_ROOT_README.md) | **상위 `../README.md` 초안** — 프로젝트 소개·서비스 구성·환경변수·공개 경로. 상위 디렉터리로 복사해 사용 |
 | [ECONOMY.md](ECONOMY.md) | **경제·진행 곡선 재설계** — 10.5h 목표 곡선, 구역별 체류·수입 표, 상점 sink, `pacing.ts` 상수 후보, 시뮬 합격 기준 |
 | [QUIZ_BANK.md](QUIZ_BANK.md) | **문제 은행 설계** — 210문항 배분, `QuizItem` 스키마, 출제 원칙, 샘플 25개, 시험·복습 규칙, 작성 워크플로 |
 | [PLANET_CATALOG.md](PLANET_CATALOG.md) | **행성 80종 도감** — 구역별 표(등급·외형·설명·단원), 분포, 외형·돌연변이 규칙, 특수 행성(사과·삼성) |
@@ -50,7 +51,7 @@ science/
 ## 규칙 요약
 - 코드 파일은 ~400줄 권장, **최대 500줄**. 넘으면 기능 단위로 분리.
 - 구조/역할/상태가 바뀌면 이 폴더 문서를 함께 갱신. 마일스톤마다 간단히 커밋.
-- 상위 `../README.md`(web 루트)를 갱신하라는 규칙이 있으나, 현재 `/Users/dalgsiki/Developer/README.md`가 존재하지 않는다. (아래 "미해결" 참고)
+- 상위 `../README.md`(web 루트)를 갱신하라는 규칙이 있으나 저장소 밖 파일이라 만들 수 없다. 대신 초안을 [WEB_ROOT_README.md](WEB_ROOT_README.md)에 두었다(아래 "메모" 참고).
 
-## 미해결 / 메모
-- `../README.md` 부재: CLAUDE.md는 상위 README를 참조·갱신하라고 하지만 파일이 없어 건너뛰었다. 필요하면 만들 위치/내용을 알려 달라.
+## 메모
+- `../README.md`: 사용자가 "알아서 만들어"라고 해 초안을 [WEB_ROOT_README.md](WEB_ROOT_README.md)에 작성했다. 상위 디렉터리로 복사해 사용한다(해결).

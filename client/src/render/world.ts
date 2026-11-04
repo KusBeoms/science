@@ -2,16 +2,30 @@
 import {G} from '../core/runtime.js';
 import {rnd} from '../core/util.js';
 import {SHOP_AT, SPAWN, slotPos} from '../core/geometry.js';
+import {CITY_HALF, PASSES} from '../core/terrain.js';
 import {P} from '../data/planets.js';
 import {SECTORS, TS, sectorIndex} from '../data/sectors.js';
 import {CAPS} from '../data/shop.js';
 import {blocky, applyLook} from './characters.js';
 import {buildSpringOnHand, buildBag} from './gear.js';
 import {applyDeco} from './deco.js';
-import {label, makePlanet} from './textures.js';
+import {checkerTex, label, makePlanet} from './textures.js';
 import {buildPads} from './portals.js';
 import {tile} from './sectors.js';
 
+/** 임시 바닥(W1 에서 지형 메시로 교체): 도시 평지 + 구역 사이 통로. 기지 타일(top 0) 보다 살짝 낮게 깔아 겹침 깜빡임을 피한다 */
+function buildGround() {
+  const flat = (x0: number, z0: number, x1: number, z1: number, tex: any) => {
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(x1 - x0, 0.6, z1 - z0),
+      new THREE.MeshLambertMaterial(tex ? {map: tex} : {color: 0x555b68})
+    );
+    m.position.set((x0 + x1) / 2, -0.38, (z0 + z1) / 2);
+    G.scene.add(m);
+  };
+  flat(-CITY_HALF, -CITY_HALF, CITY_HALF, CITY_HALF, checkerTex('#4b5262', '#444b5a', CITY_HALF / 4));
+  PASSES.forEach(r => flat(r[0], r[1], r[2], r[3], null));
+}
 export function initWorld() {
   G.renderer = new THREE.WebGLRenderer({antialias: true});
   G.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
@@ -39,6 +53,7 @@ export function initWorld() {
   G.starPts = new THREE.Points(sg, new THREE.PointsMaterial({color: 0xffffff, size: 1.8, fog: false}));
   G.scene.add(G.starPts);
   G.baseFloor = tile(G.scene, 0, 0, '#3c8f48', '#358040', 0x1c3a22, TS);
+  buildGround();
   const bl = label('내 기지', '#9dffb0', 12);
   bl.position.set(0, 9, 10);
   G.scene.add(bl);

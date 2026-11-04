@@ -9,7 +9,11 @@ export function unlockSector(i: number) {
   S.unlocked[SECTORS[i].id] = 1;
   S.zone = zoneFrom(S.unlocked);
 }
-/** 아직 못 채운 해금 조건 문구 (빈 배열이면 입장 시험을 볼 수 있다) */
+/**
+ * 아직 못 채운 해금 조건 문구 (빈 배열이면 입장 시험을 볼 수 있다).
+ * requires.vehicle(이동 수단 단계)·requires.beat(스토리 비트)는 해당 시스템이 아직 S.vehicle·S.story.beat 를
+ * 올리지 않아 조건으로 검사하면 도달 불가가 되므로 임시로 무시한다. 시스템이 붙으면 이 함수에 두 줄을 더한다.
+ */
 export function reqMissing(i: number): string[] {
   const r = SECTORS[i].requires,
     out: string[] = [];
@@ -19,8 +23,6 @@ export function reqMissing(i: number): string[] {
   }
   if (r.dex && dexN() < r.dex) out.push(`도감 ${r.dex}종`);
   if (r.spd && S.spd < r.spd) out.push(`신발 Lv${r.spd}`);
-  if (r.vehicle && S.vehicle < r.vehicle) out.push(`이동 수단 ${r.vehicle}단계`);
-  if (r.chapter && S.chapter < r.chapter) out.push(`챕터 ${r.chapter}`);
   return out;
 }
 /** 잠겨 있고 바로 앞 섹터가 열려 있어 문이 "다음 차례"로 보이는 섹터 */

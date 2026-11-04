@@ -1,4 +1,4 @@
-// 지도 판정 (2D): 허브/섹터 안·바닥·막힘·문·포탈 패드·슬롯 좌표
+// 지도 판정 (2D): 허브/섹터 안·잠긴 구역 막힘·문·포탈 패드·슬롯 좌표 (바닥 높이는 core/terrain.ts)
 import {H, SECTORS} from '../data/sectors.js';
 import {locked} from './progress.js';
 import {G} from './runtime.js';
@@ -19,8 +19,6 @@ export const sectorDist = (x: number, z: number, i: number) => {
     h = s.size / 2;
   return Math.hypot(Math.max(0, Math.abs(x - s.center.x) - h), Math.max(0, Math.abs(z - s.center.z) - h));
 };
-export const onGround = (x: number, z: number) =>
-  inBase(x, z) || SECTORS.some((_, i) => !locked(i) && inSector(x, z, i));
 export const blockedAt = (x: number, z: number) => SECTORS.some((_, i) => locked(i) && inSector(x, z, i));
 export const slotPos = (i: number) => ({x: -16 + 8 * (i % 5), z: 2 + 8 * Math.floor(i / 5)});
 export const zoneAt = () => {
