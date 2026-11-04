@@ -256,7 +256,8 @@ function update(dt: number, raw: number) {
   const sim = G.started ? dt : raw; // 타이틀 화면에서도 거리가 살아 있게
   const px = G.me.pos.x,
     pz = G.me.pos.z;
-  meV = sim > 0 ? Math.hypot(px - meX, pz - meZ) / sim : 0;
+  const moved = Math.hypot(px - meX, pz - meZ);
+  meV = sim > 0 && moved < 6 ? moved / sim : 0; // 순간이동·포탈 도약은 달리기로 치지 않는다
   meX = px;
   meZ = pz;
   const active = Math.abs(px) < CITY_HALF + ACTIVE_MARGIN && Math.abs(pz) < CITY_HALF + ACTIVE_MARGIN;
