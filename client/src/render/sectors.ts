@@ -2,8 +2,12 @@
 import {G} from '../core/runtime.js';
 import {layoutOf, nests, nestPos} from '../core/layout.js';
 import {gateFrame, sectorDist} from '../core/geometry.js';
+import {heightAt} from '../core/heightmap.js';
 import {SECTORS} from '../data/sectors.js';
+import {dots, makeGate} from './gates.js';
 import {makeGuardian} from './guardian.js';
+import {buildLandmark} from './landmarks.js';
+import {streamTerrain} from './terrain.js';
 import {checkerTex, freePlanet, freeTree, label, makePlanet} from './textures.js';
 import type {Chunk} from '../core/types.js';
 
@@ -30,7 +34,8 @@ function addStars(grp: any, i: number) {
   layoutOf(i, G.gameT).stars.forEach(st => {
     // 항성(또는 블랙홀) + 궤도선 + 이름표
     const gs = new THREE.Group(),
-      y = st.R + 2;
+      gy = heightAt(st.x, st.z),
+      y = gy + st.R + 2;
     if (st.bh) {
       gs.add(new THREE.Mesh(new THREE.SphereGeometry(st.R, 32, 16), new THREE.MeshBasicMaterial({color: 0})));
       const dk = new THREE.Mesh(
@@ -59,64 +64,25 @@ function addStars(grp: any, i: number) {
           new THREE.MeshBasicMaterial({color: st.c[0], transparent: true, opacity: 0.28, side: THREE.DoubleSide})
         );
       rg.rotation.x = -Math.PI / 2;
-      rg.position.set(st.x, 0.06, st.z);
+      rg.position.set(st.x, gy + 0.3, st.z);
       grp.add(rg);
     }
   });
 }
-/** 문(아치): 섹터의 입구 변 */
-function makeGate(grp: any, i: number) {
-  const s = SECTORS[i],
-    f = gateFrame(i),
-    w = s.size,
-    g = new THREE.Group(),
-    pm = new THREE.MeshLambertMaterial({color: 0x8a93a8}),
-    pl1 = new THREE.Mesh(new THREE.BoxGeometry(2, 10, 2), pm),
-    pl2 = pl1.clone(),
-    bm = new THREE.Mesh(new THREE.BoxGeometry(w, 2, 2), pm);
-  pl1.position.set(-w / 2 + 1, 5, 0);
-  pl2.position.set(w / 2 - 1, 5, 0);
-  bm.position.set(0, 10, 0);
-  g.add(pl1, pl2, bm);
-  const panel = new THREE.Mesh(
-    new THREE.PlaneGeometry(w - 4, 9),
-    new THREE.MeshBasicMaterial({
-      color: 0xff3355,
-      transparent: true,
-      opacity: 0.3,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-    })
-  );
-  panel.position.set(0, 4.5, 0);
-  g.add(panel);
-  const gl = label('', '#ff8aa0', 16);
-  gl.position.set(0, 12.5, 0);
-  g.add(gl);
-  g.position.set(f.x, 0, f.z);
-  if (f.lz) g.rotation.y = Math.PI / 2;
-  g.userData.pick = {kind: 'gate', i};
-  grp.add(g);
-  return {grp: g, panel, gl};
-}
 function buildChunk(i: number): Chunk {
   const s = SECTORS[i],
     {x, z} = s.center,
-    grp = new THREE.Group();
-  tile(grp, x, z, s.floor[0], s.floor[1], 0x10141f, s.size);
-  const rim = new THREE.Mesh(
-    new THREE.BoxGeometry(s.size + 0.2, 0.1, s.size + 0.2),
-    new THREE.MeshBasicMaterial({color: s.rim, wireframe: true})
-  );
-  rim.position.set(x, 0.02, z);
-  grp.add(rim);
-  const f = gateFrame(i),
-    lt = label(`${i + 1}단계 · ${s.icon} ${s.name}`, '#ffffff', 14);
-  lt.position.set(x + f.ix * (s.size / 2 - 3), 9, z + f.iz * (s.size / 2 - 3)); // 문 반대편 끝
+    grp = new THREE.Group(),
+    f = gateFrame(i),
+    lx = x + f.ix * (s.size / 2 - 28),
+    lz = z + f.iz * (s.size / 2 - 28),
+    lt = label(`${s.icon} ${dots(i + 1)}`, '#ffffff', 14); // 이름표는 글 없이 아이콘 + 단계 점
+  lt.position.set(lx, heightAt(lx, lz) + 12, lz); // 문 반대편 끝
   grp.add(lt);
+  grp.add(buildLandmark(i));
   addStars(grp, i);
   const gd = makeGuardian(s.guard.glow);
-  gd.position.set(x, 0, z);
+  gd.position.set(x, heightAt(x, z), z);
   grp.add(gd);
   const gate = makeGate(grp, i);
   G.scene.add(grp);
@@ -152,6 +118,7 @@ export function streamSectors() {
       G.chunks[i] = null;
     }
   });
+  streamTerrain(LOAD, UNLOAD);
 }
 /** 로드된 섹터의 둥지 행성 메시를 nests 상태와 동기화 */
 export function syncNests(t: number) {
@@ -180,7 +147,7 @@ export function syncNests(t: number) {
         const p = nestPos(i, k),
           r = m.grp.userData.r;
         m.grp.scale.setScalar(r);
-        m.grp.position.set(p.x, (p.kind === 'orbit' ? 2.6 : 1.3) + r + Math.sin(t * 1.5 + k) * 0.15, p.z);
+        m.grp.position.set(p.x, heightAt(p.x, p.z) + (p.kind === 'orbit' ? 2.6 : 1.3) + r + Math.sin(t * 1.5 + k) * 0.15, p.z);
         m.grp.rotation.y = t * (p.kind === 'orbit' ? 0.9 : 0.5);
         m.grp.userData.pick = {kind: 'nest', z: i, k};
       }

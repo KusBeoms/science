@@ -1,6 +1,7 @@
 // 도시 보행 경로 그래프 (WORLD.md 5.2, W1 범위: 중앙 광장 · 사과 대로 · 상점가). 군중(systems/crowd.ts)이 이 위를 걷는다.
-// 건물 배치(data/city.ts)가 정해지기 전이라 WORLD.md 3장 레이아웃의 보도 중심선을 직접 적었다. 건물과의 충돌은 걸을 때 solidAt 으로 막는다.
+// 보도 중심선은 data/city.ts 의 도로·광장 데이터에서 구하고, 걷는 도중 건물과의 충돌은 solidAt 으로 막는다.
 // 좌표: x 동, z 남 (사과 대로는 정북 = −z).
+import {CITY_PLAZAS, CITY_ROADS} from './city.js';
 
 /** 구역 id (ZONE_SHARE 의 인덱스) */
 export const Zone = {Plaza: 0, Avenue: 1, Shops: 2} as const;
@@ -50,17 +51,22 @@ function build(): CityGraph {
       nb[at[i]].add(at[i - 1]);
     }
   };
-  const R = 41, // 광장 보도 고리 반변 (기지 타일 반변 22, 광장 반변 50)
-    LANE = 12.5; // 사과 대로 보도 중심선 (도로 폭 24)
+  const lane = (id: string) => {
+    const r = CITY_ROADS.find(o => o.id === id)!;
+    return r.w / 2 + r.sidewalk / 2; // 보도 띠의 가운데
+  };
+  const R = CITY_PLAZAS[0].rect[2] - 9, // 광장 보도 고리: 중앙 광장 가장자리에서 9u 안쪽 (기지 부지 ±22 밖)
+    LANE = lane('apple'),
+    ST = lane('promenade');
 
   // 중앙 광장 보도 고리. 북변 가운데는 오러리 분수(0,−45)가 막고 있어 비운다 (대로 보도 두 줄이 양쪽으로 들어온다)
   link(Zone.Plaza, [[-R, -R], [-26, -R, 1], [-LANE, -R]]);
   link(Zone.Plaza, [[LANE, -R], [26, -R, 1], [R, -R]]);
-  link(Zone.Plaza, [[R, -R], [R, -21], [R, -9], [R, 0], [R, 9], [R, 21], [R, R]]);
+  link(Zone.Plaza, [[R, -R], [R, -21], [R, -ST], [R, 0], [R, ST], [R, 21], [R, R]]);
   link(Zone.Plaza, [[R, R], [21, R], [0, R, 1], [-21, R], [-R, R]]);
   link(Zone.Plaza, [[-R, R], [-R, 21], [-R, 0, 1], [-R, -21], [-R, -R]]);
 
-  // 사과 대로: 양쪽 보도 + 건널목 3곳
+  // 사과 대로: 양쪽 보도 (분수 L2 는 (0,−40) 이라 북변 가운데를 비운다) + 건널목 3곳
   for (const s of [-1, 1]) {
     link(Zone.Avenue, [[s * LANE, -R], [s * LANE, -62], [s * LANE, -85, 1], [s * LANE, -110], [s * LANE, -135, 1], [s * LANE, -144]]);
   }
@@ -68,9 +74,9 @@ function build(): CityGraph {
 
   // 상점가: 동쪽 도로(z=0) 양쪽 보도 + 건널목, 가게 앞 idle
   for (const s of [-1, 1]) {
-    link(Zone.Shops, [[R, s * 9], [58, s * 9], [75, s * 9, 1], [95, s * 9], [115, s * 9, 1], [132, s * 9], [143, s * 9]]);
+    link(Zone.Shops, [[R, s * ST], [58, s * ST], [75, s * ST, 1], [95, s * ST], [115, s * ST, 1], [132, s * ST], [143, s * ST]]);
   }
-  for (const x of [58, 95, 143]) link(Zone.Shops, [[x, -9], [x, 0], [x, 9]]);
+  for (const x of [58, 95, 143]) link(Zone.Shops, [[x, -ST], [x, 0], [x, ST]]);
 
   return {
     x: Float32Array.from(xs),

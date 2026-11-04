@@ -47,10 +47,9 @@ export function buildCity(): any {
   grp.name = 'city';
   nightMeshes.length = 0;
 
-  // 지면: 다른 평면(통로·지형)과 겹쳐도 이기도록 살짝 끌어당긴다
-  const mat = new THREE.MeshLambertMaterial({vertexColors: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1}),
-    ground = new THREE.Mesh(groundGeometry(), mat);
-  ground.position.y = -0.03;
+  // 지면: 기지 타일(윗면 y=0)보다 0.05 낮고 통로 판(윗면 -0.08)보다 0.03 높다
+  const ground = new THREE.Mesh(groundGeometry(), new THREE.MeshLambertMaterial({vertexColors: true}));
+  ground.position.y = -0.05;
   grp.add(ground);
 
   const where = (b: CityBuilding) => (b.district === 'avenue' ? (b.x < 0 ? 'w' : 'e') : b.district);

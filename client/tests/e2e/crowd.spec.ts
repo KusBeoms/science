@@ -5,19 +5,31 @@ const CROWD = '/js/systems/crowd.js';
 const GRAPH = '/js/data/citygraph.js';
 const TERRAIN = '/js/core/terrain.js';
 
-test('citygraph is one connected component with no dead ends', async ({game}) => {
+test('citygraph is connected, has no dead ends, and keeps clear of buildings', async ({game}) => {
   const {page} = game;
   await game.open('?debug=1');
-  const r = await page.evaluate(async url => {
-    const {CITY_GRAPH: g} = await import(url);
-    const seen = new Set<number>([0]);
-    const q = [0];
-    while (q.length) for (const n of g.adj[q.pop()!]) if (!seen.has(n)) (seen.add(n), q.push(n));
-    return {nodes: g.x.length, reached: seen.size, minDeg: Math.min(...g.adj.map((a: Uint16Array) => a.length))};
-  }, GRAPH);
+  const r = await page.evaluate(
+    async ([graph, terrain]) => {
+      const {CITY_GRAPH: g} = await import(graph);
+      const {solidAt} = await import(terrain);
+      const seen = new Set<number>([0]);
+      const q = [0];
+      while (q.length) for (const n of g.adj[q.pop()!]) if (!seen.has(n)) (seen.add(n), q.push(n));
+      let blocked = 0;
+      g.adj.forEach((adj: Uint16Array, a: number) =>
+        adj.forEach(b => {
+          const len = Math.hypot(g.x[b] - g.x[a], g.z[b] - g.z[a]);
+          for (let t = 0; t <= len; t += 0.5) if (solidAt(g.x[a] + ((g.x[b] - g.x[a]) * t) / len, g.z[a] + ((g.z[b] - g.z[a]) * t) / len, 0.45)) blocked++;
+        })
+      );
+      return {nodes: g.x.length, reached: seen.size, minDeg: Math.min(...g.adj.map((a: Uint16Array) => a.length)), blocked};
+    },
+    [GRAPH, TERRAIN],
+  );
   expect(r.nodes).toBeGreaterThan(40);
   expect(r.reached).toBe(r.nodes);
   expect(r.minDeg).toBeGreaterThanOrEqual(2);
+  expect(r.blocked).toBe(0);
 });
 
 test('crowd fills to 24, never enters solids, and reacts with at most 6 emoji bubbles', async ({game}) => {
@@ -76,5 +88,6 @@ test('crowd screenshots at spawn view and plaza', async ({game}) => {
     g.G.camDist = 14;
   });
   await page.waitForTimeout(2000);
+  expect(await canvasColors(page)).toBeGreaterThan(8);
   await page.screenshot({path: `${OUT}/crowd-plaza.png`});
 });

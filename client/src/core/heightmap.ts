@@ -144,7 +144,7 @@ function evalAt(x: number, z: number): number {
     const hl = CITY_HILL;
     h = hl.h * (1 - smooth(hl.flat, hl.foot, Math.hypot(x - hl.x, z - hl.z)));
   } else if (si && reg <= SEC.length) h = sectorH(si, x, z, ds, pw);
-  return h - COAST_DIP * (1 - smooth(0, COAST, d));
+  return reg === REG_CITY ? h : h - COAST_DIP * (1 - smooth(0, COAST, d)); // 도시 가장자리는 지면 판과 높이를 맞춘다
 }
 
 /** 대륙 전체를 굽는다 (이미 구웠으면 그대로). ≤ 120ms 목표, 시간은 bakeMs */

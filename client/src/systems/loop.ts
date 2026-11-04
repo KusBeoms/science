@@ -4,6 +4,7 @@ import {G, paused} from '../core/runtime.js';
 import {$, fmt, setTxt} from '../core/util.js';
 import {advance, forEachNest, poolOf} from '../core/layout.js';
 import {inBase, zoneAt} from '../core/geometry.js';
+import {heightAt} from '../core/heightmap.js';
 import {P, pickFrom} from '../data/planets.js';
 import {streamSectors, syncNests} from '../render/sectors.js';
 import {updateSky} from '../render/sky.js';
@@ -88,6 +89,7 @@ export function frame() {
     G.me.pos.y + 2.5 + Math.sin(G.pitch) * G.camDist,
     G.me.pos.z + Math.cos(G.yaw) * cp * G.camDist
   );
+  G.camera.position.y = Math.max(G.camera.position.y, heightAt(G.camera.position.x, G.camera.position.z) + 0.8); // 언덕·능선 속으로 파고들지 않게
   G.camera.lookAt(G.me.pos.x, G.me.pos.y + 2.5, G.me.pos.z);
   cineCamera(); // 컷신 중이면 카메라 덮어쓰기
   updateSky(dt, t); // 천구를 카메라에 붙이고 낮밤 틴트·조명·안개 갱신

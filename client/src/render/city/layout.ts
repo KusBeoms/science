@@ -26,12 +26,12 @@ const roadRect = (r: CityRoad): CityRect => {
 };
 const ROAD_RECTS = CITY_ROADS.map(roadRect);
 const FOOTPRINTS = CITY_BUILDINGS.map(b => footprint(b));
-/** 분수 받침(L2) 바닥 반지름 */
+/** 분수(L2) 둘레 정사각 바닥 */
 const FOUNTAIN = CITY_LANDMARKS.find(l => l.kind === 'orrery')!;
 
 /** 칸 (cx,cz 는 칸 중심 좌표) 의 지면색. 도로 > 보도 > 광장 > 건물 마당 > 잔디 */
 export function surfaceAt(cx: number, cz: number): number {
-  if (Math.hypot(cx - FOUNTAIN.x, cz - FOUNTAIN.z) < FOUNTAIN.r + 2.5) return PAL.ash;
+  if (Math.abs(cx - FOUNTAIN.x) < FOUNTAIN.r + 3 && Math.abs(cz - FOUNTAIN.z) < FOUNTAIN.r + 3) return PAL.ash;
   for (let i = 0; i < CITY_ROADS.length; i++) {
     if (!inRect(cx, cz, ROAD_RECTS[i])) continue;
     const r = CITY_ROADS[i];

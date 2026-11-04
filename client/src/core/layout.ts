@@ -1,6 +1,7 @@
 // 섹터 배치 (지연 생성): 항성(또는 블랙홀) 주위를 도는 행성(공전) + 따로 떨어져 혼자 자전하는 행성
 // 레이아웃·둥지는 섹터가 처음 필요할 때 만들고(데이터라 해제하지 않음), 시간은 advance() 로 활성 섹터만 진행한다.
 import {SECTORS} from '../data/sectors.js';
+import {TERRAIN} from '../data/world-map.js';
 import {pickFrom} from '../data/planets.js';
 import {rnd} from './util.js';
 import {gateFrame, padPos} from './geometry.js';
@@ -15,13 +16,14 @@ function genLayout(i: number): Layout {
   const s = SECTORS[i],
     {x: cx, z: cz} = s.center,
     h = s.size / 2,
+    wall = TERRAIN[s.id].ridge.w + 4, // 둘레 능선 바깥쪽은 둥지·항성을 두지 않는다
     stars: Star[] = [],
     items: LayItem[] = [],
     pad = padPos(i),
     gate = gateFrame(i);
   s.stars.forEach(def => {
     const rad = def.R + 6 + (def.orb - 1) * 2.4,
-      lim = h - rad - 3;
+      lim = h - wall - rad * 0.5;
     for (let t = 0; t < 300; t++) {
       const x = cx + rnd(-lim, lim),
         z = cz + rnd(-lim, lim);
@@ -45,8 +47,8 @@ function genLayout(i: number): Layout {
   });
   const solos: {x: number; z: number}[] = [];
   for (let t = 0; t < 150 * s.solo && solos.length < s.solo; t++) {
-    const x = cx + rnd(-h + 6, h - 6),
-      z = cz + rnd(-h + 6, h - 6);
+    const x = cx + rnd(-h + wall, h - wall),
+      z = cz + rnd(-h + wall, h - wall);
     if (
       stars.every(o => Math.hypot(o.x - x, o.z - z) > o.rad + 3) &&
       Math.hypot(x - cx, z - cz) > 9 &&

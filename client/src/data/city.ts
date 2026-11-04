@@ -144,8 +144,8 @@ export const CITY_BUILDINGS: readonly CityBuilding[] = [
       d: 14,
       floors: 2,
       style: 'neon',
-      wall: k === 0 ? 'coal' : 'slate',
-      roof: 'ink',
+      wall: k === 0 ? 'stone' : 'steel',
+      roof: 'slate',
     }))
   ),
 ];
