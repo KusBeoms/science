@@ -4,6 +4,7 @@ import {G, paused, releaseLock} from '../core/runtime.js';
 import {$, fmt} from '../core/util.js';
 import {P} from '../data/planets.js';
 import {SECTORS} from '../data/sectors.js';
+import {sfx} from '../audio/index.js';
 
 /** 행성이 처음 나오는 섹터 인덱스 (어느 풀에도 없으면 -1) */
 export const stageOf = (id: number) => SECTORS.findIndex(s => s.pool.includes(id));
@@ -42,6 +43,7 @@ export function renderDex(sel?: number | null) {
 export function toggleDex(on: boolean) {
   if (on && paused()) return;
   G.dexOpen = on;
+  sfx(on ? 'open' : 'close');
   $('#dex').classList.toggle('on', on);
   if (on) {
     releaseLock();

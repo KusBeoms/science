@@ -14,6 +14,7 @@ import {syncCarry} from '../render/gear.js';
 import {flash, toast} from './hud.js';
 import {interactableOf} from './interactables.js';
 import {openQuiz} from './quiz.js';
+import {sfx} from '../audio/index.js';
 
 export function tryGrab(zi: number, k: number) {
   if (paused() || locked(zi)) return;
@@ -37,8 +38,10 @@ export function tryGrab(zi: number, k: number) {
         n.t[k] = 1e9;
         syncCarry();
         toast('도망쳐! 기지로!');
+        sfx('steal');
       } else {
         n.cd[k] = 15;
+        sfx('quizFail');
         toast('오답 — 15초 뒤 다시 도전');
       }
     },
@@ -59,10 +62,14 @@ export function openGate(zi: number) {
     onDone(ok) {
       if (ok) {
         unlockSector(zi);
+        sfx('quizPass');
         toast(`🔓 ${zi + 1}단계 열림! ${s.icon} ${s.name}`, 3);
         flash('#7cf09a', 0.35);
         save();
-      } else toast('통과 실패 — 다시 도전하세요');
+      } else {
+        toast('통과 실패 — 다시 도전하세요');
+        sfx('quizFail');
+      }
     },
   });
 }
@@ -79,6 +86,7 @@ export function caught() {
   const had = G.carry.length,
     lost = Math.floor(S.cr * (had ? 0.15 : 0.05));
   S.cr -= lost;
+  sfx('caught');
   toast(`잡혔다!${had ? ' 행성을 빼앗기고' : ''} -${fmt(lost)}`);
   loseCarry();
   G.me.pos.set(SPAWN.x, 0, SPAWN.z);
@@ -90,6 +98,7 @@ export function respawn() {
   if (had) loseCarry();
   G.me.pos.set(SPAWN.x, 0, SPAWN.z);
   G.me.vy = 0;
+  sfx('fall');
   toast(had ? '우주로 떨어졌다! 행성은 제자리로 돌아갔다' : '우주로 떨어져서 스폰 지점으로 돌아왔다');
 }
 export function deposit() {
@@ -114,6 +123,7 @@ export function deposit() {
       const rw = P[id].price / DEX_REWARD_DIV;
       S.cr += rw;
       toast(`📖 도감 등록! +${fmt(rw)}`, 2.6);
+      sfx('dex');
     }
     const n = nestOf(c.z);
     n.s[c.k] = pickFrom(poolOf(c.z));
@@ -122,6 +132,7 @@ export function deposit() {
   syncCarry();
   if (msg.length) {
     toast(msg.join(', ') + ' 훔쳤다!');
+    sfx('stash');
     save();
   }
 }
@@ -132,6 +143,7 @@ export function sell(i: number) {
   S.cr += v;
   S.base[i] = null;
   toast(`+${fmt(v)}`);
+  sfx('sell');
   save();
 }
 /** E/F 키·프롬프트 터치: 현재 대상의 종류에 등록된 act 로 보낸다 */

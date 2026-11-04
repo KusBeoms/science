@@ -8,6 +8,7 @@ import {applyLook} from '../render/characters.js';
 import {buildBag, buildSpringOnHand, syncCarry} from '../render/gear.js';
 import {applyDeco} from '../render/deco.js';
 import {toast} from './hud.js';
+import {sfx} from '../audio/index.js';
 
 let shopTab = 'spr',
   shopSub = 'floor',
@@ -17,20 +18,24 @@ export function openShop() {
   G.shopOpen = true;
   releaseLock();
   $('#shop').classList.add('on');
+  sfx('open');
   renderShop();
 }
 export function closeShop() {
   G.shopOpen = false;
   $('#shop').classList.remove('on');
+  sfx('close');
   save();
 }
 function spend(cost: number, fn: () => void) {
   if (S.cr < cost) {
     toast('돈이 부족하다');
+    sfx('deny');
     return false;
   }
   S.cr -= cost;
   S.bought++;
+  sfx('buy');
   fn();
   save();
   renderShop();

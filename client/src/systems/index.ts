@@ -5,6 +5,7 @@ import {CORE_INTERACTABLES} from '../game/interact-core.js';
 import {portalIt, portalSystem} from '../game/portal.js';
 import {hazardSystem} from './hazards.js';
 import {rivalSystem} from './rival.js';
+import {audioSystem} from './audio.js';
 
 CORE_INTERACTABLES.forEach(registerInteractable);
 registerInteractable(portalIt);
@@ -12,3 +13,4 @@ registerInteractable(portalIt);
 registerSystem(hazardSystem);
 registerSystem(rivalSystem);
 registerSystem(portalSystem);
+registerSystem(audioSystem);
