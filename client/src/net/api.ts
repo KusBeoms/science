@@ -60,7 +60,7 @@ export async function fetchRemoteSave(): Promise<any | null> {
       return null;
     }
   } catch (e) {}
-  const r = await req('/api/save/' + getPid());
+  const r = await req('api/save/' + getPid());
   if (!r || !r.ok) return null;
   try {
     const j = await r.json();
@@ -84,7 +84,7 @@ async function flush() {
   if (!body || off) return;
   const headers: Record<string, string> = {'Content-Type': 'application/json'};
   if (serverTs >= 0) headers['If-Match'] = '"' + serverTs + '"';
-  const r = await req('/api/save/' + getPid(), {method: 'PUT', headers, body});
+  const r = await req('api/save/' + getPid(), {method: 'PUT', headers, body});
   if (!r) return;
   if (r.status === 404 || r.status === 405 || r.status === 501) off = true; // 서버 API 가 없는 정적 서빙이면 더 시도하지 않는다
   else if (r.status === 409) {
@@ -107,7 +107,7 @@ export function queueRemoteSave(json: string) {
 
 /** 리더보드 점수 제출 (UI 없음, 호출은 추후) */
 export async function submitScore(name: string, score: number): Promise<boolean> {
-  const r = await req('/api/score', {
+  const r = await req('api/score', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({name, score}),
@@ -115,7 +115,7 @@ export async function submitScore(name: string, score: number): Promise<boolean>
   return !!(r && r.ok);
 }
 export async function fetchLeaderboard(limit = 10): Promise<{name: string; score: number}[]> {
-  const r = await req('/api/leaderboard?limit=' + limit);
+  const r = await req('api/leaderboard?limit=' + limit);
   if (!r || !r.ok) return [];
   try {
     const j = await r.json();
