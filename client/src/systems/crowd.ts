@@ -76,7 +76,7 @@ function initView() {
   document.body.append(box);
   for (let i = 0; i < BUBBLES; i++) {
     const el = document.createElement('div');
-    el.className = 'bub';
+    el.className = 'bub crowd'; // 컷신 말풍선과 스타일은 공유, 구분은 .crowd
     el.dataset.shape = 'round';
     el.style.cssText = 'font-size:20px;padding:3px 8px;visibility:hidden;margin-top:0';
     box.append(el);

@@ -77,7 +77,8 @@ function setup() {
     return {cx: s.center.x, cz: s.center.z, half, idx, m, bumps, pad: padPos(idx)};
   });
   PS = PASSES.map(r => {
-    const horiz = r[2] - r[0] > r[3] - r[1];
+    // 방향 = 폭(PASS_W)이 걸린 축의 반대. 길이 30짜리 짧은 통로는 사각형이 40×32 라 "긴 변" 으로는 가를 수 없다
+    const horiz = Math.abs(r[3] - r[1] - PASS_W) < Math.abs(r[2] - r[0] - PASS_W);
     return horiz ? {horiz, c: (r[1] + r[3]) / 2, a0: r[0], a1: r[2]} : {horiz, c: (r[0] + r[2]) / 2, a0: r[1], a1: r[3]};
   });
 }

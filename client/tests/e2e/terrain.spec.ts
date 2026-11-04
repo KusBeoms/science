@@ -17,7 +17,7 @@ test('heightmap: flat city, north-west hill, ridge with an opening, void between
       hill: h(-105, -105),
       crest: Math.max(...[...Array(18)].map((_, k) => h(79 - k, -300))),
       opening: [h(0, -180), h(10, -190), h(0, -200)],
-      void: [h(100, 200), h(30, -165), h(200, -230)],
+      void: [h(100, 200), h(30, -165), h(115, -215)],
       pass: [h(0, -165), h(115, -260), h(270, -165)],
       pad: h((window as any).__game.G.pads.alpha.x, (window as any).__game.G.pads.alpha.z),
     };

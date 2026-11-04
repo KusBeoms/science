@@ -192,6 +192,7 @@ registerInteractable<T extends Target>({
 | 사운드 | `audio/*`, `systems/audio.ts` | Web Audio 합성 효과음·BGM, 음소거 🔊/🔇 버튼, 컷신 소리 큐는 `G.cineHooks.sound` 로 연결. [AUDIO.md](AUDIO.md) |
 | 경제 | `data/pacing.ts`, `data/pacing-sinks.ts`, `data/planet-zones.ts`, `client/tools/econ-*.mjs` | 구역×등급 가격, 새 비용 곡선, 시뮬레이터(`cd client && npx tsc && node tools/econ-sim.mjs`). [ECONOMY.md](ECONOMY.md) 9장 |
 | 문제 은행 | `data/quiz-bank/*` | 210문항(구역 1~12). `GQU` 는 `buildGQUByZone(BANK_ALL)`, 섹터 `units` 는 구역 키(`Z01`~`Z12`). 행성 문제 `PQ` 는 아직 기존 `quiz-planet.ts` |
+| 월드 W1 | `core/heightmap.ts`, `core/terrain.ts`, `data/world-map.ts`, `data/city.ts`, `data/citygraph.ts`, `render/city/*`, `render/crowd.ts`, `systems/crowd.ts`, `render/sky.ts`, `render/apple.ts`, `systems/daynight.ts`, `render/characters-look.ts` | 5u 격자 높이 지도(부팅 1회 굽기)·`groundH`, 도시 광장·사과 대로·상점가, 보행 그래프 군중(≤24, 말풍선 `.bub.crowd`), 하늘 돔·사과 천체, 로우폴리 캐릭터. 설계는 [WORLD.md](WORLD.md) |
 - 세이브 v6: `S.story`(beat·mid·seen·ended·hints). v5→v6 마이그레이션은 보유 현금을 해금 구역의 누적 지출 목표(`TARGET_CUM_SPEND`)로 1회 제한한다.
 - 기지 칸 최대는 현재 허브 배치(5×2)에 맞춰 10으로 제한(`CAPS.slots.max`). 도시 허브(WORLD.md W1)에서 30으로 확장한다.
 - 서버: 세이브 PUT 검증(`base`·`ver`, 깊이, NUL)·`If-Match` 낙관적 락·요청 제한. 클라이언트는 서버 버전을 알면 `If-Match` 를 보내고 409 면 그 세션의 서버 저장을 멈춘다.

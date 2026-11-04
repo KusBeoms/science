@@ -69,8 +69,8 @@ test('format sample x_sample: input-unlocked overlay keeps movement, shows bubbl
   await page.waitForTimeout(900);
   await page.keyboard.up('KeyW');
   expect(Math.abs((await gameEval<number>(page, 'g.G.me.pos.z')) - z0)).toBeGreaterThan(1); // 입력 비차단
-  await expect(page.locator('.bub')).toHaveCount(1);
-  expect(await page.locator('.bub').innerText()).not.toMatch(NO_TEXT);
+  await expect(page.locator('.bub:not(.crowd)')).toHaveCount(1);
+  expect(await page.locator('.bub:not(.crowd)').innerText()).not.toMatch(NO_TEXT);
   await page.screenshot({path: `${OUT}/cine-sample.png`});
   await page.waitForFunction(() => (window as any).__game.G.cine === null, undefined, {timeout: 12000});
   expect(await gameEval(page, 'JSON.stringify([g.S.story.seen.x_sample, g.S.story.beat])')).toBe('[1,0]');
