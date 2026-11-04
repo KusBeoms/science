@@ -26,8 +26,14 @@ science/
 | [ROADMAP.md](ROADMAP.md) | 10시간+ 오픈월드 확장 계획(M0~M7)과 진행 상태 |
 | [CURRICULUM.md](CURRICULUM.md) | 고1 통합과학(2022 개정) 교육과정 조사, 출제 가이드라인, 단원 인덱스(curriculum-units.json) |
 | [TESTING.md](TESTING.md) | 헤드리스 브라우저 E2E 하네스 사용법, 마일스톤 QA 체크리스트 |
-| [STORY.md](STORY.md) | **스토리 v2** — 사과 행성에 반한 도둑 이야기, 무문자(그림/애니) 연출 원칙, 비트 시트, 새 메커니즘(시선 수호신·암시장·삼연 추격), 엔딩 후 자유 플레이 |
+| [STORY.md](STORY.md) | **스토리 v2** — 사과 행성에 반한 도둑 이야기, 무문자(그림/애니) 연출 원칙, 비트 시트, 새 메커니즘(시선 수호신·암시장·삼성 추격), 엔딩 후 자유 플레이 |
 | [CONTENT_PLAN.md](CONTENT_PLAN.md) | **콘텐츠 기획서** — 12개 구역·행성 80종·이야기·이동 수단·하이스트·NPC 등 구체 내용과 결정할 것 |
+| [ECONOMY.md](ECONOMY.md) | **경제·진행 곡선 재설계** — 10.5h 목표 곡선, 구역별 체류·수입 표, 상점 sink, `pacing.ts` 상수 후보, 시뮬 합격 기준 |
+| [QUIZ_BANK.md](QUIZ_BANK.md) | **문제 은행 설계** — 210문항 배분, `QuizItem` 스키마, 출제 원칙, 샘플 25개, 시험·복습 규칙, 작성 워크플로 |
+| [PLANET_CATALOG.md](PLANET_CATALOG.md) | **행성 80종 도감** — 구역별 표(등급·외형·설명·단원), 분포, 외형·돌연변이 규칙, 특수 행성(사과·삼성) |
+| [GAMEPLAY_SYSTEMS.md](GAMEPLAY_SYSTEMS.md) | **이동 수단·수배·하이스트(M2·M3)** — 단계 스펙, 상태 머신, 데이터 구조, 수용 기준 |
+| [UX_CUTSCENE.md](UX_CUTSCENE.md) | **컷신 12개 스토리보드·UI** — 디렉터 데이터 포맷, 이모지 사전, 글 없는 HUD·튜토리얼, 접근성 |
+| [QUESTS_ACHIEVEMENTS.md](QUESTS_ACHIEVEMENTS.md) | **NPC·의뢰 30·수집·레이스·업적 50** — 세이브 v6 초안, 마일스톤별 QA 체크리스트 |
 
 ## 서비스 구성 (docker-compose)
 | 서비스 | 역할 | 라벨 |

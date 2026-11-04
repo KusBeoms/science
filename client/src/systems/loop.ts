@@ -45,6 +45,7 @@ export function frame() {
     t = G.clock.elapsedTime,
     dt = paused() ? 0 : raw;
   G.gameT += dt;
+  S.playSec += dt; // 일시정지 제외 누적 플레이 시간(업적·복습에서 사용)
   const prevZone = G.curZone;
   G.curZone = zoneAt();
   if (G.curZone !== prevZone) sectorChanged(prevZone, G.curZone);

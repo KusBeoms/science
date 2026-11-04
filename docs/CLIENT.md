@@ -84,6 +84,7 @@ python3 -m http.server -d public        # 정적 서빙만으로 동작 (서버 
 - 판정: `onGround` = 허브 ∪ 해금된 섹터, `blockedAt` = 잠긴 섹터(벽), `zoneAt` = 플레이어가 선 섹터(여유 1). 섹터 사이 빈 곳은 허공 → 떨어지면 리스폰(비행 수단 시스템이 `hover()` 로 끈다).
 - 문: 섹터의 `gate` 변(`n|s|e|w`) 중앙. `gateFrame(i)` = 변 중점·안쪽 방향·변 방향. 문은 `isNext(i)`(잠김 + `requires.prev` 해금)일 때 상호작용 대상이 되고, `reqMissing(i)` 가 비어야 시험을 볼 수 있다. 시험 문제: `units` 태그로 `GQU` 에서 3문제 이상 모이면 그 문제, 아니면 `GQ`.
 - 해금 조건 `requires`: `prev`(이전 섹터 통과, 생략 시 바로 앞 섹터) + 선택 `dex`(도감 수) · `spd`(신발 Lv) · `vehicle`(`S.vehicle` 티어) · `chapter`(`S.chapter`). 시간이 걸리는 조건을 섞어 진행 속도를 조절하는 곳.
+  - ⚠ 아래 표의 `vehicle`·`chapter` 값은 **M5 재배치 전의 임시값**이다. 최종 설계에서 이동 수단이 섹터 해금 조건이 되는 곳은 **S6(`reddwarf`, 소형 우주선)뿐**이고, 나머지 구역은 도감·신발·시험·`beat`(중간 비트 `4-N` 포함, CONTENT_PLAN 2장)로 조절한다.
 - 환경 훅: `gravityMul`(점프 중력 배율), `timeMul`(그 섹터에 있는 동안 기지 성장·수익 배율), `difficulty`(1~5, 후속 밸런싱용), `solo`(혼자 도는 행성 수, 기본 = 넓이 비례·최대 16), `note`(첫 진입 안내).
 - 풀: `pool`(행성 id). `ids('이름', …)` 로 만든다. 비어 있으면 `poolOf(i)` 가 앞 섹터 풀을 빌린다. 5~12 섹터는 현재 **기존 행성을 임시 재사용**.
 - `S.zone` 은 호환용 파생값(`zoneFrom(S.unlocked)` = 앞에서부터 연속 해금 수). 미션 "N단계 시험 통과"가 이것을 본다.
@@ -103,8 +104,10 @@ python3 -m http.server -d public        # 정적 서빙만으로 동작 (서버 
 | 11 | neutron | 중성자별 | extreme | (0,−804) | 220 | s | 10 · 도감 22 · 이동 수단 2 | 중력 ×1.8 · 시간 ×2 |
 | 12 | edmunds | 에드먼즈 | fiction | (340,−360) | 260 | w | 11 · 도감 24 · 이동 수단 3 · 챕터 3 | |
 
+> ⚠ 이 표는 **M1 임시 틀**이다(`이동 수단 N`·`챕터 N` 칸은 M5 전 임시값, 최종 이동 수단 조건은 S6 하나). 최종 구역 순서·id는 [CONTENT_PLAN.md](CONTENT_PLAN.md) 2장의 "구역 번호↔섹터 id 매핑"을 따르며(M5에서 재배치), `챕터` 조건은 `S.story.beat` 기반 `beat`로 대체된다.
+
 - 걸어서 이어짐: 허브→1→2→3→4 (북쪽 일렬), 1→5→6 (동쪽). 권역 안 7→8→9, 10→11 은 맞닿아 있다.
-- 허공으로 떨어짐: 7(1에서 서쪽 126), 10(4에서 북쪽 120), 12(6에서 남북 109·3에서 동쪽 166) → 이동 수단(`vehicle` 조건)이나 포탈이 필요.
+- 허공으로 떨어짐: 7(1에서 서쪽 126), 10(4에서 북쪽 120), 12(6에서 남북 109·3에서 동쪽 166) → 이동 수단(`vehicle` 조건)이나 포탈이 필요. (임시 틀 기준 설명 — M5 재배치 후 허공 횡단은 S6 우주선부터.)
 - 쌍성계는 기존 2단계(외계행성: 적색왜성+황색 항성, 케플러-16b)가 이미 쌍성계라 별도 섹터로 두지 않았다.
 
 ## 청크 스트리밍 (`render/sectors.ts`, `core/layout.ts`)
@@ -155,8 +158,10 @@ registerInteractable<T extends Target>({
 - 현재 등록: `nest`, `base`, `npc`, `gate`, `portal`.
 ### HUD 줄 (`game/hud.ts`)
 - `addHudLine(() => string | null)` — `#lines`(좌상단 `#carryTag` 아래)에 한 줄씩. 시스템의 `hud()` 는 자동 등록.
+- 예정: UX_CUTSCENE 10.3.2 의 **`HudWidget{slot, priority, icons[], fill?}`** 확장 포인트가 `addHudLine`(문자열 줄)을 **대체**한다(슬롯 격자·우선순위, 문자열 줄 폐지). 새 시스템은 가능하면 문자열 대신 이 형태를 염두에 두고 `hud()` 를 작성한다.
 ### 범용 오버레이 (`game/modal.ts`)
 - `index.html` 에 `<div class="hud ov" id="xxx"><div class="card">…</div></div>` 추가 → `openModal('xxx', onClose?)` / `closeModal()`. 열려 있는 동안 `paused()`, Esc 로 닫힘.
+- 예정(UX_CUTSCENE 10.5): 오버레이는 좌상단 **`◀`(항상 같은 위치, 한 단계 뒤로)** 로 닫고, 최상위 화면의 `◀` 은 월드로 복귀한다(단독 `✕` 폐지, Esc·모바일 뒤로가기 = `◀`). 메뉴는 **`☰` 허브 하나**를 최상위로 두고 깊이 ≤ 2, 한 화면 탭 ≤ 5.
 
 ## 세이브 스키마 (`core/save-schema.ts`)
 - 키 `stealPlanet4`(고정) — 버전은 `ver` 필드. `stealPlanet3` 키만 있으면 읽어서 이어받는다.

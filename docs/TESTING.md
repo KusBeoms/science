@@ -38,4 +38,6 @@ npx playwright test ui       # 일부만 (빌드는 먼저 npx tsc)
 5. 세이브 스키마를 바꿨다면 save.spec 에 이전 버전 세이브 이어받기 케이스 추가.
 6. 새 기능의 UI 경로(열기/닫기/키 입력)용 e2e 추가, `docs/CLIENT.md` 갱신.
 7. 모든 코드 파일 500줄 이하 확인 (`find client/src client/tests -name '*.ts' | xargs wc -l | sort -n | tail`).
-8. 수동으로만 확인 가능한 항목(터치/모바일, 실GPU 성능, 포인터락, 오디오)은 별도로 체크.
+8. 서버 PUT 상한은 클라이언트 `json.length`(UTF-16 코드 단위)가 아니라 서버가 재는 **본문 바이트(`req.body.size()`) 256KB** 기준으로 검사한다: 최악 세이브(업적 50·의뢰 30·레이스 12·복습 60·집 4, 한글·이모지 포함)를 `new TextEncoder().encode(json).length` 로 재서 256KB 아래인지 확인.
+9. 세이브 **상위 버전 로드** 케이스(save.spec): 현재 `SAVE_VER` 보다 큰 `ver` 의 세이브로 부팅해 에러 0건이며, 상위 버전 세이브가 하위 버전 저장으로 덮여 진행이 사라지지 않는지 확인한다.
+10. 수동으로만 확인 가능한 항목(터치/모바일, 실GPU 성능, 포인터락, 오디오)은 별도로 체크.

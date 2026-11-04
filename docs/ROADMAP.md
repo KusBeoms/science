@@ -11,12 +11,12 @@
 |---|---|---|
 | M0 | 세이브 v4(`stealPlanet4`, v3 이어받기) · 경제 시뮬레이터 · **TS+C++ 구조 리팩터링** | 완료 (세이브 v4 · TS 클라이언트 · C++ 서버 · compose). 브라우저 실기 검증은 미실시 |
 | M1 | 월드 청크/섹터 시스템, 섹터 4→12개 | 기반 완료 — 2D 섹터 12개(5~12는 틀·임시 풀), 청크 스트리밍, 포탈, 시스템/상호작용 레지스트리, 세이브 v5, `data/pacing.ts`, `?debug=1` 훅 (docs/CLIENT.md) |
-| M2 | 이동 수단(호버보드/우주선) + 빠른 이동 | 빠른 이동(포탈)은 M1에서 완료. 이동 수단 미착수 — `GameSystem.speedMul/hover` + `S.vehicle` 훅 준비됨 |
-| M3 | 수배 시스템 + 하이스트 | 미착수 |
-| M4 | **스토리 v2 연출**: 컷신 디렉터(무문자), 암시장, 시선 수호신(숨바꼭질), 삼연 행성 추격, 엔딩 + 자유 플레이/집 구매 — [STORY.md](STORY.md) | 기획 확정, 미착수 |
-| M5 | 행성 80종 + 문제 200문항 데이터 투입 | 미착수 |
-| M6 | 레이스/수집/업적/환경 위험 | 미착수 |
-| M7 | 밸런싱(10h 목표 검증) + 버그 정리 | 미착수 |
+| M2 | 이동 수단(호버보드/우주선) + 빠른 이동 | 빠른 이동(포탈)은 M1에서 완료. 이동 수단 미착수 — `GameSystem.speedMul/hover` + `S.vehicle` 훅 준비됨. **UX 10장 P0**(터치 44px, 퀴즈 ✅/❌, 픽토그램, reduced-motion) 병행 |
+| M3 | 수배 시스템 + 하이스트 | 미착수. **UX P1**: `HudWidget` 슬롯 격자(`addHudLine` 대체)로 경계 눈 아이콘 표시, 숨김 규칙, `S.ui.seen` 점진 공개 |
+| M4 | **스토리 v2 연출**: 컷신 디렉터(무문자), 암시장, 시선 수호신(숨바꼭질), 삼성 행성 추격, 엔딩 + 자유 플레이/집 구매 — [STORY.md](STORY.md) | 기획 확정, 미착수. **중간 비트 4-1~4-5 오버레이 5개**(`S.story.mid`)를 컷신 12개와 별도로 구현. **UX P2**: `☰` 허브 + `◀` 규칙 |
+| M5 | 행성 80종 + 문제 210문항 데이터 투입, 섹터 12개를 CONTENT_PLAN 매핑대로 재배치(신규 id `jovian`·`giants`·`hotjup`, 폐기 `pulsar`·`neutron`·`edmunds`) | 미착수. 해금 조건을 `requires.beat`(중간 비트 `4-N`)로 전환, 이동 수단 조건은 S6만 남김. 상점 4탭·도감 구역 칩(UX P2) |
+| M6 | 레이스/수집/업적/환경 위험 | 미착수. **UX P3**: 위험 방향 쐐기, 햅틱, 색약 보조, UI 배율, SVG 아이콘 13개 |
+| M7 | 밸런싱(10h 목표 검증) + 버그 정리 | 미착수. UX 수용 기준(10.11)·중간 비트 시각 검증, 엔딩 전 S12 H6 중심 확인 |
 
 ## 실측 vs 시뮬레이터 (중요)
 - 초기 시뮬레이터(탐욕 구매 정책)는 상점 소진까지 약 1.75시간으로 추정했으나, **사용자 실측은 현재 콘텐츠 전체 약 10분**이다. 시뮬은 6~10배 낙관적이었으므로 **실측값으로 보정하기 전에는 시뮬 결과를 신뢰하지 않는다.**
@@ -27,3 +27,4 @@
 - v3 키 `stealPlanet3` → v4 키 `stealPlanet4`. v4가 없으면 v3를 읽어 이어받는다.
 - v4 신규 필드: `ver, chapter, wanted, vehicle, ach, coins, playSec`.
 - v5 (키는 `stealPlanet4` 그대로, `ver: 5`): `unlocked, portals` + 후속용 빈 기본값 `quests, vehicles, heists, collectibles`. `zone` → `unlocked`, `notes` 키 인덱스 → 섹터 id 변환. 체인은 `client/src/core/save-schema.ts`.
+- v6 (예정, 한 번에 묶음): `S.story`(STORY 7.1), 의뢰·별조각·레이스·업적 필드(QUESTS_ACHIEVEMENTS 5장), 섹터 id 정리(폐기 id 합치기 — CONTENT_PLAN 2장 매핑표), `requires.chapter` → `requires.beat`, 신규 필드 `ach.equippedTitle`·`npc.reviewDaily`·`S.review`(오답 복습, 문항 id → 횟수)·`S.ui`(HUD 점진 공개 `seen` 등, UX 10.2)·`S.story.mid`(중간 비트 0~5, `beat === 4`일 때만 사용). 이동 수단·수배·하이스트는 v5의 빈 기본값을 그대로 쓰므로 별도 버전 상승이 없다(GAMEPLAY_SYSTEMS).

@@ -10,12 +10,19 @@
 
 using Entry = std::pair<std::string, double>;  // name, score
 
+// Result of a save write. kConflict: expected_ts did not match the stored version.
+// kFailed: the store rejected the write (e.g. data error) - never silently dropped.
+enum class PutResult { kOk, kConflict, kFailed };
+
 class SaveStore {
  public:
   virtual ~SaveStore() = default;
   // json: serialized JSON object. Returns false when not found.
   virtual bool get(const std::string& pid, std::string& json, int64_t& updated_at) = 0;
-  virtual void put(const std::string& pid, const std::string& json, int64_t updated_at) = 0;
+  // expected_ts < 0: unconditional write. Otherwise write only if the stored version
+  // equals expected_ts (or no save exists yet); on kConflict *current is set to the stored version.
+  virtual PutResult put(const std::string& pid, const std::string& json, int64_t updated_at,
+                        int64_t expected_ts, int64_t* current) = 0;
   virtual bool connected() = 0;  // true if backed by a live PostgreSQL connection
 };
 
@@ -31,10 +38,12 @@ class Leaderboard {
 class MemorySaveStore : public SaveStore {
  public:
   bool get(const std::string& pid, std::string& json, int64_t& updated_at) override;
-  void put(const std::string& pid, const std::string& json, int64_t updated_at) override;
+  PutResult put(const std::string& pid, const std::string& json, int64_t updated_at,
+                int64_t expected_ts, int64_t* current) override;
   bool connected() override { return false; }
 
  private:
+  static constexpr size_t kMaxSaves = 50000;  // bounds memory when no DB is configured
   std::mutex mu_;
   std::map<std::string, std::pair<std::string, int64_t>> m_;
 };
