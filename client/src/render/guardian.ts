@@ -1,15 +1,15 @@
 // 수호신: 거대한 천신(Celestial)풍 — 검은 암석 갑옷, 갈라진 틈으로 새어 나오는 용암빛, 눈 6개 달린 투구, 커다란 어깨 갑옷
 import {blocky} from './characters.js';
 
-export const GGLOW = [0xff4a2a, 0xb36bff, 0xff7a1a, 0x4aa8ff]; // 구역별 빛 색: 용암 / 보라 / 강착원반 / 청색 천신
-export function makeGuardian(_z: unknown, zi: number): any {
+/** glow = 섹터별 빛 색 (data/sectors.ts 의 guard.glow) */
+export function makeGuardian(glow0: number): any {
   const rock = 0x17141c,
     g = blocky(rock, 0x120f16, '#1a1620', 1.8),
     pr = g.userData;
   const rockM = new THREE.MeshLambertMaterial({color: rock}),
     rockM2 = new THREE.MeshLambertMaterial({color: 0x241f2c});
-  const glow = new THREE.MeshBasicMaterial({color: GGLOW[zi]}),
-    eyes = new THREE.MeshBasicMaterial({color: GGLOW[zi]});
+  const glow = new THREE.MeshBasicMaterial({color: glow0}),
+    eyes = new THREE.MeshBasicMaterial({color: glow0});
   const add = (m: any, x: number, y: number, z_: number, p?: any) => {
     m.position.set(x, y, z_);
     (p || g).add(m);
@@ -70,7 +70,7 @@ export function makeGuardian(_z: unknown, zi: number): any {
   // 발밑 오라
   const aura = new THREE.Mesh(
     new THREE.TorusGeometry(2.6, 0.1, 6, 40),
-    new THREE.MeshBasicMaterial({color: GGLOW[zi], transparent: true, opacity: 0.55})
+    new THREE.MeshBasicMaterial({color: glow0, transparent: true, opacity: 0.55})
   );
   aura.rotation.x = Math.PI / 2;
   aura.position.y = 0.1;

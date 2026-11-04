@@ -21,9 +21,12 @@ science/
 ## 문서 목록
 | 문서 | 내용 |
 |---|---|
-| [CLIENT.md](CLIENT.md) | 클라이언트 모듈 구조, 공유 상태 설계, 빌드 |
+| [CLIENT.md](CLIENT.md) | 클라이언트 모듈 구조, 공유 상태 설계, 빌드, 섹터·청크 스트리밍·포탈·레지스트리·세이브 스키마, **새 기능 추가 레시피** |
 | [SERVER.md](SERVER.md) | API 엔드포인트, 환경변수, 로컬/도커 실행 |
 | [ROADMAP.md](ROADMAP.md) | 10시간+ 오픈월드 확장 계획(M0~M7)과 진행 상태 |
+| [CURRICULUM.md](CURRICULUM.md) | 고1 통합과학(2022 개정) 교육과정 조사, 출제 가이드라인, 단원 인덱스(curriculum-units.json) |
+| [TESTING.md](TESTING.md) | 헤드리스 브라우저 E2E 하네스 사용법, 마일스톤 QA 체크리스트 |
+| [CONTENT_PLAN.md](CONTENT_PLAN.md) | **콘텐츠 기획서** — 12개 구역·행성 80종·이야기·이동 수단·하이스트·NPC 등 구체 내용과 결정할 것 |
 
 ## 서비스 구성 (docker-compose)
 | 서비스 | 역할 | 라벨 |

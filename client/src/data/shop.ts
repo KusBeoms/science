@@ -23,7 +23,7 @@ export const BAGS: [string, number, number, string][] = [
   ['봉다리', 500, 2, '#c8a46a'],
   ['가방', 8000, 3, '#4a8cff'],
   ['배낭', 100000, 4, '#d23a4a'],
-]; // [이름,가격,들 수 있는 수,색]
+]; // [이름,가격,들 수 있는 수,색] — 단계는 행 추가로 늘린다 (S.bag = 산 단계 수)
 export const DECO: Record<string, {n: string; v: DecoRow[]}> = {
   floor: {
     n: '바닥',
@@ -157,5 +157,10 @@ export const LOOK: Record<string, {n: string; v: [string, string, number][]}> = 
     ],
   },
 };
-export const spdCost = (l: number) => Math.floor(80 * 1.8 ** l),
-  slotCost = (n: number) => 1000 * 2 ** (n - 6);
+/** 상점 상한 테이블 (비용 곡선은 data/pacing.ts). 늘릴 때: slots 는 core/geometry.ts 의 slotPos 배치도 함께 넓힐 것 */
+export const CAPS = {
+  /** 기지 칸 시작/최대 (S.base 배열 길이 = max) */
+  slots: {start: 6, max: 10},
+  /** 신발(이동속도) 최대 Lv */
+  spd: 10,
+};

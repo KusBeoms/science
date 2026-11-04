@@ -1,58 +1,65 @@
-// 플레이어 행동: 훔치기/문 열기/잡힘/리스폰/입고/판매/상호작용
-import {S, save, cap, freeCount, freeSlot, mul, newPlanet} from '../core/state.js';
+// 플레이어 행동: 훔치기/문 열기/잡힘/리스폰/입고/판매/상호작용 키
+import {S, save, cap, freeCount, freeSlot, newPlanet, sellValue} from '../core/state.js';
 import {G, paused} from '../core/runtime.js';
-import {nests} from '../core/layout.js';
-import {SPAWN, locked} from '../core/geometry.js';
+import {nestOf, poolOf} from '../core/layout.js';
+import {SPAWN} from '../core/geometry.js';
+import {locked, reqMissing, unlockSector} from '../core/progress.js';
 import {fmt, rnd, shuffle} from '../core/util.js';
 import {MUT, P, pickFrom} from '../data/planets.js';
-import {Z} from '../data/zones.js';
+import {DEX_REWARD_DIV} from '../data/pacing.js';
+import {SECTORS} from '../data/sectors.js';
 import {PQ} from '../data/quiz-planet.js';
-import {GQ} from '../data/quiz-gate.js';
+import {GQ, GQU} from '../data/quiz-gate.js';
 import {syncCarry} from '../render/gear.js';
 import {flash, toast} from './hud.js';
+import {interactableOf} from './interactables.js';
 import {openQuiz} from './quiz.js';
-import {openShop} from './shop-ui.js';
 
 export function tryGrab(zi: number, k: number) {
   if (paused() || locked(zi)) return;
+  const n = nestOf(zi);
   if (G.carry.length >= cap())
     return toast(
       cap() > 1 ? '가방이 가득 찼다 — 기지에 가져다 놓자' : '손이 가득! 상점에서 봉다리를 사면 더 들 수 있다'
     );
   if (freeCount() <= G.carry.length) return toast('기지 슬롯이 가득 찼다 — 판매하거나 칸을 늘리자');
-  if (nests[zi].t[k] > 0) return; // 이미 가져갔거나 다시 자라는 중인 둥지
-  if (nests[zi].cd[k] > 0) return toast(`재도전까지 ${Math.ceil(nests[zi].cd[k])}s`);
-  const id = nests[zi].s[k],
+  if (n.t[k] > 0) return; // 이미 가져갔거나 다시 자라는 중인 둥지
+  if (n.cd[k] > 0) return toast(`재도전까지 ${Math.ceil(n.cd[k])}s`);
+  const id = n.s[k],
     p = P[id];
   openQuiz({
     title: `⏸ 시간 정지 · ${p.name} — 문제를 맞혀야 훔칠 수 있다`,
-    qs: [PQ[p.name]],
+    qs: [PQ[p.name] || shuffle(GQ.slice())[0]], // 행성 문제가 아직 없으면 입장 시험 문제로 대신한다
     need: 1,
     onDone(ok) {
       if (ok) {
         G.carry.push({id, z: zi, k, st: 1});
-        nests[zi].t[k] = 1e9;
+        n.t[k] = 1e9;
         syncCarry();
         toast('도망쳐! 기지로!');
       } else {
-        nests[zi].cd[k] = 15;
+        n.cd[k] = 15;
         toast('오답 — 15초 뒤 다시 도전');
       }
     },
   });
 }
-export function openGate() {
-  const zi = S.zone;
-  if (zi >= Z.length || paused()) return;
-  const qs = shuffle(GQ.slice()).slice(0, 3);
+/** 섹터 zi 입장 시험. 해금 조건(도감·신발·이동 수단·챕터)을 못 채웠으면 안내만 한다 */
+export function openGate(zi: number) {
+  if (!locked(zi) || paused()) return;
+  const miss = reqMissing(zi),
+    s = SECTORS[zi];
+  if (miss.length) return toast(`🔒 ${zi + 1}단계 조건: ${miss.join(' · ')}`, 3);
+  const bank = s.units.flatMap(u => GQU[u] || []),
+    qs = shuffle((bank.length >= 3 ? bank : GQ).slice()).slice(0, 3);
   openQuiz({
-    title: `🔒 ${zi + 1}단계 ${Z[zi].ic} ${Z[zi].n} 입장 시험 — 3문제 중 2문제`,
+    title: `🔒 ${zi + 1}단계 ${s.icon} ${s.name} 입장 시험 — 3문제 중 2문제`,
     qs,
     need: 2,
     onDone(ok) {
       if (ok) {
-        S.zone = Math.max(S.zone, zi + 1);
-        toast(`🔓 ${zi + 1}단계 열림! ${Z[zi].ic} ${Z[zi].n}`, 3);
+        unlockSector(zi);
+        toast(`🔓 ${zi + 1}단계 열림! ${s.icon} ${s.name}`, 3);
         flash('#7cf09a', 0.35);
         save();
       } else toast('통과 실패 — 다시 도전하세요');
@@ -61,8 +68,9 @@ export function openGate() {
 }
 export function loseCarry() {
   G.carry.forEach(c => {
-    nests[c.z].s[c.k] = c.id;
-    nests[c.z].t[c.k] = 0;
+    const n = nestOf(c.z);
+    n.s[c.k] = c.id;
+    n.t[c.k] = 0;
   });
   G.carry = [];
   syncCarry();
@@ -103,12 +111,13 @@ export function deposit() {
     msg.push(P[id].name + (np.mut ? ` (${MUT[np.mut][0]})` : ''));
     if (!S.dex[id]) {
       S.dex[id] = 1;
-      const rw = P[id].price / 10;
+      const rw = P[id].price / DEX_REWARD_DIV;
       S.cr += rw;
       toast(`📖 도감 등록! +${fmt(rw)}`, 2.6);
     }
-    nests[c.z].s[c.k] = pickFrom(Z[c.z].pool);
-    nests[c.z].t[c.k] = rnd(8, 15);
+    const n = nestOf(c.z);
+    n.s[c.k] = pickFrom(poolOf(c.z));
+    n.t[c.k] = rnd(8, 15);
   }
   syncCarry();
   if (msg.length) {
@@ -119,18 +128,16 @@ export function deposit() {
 export function sell(i: number) {
   const o = S.base[i];
   if (!o) return; // 라이벌이 막 훔쳐 갔거나 이미 판 칸이면 무시
-  const p = P[o.id],
-    v = (p.price / 2) * mul(o);
+  const v = sellValue(o);
   S.cr += v;
   S.base[i] = null;
   toast(`+${fmt(v)}`);
   save();
 }
-export function act(k: string) {
+/** E/F 키·프롬프트 터치: 현재 대상의 종류에 등록된 act 로 보낸다 */
+export function act(k: 'e' | 'f') {
   const target = G.target;
   if (!target || paused()) return;
-  if (target.kind === 'nest' && k === 'e') tryGrab(target.z, target.k);
-  else if (target.kind === 'base' && k === 'f') sell(target.i);
-  else if (target.kind === 'npc' && k === 'e') openShop();
-  else if (target.kind === 'gate' && k === 'e') openGate();
+  const it = interactableOf(target.kind);
+  if (it) it.act(target, k);
 }

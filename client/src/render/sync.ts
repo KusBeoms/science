@@ -1,41 +1,12 @@
-// 둥지/기지 슬롯의 행성 메시를 상태(nests, S.base)와 동기화
+// 기지 슬롯의 행성 메시를 S.base 와 동기화 (둥지 행성은 render/sectors.ts 의 syncNests)
 import {S} from '../core/state.js';
 import {G} from '../core/runtime.js';
-import {nests, nestPos} from '../core/layout.js';
 import {slotPos} from '../core/geometry.js';
-import {GROW, P} from '../data/planets.js';
+import {P} from '../data/planets.js';
+import {GROW} from '../data/pacing.js';
 import {makePlanet, freePlanet} from './textures.js';
 
-export function syncPlanets(t: number) {
-  nests.forEach((n, zi) =>
-    n.s.forEach((id, k) => {
-      const m = G.nestMesh[zi][k],
-        empty = n.t[k] > 0;
-      if (empty && m.grp) {
-        G.scene.remove(m.grp);
-        freePlanet(m.grp);
-        m.grp = null;
-        m.id = -1;
-      }
-      if (!empty && m.id !== id) {
-        if (m.grp) {
-          G.scene.remove(m.grp);
-          freePlanet(m.grp);
-        }
-        m.grp = makePlanet(id);
-        m.id = id;
-        G.scene.add(m.grp);
-      }
-      if (m.grp) {
-        const p = nestPos(zi, k),
-          r = m.grp.userData.r;
-        m.grp.scale.setScalar(r);
-        m.grp.position.set(p.x, (p.kind === 'orbit' ? 2.6 : 1.3) + r + Math.sin(t * 1.5 + k) * 0.15, p.z);
-        m.grp.rotation.y = t * (p.kind === 'orbit' ? 0.9 : 0.5);
-        m.grp.userData.pick = {kind: 'nest', z: zi, k};
-      }
-    })
-  );
+export function syncBase(t: number) {
   G.baseMesh.forEach((m, i) => {
     const o = i < S.slots ? S.base[i] : null;
     m.ped.visible = i < S.slots;

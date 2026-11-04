@@ -1,14 +1,15 @@
-// 라이벌 도둑: 기지에 침입해 다 큰 행성을 훔쳐 달아난다
+// 라이벌 도둑 시스템: 기지에 침입해 다 큰 행성을 훔쳐 달아난다
 import {S, save, freeSlot} from '../core/state.js';
 import {G} from '../core/runtime.js';
 import {dist2, rnd} from '../core/util.js';
 import {slotPos} from '../core/geometry.js';
-import {H} from '../data/zones.js';
+import {H} from '../data/sectors.js';
 import {P} from '../data/planets.js';
 import {animateWalk} from '../render/characters.js';
 import {toast} from '../game/hud.js';
+import type {GameSystem} from '../core/types.js';
 
-export function updateRival(dt: number) {
+function updateRival(dt: number) {
   const rival = G.rival,
     me = G.me;
   G.raidT -= dt;
@@ -76,3 +77,4 @@ export function updateRival(dt: number) {
     }
   }
 }
+export const rivalSystem: GameSystem = {id: 'rival', update: updateRival};

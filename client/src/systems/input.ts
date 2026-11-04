@@ -1,14 +1,11 @@
 // 입력: 키보드·마우스·터치·포인터락·조이스틱·화면 클릭 선택
-import {S} from '../core/state.js';
 import {G, paused} from '../core/runtime.js';
-import {clamp, dist2, $} from '../core/util.js';
-import {nestPos} from '../core/layout.js';
-import {SHOP_AT} from '../core/geometry.js';
-import {SH, Z} from '../data/zones.js';
-import {toast} from '../game/hud.js';
+import {clamp, $} from '../core/util.js';
 import {answer, closeQuiz, nextQ} from '../game/quiz.js';
-import {act, openGate, tryGrab} from '../game/actions.js';
-import {openShop, closeShop} from '../game/shop-ui.js';
+import {act} from '../game/actions.js';
+import {clickPick} from '../game/interactables.js';
+import {closeModal} from '../game/modal.js';
+import {closeShop} from '../game/shop-ui.js';
 import {toggleDex} from '../game/dex.js';
 import {startGame} from './ui.js';
 
@@ -23,9 +20,13 @@ function clickAt(cx: number, cy: number) {
   const v = new THREE.Vector2((cx / innerWidth) * 2 - 1, -(cy / innerHeight) * 2 + 1);
   ray.setFromCamera(v, G.camera);
   const groups: any[] = [G.npc];
-  G.nestMesh.forEach(a => a.forEach(m => m.grp && groups.push(m.grp)));
+  G.chunks.forEach(c => {
+    if (!c) return;
+    c.nest.forEach(m => m.grp && groups.push(m.grp));
+    groups.push(c.gate.grp);
+  });
   G.baseMesh.forEach(m => m.grp && groups.push(m.grp));
-  G.gates.forEach(g => groups.push(g.grp));
+  Object.keys(G.pads).forEach(id => groups.push(G.pads[id].grp));
   const vis = (o: any) => {
     for (; o; o = o.parent) if (!o.visible) return false;
     return true;
@@ -35,17 +36,7 @@ function clickAt(cx: number, cy: number) {
   let o = hit.object;
   while (o && !(o.userData && o.userData.pick)) o = o.parent;
   if (!o) return;
-  const pk = o.userData.pick;
-  if (pk.kind === 'nest') {
-    if (dist2(G.me.pos, nestPos(pk.z, pk.k)) < 7) tryGrab(pk.z, pk.k);
-    else toast('더 가까이 가세요');
-  } else if (pk.kind === 'npc') {
-    if (dist2(G.me.pos, SHOP_AT) < 9) openShop();
-    else toast('상점 아저씨에게 더 가까이 가세요');
-  } else if (pk.kind === 'gate') {
-    if (pk.i === S.zone && Math.abs(G.me.pos.z - (Z[pk.i].z + SH)) < 9) openGate();
-    else toast(pk.i < S.zone ? '이미 열린 문' : '앞 단계부터 통과해야 한다');
-  } else G.pickOv = {pk, t: 4};
+  clickPick(o.userData.pick, pk => (G.pickOv = {pk, t: 4}));
 }
 export function setLock(on: boolean) {
   G.lockMode = on;
@@ -273,6 +264,10 @@ export function setupKeys() {
     }
     if (G.shopOpen) {
       if (e.code === 'Escape') closeShop();
+      return;
+    }
+    if (G.modal) {
+      if (e.code === 'Escape') closeModal();
       return;
     }
     if (e.repeat && performance.now() - G.quizClosedAt < 700) {

@@ -2,7 +2,7 @@
 import {S} from '../core/state.js';
 import {G} from '../core/runtime.js';
 import {DECO} from '../data/shop.js';
-import {TS, H} from '../data/zones.js';
+import {TS, H} from '../data/sectors.js';
 import {checkerTex, freeTree} from './textures.js';
 
 export function applyDeco() {

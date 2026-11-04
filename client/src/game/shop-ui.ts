@@ -2,8 +2,8 @@
 import {S, save, cap} from '../core/state.js';
 import {G, paused, releaseLock} from '../core/runtime.js';
 import {$, fmt} from '../core/util.js';
-import {BAGS, DECO, LOOK, SPR, sprStyle, slotCost, spdCost} from '../data/shop.js';
-import {SLOTMAX, SPDMAX} from '../data/zones.js';
+import {BAGS, CAPS, DECO, LOOK, SPR, sprStyle} from '../data/shop.js';
+import {slotCost, spdCost} from '../data/pacing.js';
 import {applyLook} from '../render/characters.js';
 import {buildBag, buildSpringOnHand, syncCarry} from '../render/gear.js';
 import {applyDeco} from '../render/deco.js';
@@ -119,10 +119,10 @@ export function renderShop() {
     });
   } else if (shopTab === 'shoe') {
     hint.textContent = '신발 레벨 하나당 이동 속도 +1.5. 구역마다 수호자가 점점 빨라진다.';
-    const full = S.spd >= SPDMAX;
+    const full = S.spd >= CAPS.spd;
     g.append(
       cell(
-        `<i class="sw" style="background:#7cc4ff">👟</i><b>운동화 Lv${S.spd}/${SPDMAX}</b><span>이동 ${(14 + 1.5 * S.spd).toFixed(1)} → ${(14 + 1.5 * (S.spd + 1)).toFixed(1)}</span><em>${full ? 'MAX' : '✦ ' + fmt(spdCost(S.spd))}</em>`,
+        `<i class="sw" style="background:#7cc4ff">👟</i><b>운동화 Lv${S.spd}/${CAPS.spd}</b><span>이동 ${(14 + 1.5 * S.spd).toFixed(1)} → ${(14 + 1.5 * (S.spd + 1)).toFixed(1)}</span><em>${full ? 'MAX' : '✦ ' + fmt(spdCost(S.spd))}</em>`,
         full ? 'eq' : '',
         () => {
           if (!full)
@@ -134,11 +134,11 @@ export function renderShop() {
       )
     );
   } else if (shopTab === 'slot') {
-    hint.textContent = `기지에 행성을 놓는 칸 (최대 ${SLOTMAX}칸). 지금 ${S.slots}칸.`;
-    const full = S.slots >= SLOTMAX;
+    hint.textContent = `기지에 행성을 놓는 칸 (최대 ${CAPS.slots.max}칸). 지금 ${S.slots}칸.`;
+    const full = S.slots >= CAPS.slots.max;
     g.append(
       cell(
-        `<i class="sw" style="background:#cfd6e6">🏠</i><b>칸 +1</b><span>${S.slots} → ${Math.min(SLOTMAX, S.slots + 1)}</span><em>${full ? 'MAX' : '✦ ' + fmt(slotCost(S.slots))}</em>`,
+        `<i class="sw" style="background:#cfd6e6">🏠</i><b>칸 +1</b><span>${S.slots} → ${Math.min(CAPS.slots.max, S.slots + 1)}</span><em>${full ? 'MAX' : '✦ ' + fmt(slotCost(S.slots))}</em>`,
         full ? 'eq' : '',
         () => {
           if (!full)

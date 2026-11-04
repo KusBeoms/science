@@ -24,3 +24,18 @@ export function infoHTML(p: Planet, o: Owned | null) {
     `<br>${p.fact}`
   );
 }
+/** HUD 상태 줄 확장 포인트: 후속 기능이 한 줄씩 추가한다 (null/빈 문자열이면 그 줄은 숨김). 시스템의 hud() 도 여기로 등록된다 */
+export const hudLines: (() => string | null)[] = [];
+export const addHudLine = (f: () => string | null) => hudLines.push(f);
+/** 매 프레임: #lines 에 줄들을 그린다 (바뀔 때만 DOM 갱신) */
+let linesTxt = '';
+export function renderHudLines() {
+  const t = hudLines
+    .map(f => f())
+    .filter(Boolean)
+    .join('\n');
+  if (t !== linesTxt) {
+    linesTxt = t;
+    $('#lines').textContent = t;
+  }
+}

@@ -1,6 +1,6 @@
 // 여러 모듈이 공유하는 가변 런타임 상태 (원본의 전역 let 변수들). ES 모듈은 import 한 let 에 대입할 수 없으므로 하나의 객체 G 로 묶는다.
 // THREE 객체와 라이벌은 경계 타입이라 any.
-import type {Carry, Pick, QuizCtx, Target} from './types.js';
+import type {Carry, Chunk, Pick, QuizCtx, Target} from './types.js';
 
 export const G = {
   // 입력/플레이어
@@ -25,9 +25,14 @@ export const G = {
   quizOpen: false,
   dexOpen: false,
   shopOpen: false,
+  /** 범용 오버레이(game/modal.ts)로 열린 요소 id — 포탈 목록 등. 열려 있으면 일시정지 */
+  modal: null as string | null,
+  modalClose: null as (() => void) | null,
   quizCtx: null as QuizCtx | null,
+  /** 플레이어가 서 있는 섹터 인덱스 (-1 = 허브/허공) */
   curZone: -1,
-  lastZone: -2,
+  /** 일시정지를 뺀 누적 게임 시간(초) — 둥지 시간 보정 기준 */
+  gameT: 0,
   comet: null as any,
   cometT: 40,
   started: false,
@@ -49,12 +54,13 @@ export const G = {
   carryGrp: null as any,
   sackGrp: null as any,
   springGrp: null as any,
-  guards: [] as {m: any; chase: boolean; home: any}[],
-  nestMesh: [] as {id: number; grp: any}[][],
+  /** 섹터 인덱스별 로드된 씬 객체 (render/sectors.ts 가 거리 기준으로 만들고 해제) */
+  chunks: [] as (Chunk | null)[],
+  /** 포탈 패드: 'hub' 또는 섹터 id → {grp, x, z} */
+  pads: {} as Record<string, {grp: any; x: number; z: number}>,
   baseMesh: [] as {ped: any; id: number; grp: any; mut?: number}[],
-  gates: [] as {grp: any; panel: any; gl: any; pm: any}[],
 };
-export const paused = () => !G.started || G.quizOpen || G.dexOpen || G.shopOpen;
+export const paused = () => !G.started || G.quizOpen || G.dexOpen || G.shopOpen || G.modal !== null;
 export function releaseLock() {
   if (document.pointerLockElement) document.exitPointerLock();
   Object.keys(G.keys).forEach(k => (G.keys[k] = false));

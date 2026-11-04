@@ -75,7 +75,8 @@ body.touch #prompt {
   }
   #mission,
   #tag,
-  #carryTag {
+  #carryTag,
+  #lines {
     font-size: 11px;
   }
 }

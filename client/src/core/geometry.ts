@@ -1,20 +1,52 @@
-// 지도 판정: 타일 안/잠김/바닥/막힘/슬롯 좌표/구역
-import {H, SH, Z} from '../data/zones.js';
-import {S} from './state.js';
+// 지도 판정 (2D): 허브/섹터 안·바닥·막힘·문·포탈 패드·슬롯 좌표
+import {H, SECTORS} from '../data/sectors.js';
+import {locked} from './progress.js';
 import {G} from './runtime.js';
 
 export const SHOP_AT = {x: -15, z: -13},
-  SPAWN = {x: 0, z: 17};
-export const inTile = (x: number, z: number, c: number, m?: number, h?: number) => {
-  h = (h || H) + (m || 0);
-  return Math.abs(x) < h && Math.abs(z - c) < h;
+  SPAWN = {x: 0, z: 17},
+  HUB_PAD = {x: 15, z: -13};
+/** 허브 타일 안 (m = 여유, 음수면 안쪽으로 좁힘) */
+export const inBase = (x: number, z: number, m = 0) => Math.abs(x) < H + m && Math.abs(z) < H + m;
+export const inSector = (x: number, z: number, i: number, m = 0) => {
+  const s = SECTORS[i],
+    h = s.size / 2 + m;
+  return Math.abs(x - s.center.x) < h && Math.abs(z - s.center.z) < h;
 };
-export const locked = (zi: number) => zi >= S.zone;
+/** 섹터 사각형까지의 거리 (안이면 0) — 청크 스트리밍 기준 */
+export const sectorDist = (x: number, z: number, i: number) => {
+  const s = SECTORS[i],
+    h = s.size / 2;
+  return Math.hypot(Math.max(0, Math.abs(x - s.center.x) - h), Math.max(0, Math.abs(z - s.center.z) - h));
+};
 export const onGround = (x: number, z: number) =>
-  inTile(x, z, 0) || Z.some((q, i) => !locked(i) && inTile(x, z, q.z, 0, SH));
-export const blockedAt = (x: number, z: number) => Z.some((q, i) => locked(i) && inTile(x, z, q.z, 0, SH));
+  inBase(x, z) || SECTORS.some((_, i) => !locked(i) && inSector(x, z, i));
+export const blockedAt = (x: number, z: number) => SECTORS.some((_, i) => locked(i) && inSector(x, z, i));
 export const slotPos = (i: number) => ({x: -16 + 8 * (i % 5), z: 2 + 8 * Math.floor(i / 5)});
 export const zoneAt = () => {
-  for (let i = 0; i < Z.length; i++) if (inTile(G.me.pos.x, G.me.pos.z, Z[i].z, 1, SH)) return i;
+  for (let i = 0; i < SECTORS.length; i++) if (inSector(G.me.pos.x, G.me.pos.z, i, 1)) return i;
   return -1;
 };
+/** 문이 놓인 변: 중점(x,z), 섹터 안쪽 방향(ix,iz), 변을 따라가는 방향(lx,lz) */
+export function gateFrame(i: number) {
+  const s = SECTORS[i],
+    h = s.size / 2,
+    c = s.center;
+  if (s.gate === 's') return {x: c.x, z: c.z + h, ix: 0, iz: -1, lx: 1, lz: 0};
+  if (s.gate === 'n') return {x: c.x, z: c.z - h, ix: 0, iz: 1, lx: 1, lz: 0};
+  if (s.gate === 'e') return {x: c.x + h, z: c.z, ix: -1, iz: 0, lx: 0, lz: 1};
+  return {x: c.x - h, z: c.z, ix: 1, iz: 0, lx: 0, lz: 1};
+}
+/** 문 앞 (변까지 수직 거리 < d, 변 길이 + 2 안쪽) */
+export function nearGate(i: number, x: number, z: number, d: number) {
+  const f = gateFrame(i),
+    dx = x - f.x,
+    dz = z - f.z;
+  return Math.abs(dx * f.ix + dz * f.iz) < d && Math.abs(dx * f.lx + dz * f.lz) < SECTORS[i].size / 2 + 2;
+}
+/** 섹터 포탈 패드: 문에서 안쪽으로 8, 옆으로 반변의 절반 */
+export function padPos(i: number) {
+  const f = gateFrame(i),
+    o = SECTORS[i].size / 4;
+  return {x: f.x + f.ix * 8 + f.lx * o, z: f.z + f.iz * 8 + f.lz * o};
+}

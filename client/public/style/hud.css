@@ -213,3 +213,11 @@ body.touch .rb {
   color: #9dffb0;
   text-shadow: 0 1px 4px #000;
 }
+#lines {
+  top: 118px;
+  left: 14px;
+  font-size: 12px;
+  color: #cfe0ff;
+  text-shadow: 0 1px 4px #000;
+  white-space: pre-line;
+}

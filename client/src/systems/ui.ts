@@ -4,6 +4,7 @@ import {G} from '../core/runtime.js';
 import {$} from '../core/util.js';
 import {closeQuiz, nextQ} from '../game/quiz.js';
 import {act} from '../game/actions.js';
+import {interactableOf} from '../game/interactables.js';
 import {closeShop, openShop} from '../game/shop-ui.js';
 import {toggleDex} from '../game/dex.js';
 
@@ -17,7 +18,8 @@ export function bindUI() {
   $('#qn').onclick = nextQ;
   $('#prompt').addEventListener('pointerdown', e => {
     e.preventDefault();
-    if (G.target) act(G.target.kind === 'base' ? 'f' : 'e');
+    const it = G.target && interactableOf(G.target.kind);
+    if (it) act(it.tapKey || 'e');
   });
   $('#sx').onclick = closeShop;
   $('#shopBtn').onclick = e => {

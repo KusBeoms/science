@@ -7,6 +7,8 @@ import {initWorld} from './render/world.js';
 import {setupKeys, setupPointers} from './systems/input.js';
 import {bindUI} from './systems/ui.js';
 import {frame} from './systems/loop.js';
+import './systems/index.js';
+import './debug.js';
 
 async function main() {
   if (typeof THREE === 'undefined') {

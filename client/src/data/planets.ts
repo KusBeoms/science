@@ -1,8 +1,10 @@
-// 행성 데이터. DB 행은 원본 그대로: [이름, 분류, 질량(M⊕), 반지름(R⊕), 단계, 가격, 색1, 색2, 설명, 효과]
-import type {Planet} from '../core/types.js';
+// 행성 데이터. DB 행: [이름, 분류, 질량(M⊕), 반지름(R⊕), 등급, 가격, 색1, 색2, 설명, 효과]
+// id = DB 인덱스 (세이브의 dex·base 키) → 행은 **끝에만 추가**한다. 새 행은 planets-more.ts 의 DB_MORE 에.
+import type {DbRow, Planet} from '../core/types.js';
+import {INC_DIV, PRICE_MUL, RW} from './pacing.js';
+import {DB_MORE} from './planets-more.js';
 export const R = ['실제', '인터스텔라', '아바타'];
-type DbRow = [string, number, number, number, number, number, string, string, string, string?];
-export const DB: DbRow[] = [
+const DB_BASE: DbRow[] = [
   ['명왕성', 0, 0.0022, 0.186, 0, 25, '#e9d6c3', '#8a6f5c', '하트 모양 평원은 질소 빙하 (2015, 뉴호라이즌스)'],
   ['수성', 0, 0.055, 0.383, 0, 50, '#cfc8be', '#6c665e', '낮 430°C, 밤 -180°C. 하루가 1년의 2배'],
   ['화성', 0, 0.107, 0.532, 0, 100, '#e8825a', '#7a2f1c', '올림푸스 산은 에베레스트의 2.5배 높이'],
@@ -95,8 +97,7 @@ export const DB: DbRow[] = [
     'glow star',
   ],
 ];
-export const RW = [50, 28, 14, 6, 1.6, 0.4];
-export const GROW = [8, 15, 30, 60, 120, 240]; // 강착(성장) 시간 초 — 희귀할수록 길다
+export const DB: DbRow[] = DB_BASE.concat(DB_MORE);
 export const MUT: [string, number][] = [
   ['', 1],
   ['고온 ×2', 2],
@@ -109,16 +110,19 @@ export const P: Planet[] = DB.map((d, i) => ({
   M: d[2],
   R: d[3],
   t: d[4],
-  price: d[5],
+  price: d[5] * PRICE_MUL,
   c1: d[6],
   c2: d[7],
   fact: d[8],
   fx: d[9] || '',
   g: d[2] / (d[3] * d[3]),
   ve: 11.186 * Math.sqrt(d[2] / d[3]),
-  inc: d[5] / 25,
+  inc: (d[5] * PRICE_MUL) / INC_DIV,
 }));
 export const SOLAR = ['태양', '명왕성', '수성', '화성', '금성', '지구', '천왕성', '해왕성', '토성', '목성'];
+/** 이름 → id 목록 (없는 이름은 건너뛴다) */
+export const ids = (...names: string[]) => names.map(n => P.findIndex(p => p.name === n)).filter(i => i >= 0);
+/** 등급 가중치로 풀에서 하나 고른다. 풀은 비어 있으면 안 된다 (core/layout.ts 의 poolOf 가 대체 풀을 준다) */
 export function pickFrom(pool: number[]): number {
   const w = pool.map(i => RW[P[i].t]),
     s = w.reduce((a, b) => a + b);

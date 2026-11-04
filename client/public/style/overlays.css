@@ -203,3 +203,26 @@
   color: #04101c;
   font-weight: 700;
 }
+.dh {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: var(--dim);
+  margin-top: 6px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 3px;
+}
+#portal .card {
+  width: 360px;
+  max-height: 80vh;
+  overflow: auto;
+}
+#plist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+#plist button {
+  text-align: left;
+  padding: 10px 14px;
+}

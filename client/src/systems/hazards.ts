@@ -1,35 +1,26 @@
-// 환경 요소: 구역 안내문, 중력, 혜성
+// 환경 요소 시스템 (레지스트리 모범 사례): 섹터 안내문(onSectorEnter), 중력·시간 배율, 혜성(update)
 import {S, save, income} from '../core/state.js';
 import {G} from '../core/runtime.js';
 import {clamp, fmt, rnd, setTxt} from '../core/util.js';
 import {cap} from '../core/state.js';
-import {inTile} from '../core/geometry.js';
+import {inBase} from '../core/geometry.js';
 import {P} from '../data/planets.js';
-import {H} from '../data/zones.js';
+import {H, SECTORS} from '../data/sectors.js';
 import {freeTree} from '../render/textures.js';
 import {toast} from '../game/hud.js';
+import type {GameSystem} from '../core/types.js';
 
-const NOTES = [
-  '🌍 대기가 없는 곳이 많다 — 낮밤 온도 차가 크다',
-  '⭐ 쌍성·적색왜성 — 별마다 환경이 다르다',
-  '⏳ 블랙홀 근처는 시간이 느리다 — 여기 있는 동안 기지가 ×3 빠르게 흐른다',
-  '🪐 판도라 중력 0.8g — 더 높이 뛴다',
-];
+const cur = () => (G.curZone >= 0 ? SECTORS[G.curZone] : null);
+/** 현재 섹터의 시간 배율 (기지 성장·수익이 이만큼 빨리 흐른다) */
+export const timeNow = () => cur()?.timeMul ?? 1;
 export const gravityNow = () =>
-  (G.carry.length ? clamp(Math.max(...G.carry.map(c => P[c.id].g)), 0.6, 2.2) : 1) * (G.curZone === 3 ? 0.8 : 1);
-export function hazards(dt: number) {
+  (G.carry.length ? clamp(Math.max(...G.carry.map(c => P[c.id].g)), 0.6, 2.2) : 1) * (cur()?.gravityMul ?? 1);
+function hazards(dt: number) {
   const carry = G.carry,
     me = G.me;
-  if (G.curZone !== G.lastZone) {
-    if (G.curZone >= 0 && !S.notes[G.curZone]) {
-      S.notes[G.curZone] = 1;
-      toast(NOTES[G.curZone], 4.5);
-      save();
-    }
-    G.lastZone = G.curZone;
-  }
-  const tag = [];
-  if (G.curZone === 2) tag.push('⏳ 시간 ×3');
+  const tag = [],
+    tm = timeNow();
+  if (tm !== 1) tag.push(`⏳ 시간 ×${tm}`);
   const gE = gravityNow();
   if (Math.abs(gE - 1) > 0.02) tag.push(`중력 ${gE.toFixed(2)}g`);
   if (G.night > 0) tag.push('🌙 밤 — 성장 ×30');
@@ -39,7 +30,7 @@ export function hazards(dt: number) {
     carry.length ? `✋ ${carry.map(c => P[c.id].name).join(', ')} (${carry.length}/${cap()}) — 기지로!` : ''
   );
   if (!G.comet) {
-    if (inTile(me.pos.x, me.pos.z, 0) && !carry.length && (G.cometT -= dt) <= 0) {
+    if (inBase(me.pos.x, me.pos.z) && !carry.length && (G.cometT -= dt) <= 0) {
       G.cometT = rnd(60, 90);
       spawnComet();
     }
@@ -75,3 +66,13 @@ function spawnComet() {
   G.comet = {g, z};
   toast('☄ 혜성 출현! 닿으면 포획');
 }
+export const hazardSystem: GameSystem = {
+  id: 'hazards',
+  update: hazards,
+  onSectorEnter(s) {
+    if (S.notes[s.id]) return;
+    S.notes[s.id] = 1;
+    toast(s.note, 4.5);
+    save();
+  },
+};
