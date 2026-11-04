@@ -8,7 +8,7 @@ import {num, step, vec} from './cutscene-track.js';
 
 export interface Actor {
   obj: any;
-  /** 말풍선 앵커: 오브젝트 위로 얼마나 띄울지 */
+  /** 말풍선 앵커: 오브젝트 위로 띄울 월드 단위 높이 */
   top: number;
   own: boolean;
   s0: number;
@@ -23,19 +23,29 @@ const basic = (c: number) => new THREE.MeshBasicMaterial({color: c, fog: false})
     o.position.set(x, y, z);
     return o;
   };
+/** 사과 후광: 붉은 방사형 그라디언트 */
+function glowTex() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const x = c.getContext('2d')!,
+    g = x.createRadialGradient(64, 64, 4, 64, 64, 64);
+  g.addColorStop(0, 'rgba(255,110,120,0.7)');
+  g.addColorStop(1, 'rgba(255,60,80,0)');
+  x.fillStyle = g;
+  x.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+}
 const BUILD: Record<ActorKind, () => Built> = {
-  player: () => ({obj: G.me, top: 4.6}),
+  player: () => ({obj: G.me, top: 4.2}),
   apple: () => {
     const g = new THREE.Group(),
-      halo = mesh(
-        new THREE.SphereGeometry(31, 24, 16),
-        new THREE.MeshBasicMaterial({color: 0xff5060, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, side: THREE.BackSide, fog: false, depthWrite: false})
-      ),
+      halo = new THREE.Sprite(new THREE.SpriteMaterial({map: glowTex(), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false})),
       body = mesh(new THREE.SphereGeometry(22, 32, 24), lit(0xd8232a, 0x5a0c10));
     body.scale.y = 0.94;
+    halo.scale.setScalar(84);
     g.add(halo, body, mesh(new THREE.BoxGeometry(1.6, 6, 1.6), lit(0x5a3a1a, 0x1a1008), 0, 22, 0), mesh(new THREE.SphereGeometry(4.5, 12, 8), lit(0x4caf50, 0x103a14), 4, 24, 0));
     g.children[3].scale.set(1.6, 0.5, 0.9);
-    return {obj: g, top: 30, tick: t => halo.scale.setScalar(1 + 0.06 * Math.sin(t * 3))};
+    return {obj: g, top: 30, tick: t => halo.scale.setScalar(84 + 5 * Math.sin(t * 3))};
   },
   ring: () => {
     const g = new THREE.Group(),
@@ -80,9 +90,9 @@ const BUILD: Record<ActorKind, () => Built> = {
     [0xff9a4a, 0x7cc4ff, 0xc89aff].forEach((c, i) => g.add(mesh(new THREE.SphereGeometry(2.4, 16, 12), lit(c, c & 0x555555), (i - 1) * 5, i === 1 ? 2 : 0, 0)));
     return {obj: g, top: 6};
   },
-  guard: () => ({obj: makeGuardian(0xff5a30), top: 11}),
-  npc: () => ({obj: blocky(0x6a9a7a, 0x445566, '#e0b090'), top: 4.6}),
-  silhouette: () => ({obj: blocky(0x050505, 0x050505, '#050505'), top: 4.6}),
+  guard: () => ({obj: makeGuardian(0xff5a30), top: 12}),
+  npc: () => ({obj: blocky(0x6a9a7a, 0x445566, '#e0b090'), top: 4.2}),
+  silhouette: () => ({obj: blocky(0x050505, 0x050505, '#050505'), top: 4.2}),
 };
 
 export function spawnActors(setup: Setup | undefined, o: Vec3, lock: boolean): Map<string, Actor> {

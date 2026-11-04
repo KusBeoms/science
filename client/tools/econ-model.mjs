@@ -22,7 +22,7 @@ export function simulate(cfg, beh, seed, opt = {}) {
     r = {
       zoneEnter: [], enterIncome: [], enterSpend: [], endT: null, firstBuyT: null, income10: null,
       spdMaxT: null, slotMaxT: null, sinkT: null, dexWait: Z.map(() => 0), vehWait: {}, vehReady: {},
-      topShare: null, houseT: [], zoneInc: Z.map(() => ({passive: 0, sell: 0, other: 0, sec: 0})),
+      topShare: null, snap: null, houseT: [], zoneInc: Z.map(() => ({passive: 0, sell: 0, other: 0, sec: 0})),
     };
   let busy = 0, job = null, baseSec = 0, cometAt = 60 + rnd() * 30, ended = false, lastEnter = 0, examAt = 0;
   const pickFrom = pool => {
@@ -98,6 +98,8 @@ export function simulate(cfg, beh, seed, opt = {}) {
     const g = nextGate();
     if (g && g.dex && st.dex.size < g.dex)
       for (let z = st.zone; z >= 0; z--) if (Z[z].pool.some(p => !st.dex.has(p.id))) return z;
+    if (beh.hunt && rnd() < beh.hunt)
+      for (let z = st.zone; z >= 0; z--) if (Z[z].pool.some(p => !st.dex.has(p.id))) return z;
     return Math.max(0, st.zone);
   };
   const choose = (pool, needNew) => {
@@ -116,7 +118,7 @@ export function simulate(cfg, beh, seed, opt = {}) {
     const z = stealZone(),
       pool = Z[z].pool,
       g = nextGate(),
-      needNew = !!(g && g.dex && st.dex.size < g.dex),
+      needNew = !!(g && g.dex && st.dex.size < g.dex) || !!beh.hunt,
       n = Math.min(cap(), st.slots - filled()),
       v = speed();
     let sec = (Z[z].dist / v) * (1 + 1 / CARRY_SLOW) / beh.pace + beh.tBase;
@@ -240,6 +242,7 @@ export function simulate(cfg, beh, seed, opt = {}) {
       if (rnd() < beh.cometCatch) gain(income() * 40, 'other');
     }
     missionTick();
+    if (opt.probe && st.t % opt.probeEvery === 0) opt.probe(st, income());
     if (busy > 0 && --busy === 0 && job) {
       const j = job;
       job = null;
@@ -250,6 +253,7 @@ export function simulate(cfg, beh, seed, opt = {}) {
     if (!ended && cfg.done(st, beh)) {
       ended = true;
       r.endT = st.t;
+      r.snap = r.zoneInc.map(z => ({...z}));
       const base = st.base.filter(Boolean).map(o => (o.p.price / cfg.incDiv) * mulOf(o));
       if (base.length) r.topShare = Math.max(...base) / base.reduce((a, b) => a + b);
       if (!cfg.post) break;

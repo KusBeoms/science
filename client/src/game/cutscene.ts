@@ -54,7 +54,7 @@ function proj(r: Run, id: string): [number, number] | null {
   const a = r.actors.get(id);
   if (!a) return null;
   a.obj.getWorldPosition(tmp);
-  tmp.y += a.top * a.obj.scale.y;
+  tmp.y += a.top;
   tmp.project(G.camera);
   return tmp.z > 1 ? null : [(tmp.x * 0.5 + 0.5) * innerWidth, (-tmp.y * 0.5 + 0.5) * innerHeight];
 }

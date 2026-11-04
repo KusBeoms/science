@@ -62,6 +62,13 @@ export const MISSIONS = [
   ['dex', 25, 1000000],
 ];
 
+const SINK_TOTAL =
+  sum(SPRINGS) +
+  sum([500, 8000, 100000]) +
+  82000 +
+  sum(range(10).map(l => Math.floor(80 * 1.8 ** l))) +
+  sum(range(4).map(k => 1000 * 2 ** k));
+
 export const legacyConfig = () => ({
   name: '현행(INC_DIV 25)',
   rw: [50, 28, 14, 6, 1.6, 0.4],
@@ -93,7 +100,7 @@ export const legacyConfig = () => ({
   missionMul: 1,
   spendGate: null,
   examRetry: 0,
-  sinkTotal: sum(SPRINGS) + sum([500, 8000, 100000]) + 82000 + sum(range(10).map(l => Math.floor(80 * 1.8 ** l))) + sum(range(4).map(k => 1000 * 2 ** k)),
-  done: st => st.zone >= 5 && st.dex.size >= 24 && st.slots >= 10 && st.spd >= 10 && st.bag >= 3 && st.springN >= 8,
+  sinkTotal: SINK_TOTAL,
+  done: st => st.spent >= 0.99 * SINK_TOTAL,
   rng: mulberry32,
 });

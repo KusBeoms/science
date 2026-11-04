@@ -21,6 +21,40 @@
 | 캐릭터 | `blocky()` 블록형 + `face` 5종(0~4) | 감정은 **머리 위 말풍선**이 담당(얼굴 표정 변경 불필요) |
 
 ---
+## 0.1 구현 상태 (B1 컷신 디렉터 + B7 글 없는 UI 틀) — 2장 초안과 달라진 실제값
+
+**구현됨**: 타임라인 디렉터(카메라·배우·말풍선·FX·사운드 훅·HUD 훅·UI 숨김 트랙), 건너뛰기 ⏭(최초 시청 2초 지연·`skipHold` 길게 누르기·Space/Enter/Esc), 입력 비차단 오버레이 모드(`lockInput:false`, `soft` 시선 보조, 시점 입력 시 해제), 재시청(`playCut(id,{replay:true})`: 입력 잠금·고정 카메라·`onEnd`/`seen` 불변), 컷신 C01, 포맷 검증 샘플 `x_sample`, `iconToast`, `HudWidget`, 세이브 v6 `S.story`. **미구현**: C02~C12·M4-1~5 데이터, 사과 게이지 `#appleGauge`·방향 화살표 `#dir` 요소(HUD 키는 `G.cineHooks.hud` 로 위임), 사운드 구현(큐 이름만), 사과 원경 상시 표시·금화 고리 결계 상시 표시, 날씨·낮밤 `setup`, 재시청 메뉴 🎞️, 연출 보호 구간(5.4) 알림 억제, 힌트 시스템(5.1).
+
+| 파일 | 역할 |
+|---|---|
+| `data/cutscene-icons.ts` | `ICONS`(key→[이모지, shape]) · `IconKey` — 스토리/튜토리얼/HUD 의 아이콘 단일 출처 |
+| `data/cutscene-types.ts` | `CutDef` 등 포맷 타입 · `STORY_CUTS`(seen 17키) · `CutId` |
+| `data/cutscenes.ts` | `CUTS`(C01 + `x_sample`) · `cutOf(id)` · `cutByBeat(beat, mid)` — **새 컷신은 여기에 `CutDef` 추가만** |
+| `game/cutscene.ts` | 디렉터: `playCut skipCut skipPress tickCut cineCamera cineActive` |
+| `game/cutscene-actors.ts` / `-fx.ts` / `-track.ts` | 배우 생성·구동 / 화면 FX·말풍선 투영 / 키프레임 보간 |
+| `systems/cutscene.ts` | 시스템: `tickCut` 구동 · C01 자동 재생(`S.story.seen.c01_love` 가 0 일 때, `?cine=0` 이면 끔) · 건너뛰기 입력 · `?debug=1` 시 `__game.cine.{play,skip,active,iconToast,addHudWidget}` |
+| `public/style/cine.css`, `index.html` `#cine #itoast #widgets` | 레이어(z 8)·레터박스·말풍선·`body.cine-nohud`·모션 감소 |
+
+**데이터 포맷 실제값 (2장과 다른 점)**
+- 모든 `Vec3` 는 **재생 시작 시 플레이어 위치 기준 상대 좌표**(회전 없음). 'player' 배우는 실제 `G.me` 를 빌려 구동하고 종료 시 위치·방향·포즈를 복구한다(입력 잠금 컷신에서만 위치·방향을 움직임).
+- 키 공통: `t`, `ease`, `cut:true`(직전 키에서 보간 없이 그 시각에 점프 — 컷 직전에 `t-0.01` 키를 하나 둬서 앞 컷을 끝낸다). 필드를 가진 키끼리만 보간하고 첫 키 이전은 첫 값 유지. 트랙은 로드 시 시각순 정렬.
+- `setup` 은 `{actors}` 만(`time`·`weather`·`endState`·`SkipSnapshot` 제거 — 날씨는 FX `rain`, 상태 변경은 `onEnd` 하나로 통일). 배우 kind 11종 전부 구현(placeholder 형상: `apple ring coin line sprout knife triple` 은 기본 도형, `guard`=`makeGuardian`, `npc/silhouette`=`blocky`).
+- 트랙에 `{type:'ui', kf:[{t, hud:boolean}]}` 추가: 게임플레이 HUD 숨김(`body.cine-nohud`). 기본은 입력 잠금 컷신 숨김·오버레이 표시.
+- `EndEffect` 에 `{do:'ended'}`(→`S.story.ended=1`) 추가. 디렉터가 직접 처리: `beat`(mid=0 리셋) `mid`(beat===4 일 때만) `flag`(`seen[key]`) `ended` `save`. 나머지(`gaugeSync flushNotices start unlock`)는 `G.cineHooks.effect(e)` 로 위임. `seen[id]=1` 은 `onEnd` 와 함께 **항상**(재시청 제외) 기록.
+- FX `amt`/`dur`: `fade dim vignetteRed rain` = 목표 불투명도 램프 · `flash` = 순간 밝기(상한 0.25, 모션 감소 시 생략) · `shake` = 카메라 진폭 · `slowmo` = 컷신 시간 배속 · `sparkle` = `at` 배우 위치 ✨ · `spot` = `at`(배우 id 또는 HUD 대상 `apple|wanted|dir`) 스포트라이트.
+- 훅: `G.cineHooks.sound(cue,{vol,pan,duck})` · `hud(HudKey|null)`(null = 컷신 종료, 미리보기 원복) · `effect(EndEffect)`. 전부 optional — 구현하는 모듈이 대입한다.
+- 일시정지: 입력 잠금 컷신은 `paused()` true(`G.cine.lock`), 오버레이는 퀴즈·도감·상점·모달이 열린 동안 `cineT` 정지. 입력 잠금 컷신이 오면 재생 중 오버레이는 즉시 종료 처리, 대기열은 1개.
+- 건너뛰기: 0.3초 페이드 후 `onEnd` 실행(정상 종료와 동일). 정상 종료 시 컷신 카메라→조작 카메라로 0.8초 보간 복귀. 오버레이의 ⏭ 는 44px 칩(화면 우중), Space 는 점프이므로 Enter/Esc 만.
+
+**`iconToast` / `HudWidget` (`game/hud.ts`)**
+- `iconToast(icons: IconKey[], sec=1.2)`: 화면 중앙 하단 위 `#itoast`, 이모지+shape 외곽만(숫자 `×n` 허용), 큐 최대 2·같은 아이콘 연속은 `×n` 합침, 컷신·오버레이 중엔 보류(최대 2) → 종료 시 `flushIconToasts`. **규칙: 스토리·튜토리얼·알림 경로는 `iconToast` 만, 문장 `toast()` 는 시스템 오류 전용**(E2E 가 `data/cutscenes.ts`·`game/cutscene*.ts`·`systems/cutscene.ts` 의 `toast(` 와 한글 리터럴 0건을 검사).
+- `HudWidget{id, slot:'TL'|'TC'|'TR'|'L1'|'L2'|'RM', priority, icons[], fill?}`: `addHudWidget(() => HudWidget|null)` 또는 `GameSystem.widget()`. 슬롯 상한 `{TL:2,TC:1,TR:2,L1:1,L2:1,RM:1}` · 총량 6 · 초과 시 priority 낮은 것부터 숨김을 `renderHudWidgets()`(=`renderHudLines()` 끝에서 호출)가 강제. 슬롯 좌표는 임시(`cine.css`), HUD 슬롯 격자(10.3) 도입 시 재배치.
+
+**세이브 v6 `S.story`** (`core/types.ts` `StoryState`, `core/save-schema.ts`): `{beat:0, mid:0, seen:{17키:0}, ended:0, hints:{}}`, `SAVE_VER=6`. `STEPS[5]` 는 story 만 만든다(기존 v5 의 다른 빈 필드는 건드리지 않음). 이미 진행한 v5 세이브(`stolen·zone·bought·cr>10`)는 `seen.c01_love=1, beat=1` 로 시작해 C01 이 재생되지 않는다. `beat!==4` 면 `mid=0` 보정. 상위 버전 세이브는 STEPS 를 건너뛰고 `ver` 도 낮추지 않는다(story 가 있으면 그대로 보존).
+
+**E2E**: `client/tests/e2e/cutscene.spec.ts` 9건 — C01 전체 재생(텍스트 노드 0·`beat=1`·카메라 복귀)·⏭/Space 건너뛰기·키 비누수·오버레이 입력 비차단·`iconToast`(병합/큐/보류)·`HudWidget` 상한·세이브 v6(마이그레이션/상위 버전 보존)·규칙 린트. 다른 E2E 가 C01(20초 입력 잠금)에 막히지 않도록 `fixtures.ts` 의 `open()` 은 기본 `?cine=0` 을 붙인다(컷신 테스트만 `?cine=1`).
+
+---
 ## 1. 컷신 스토리보드 (컷신 12개 = STORY 비트 1:1, + 중간 비트 오버레이 5개 = STORY 4.1)
 
 컷신 12개는 1장 본문, 중간 비트 4-1~4-5는 **1.1절**(C12 뒤)에 있다. 전체 정의 17개.
