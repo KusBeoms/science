@@ -103,8 +103,10 @@ export function placeBubbles(proj: (id: string) => [number, number] | null) {
     if (p) b.el.style.transform = `translate(${p[0]}px,${p[1]}px) translate(-50%,-100%)`;
   });
 }
-export function fxReset() {
+/** 모든 효과 초기화. black=true 면 화면은 암전 유지(건너뛰기 직후 fadeTo(0) 로 밝힌다) */
+export function fxReset(black = false) {
   NAMES.forEach(n => Object.assign(chan[n], {v: 0, from: 0, to: 0, d: 0}));
+  if (black) Object.assign(chan.fade, {v: 1, from: 1, to: 1});
   bubs.splice(0).forEach(b => b.el.remove());
   shakeUntil = slowUntil = 0;
   $('#cineFx')

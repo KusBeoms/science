@@ -30,6 +30,8 @@ const DB = [
   ['태양', 5, 3000000, 0],
   ['프록시마 센타우리', 4, 400000, 0],
 ];
+const sum = a => a.reduce((x, y) => x + y, 0);
+const range = n => Array.from({length: n}, (_, i) => i);
 const SOLAR = ['태양', '명왕성', '수성', '화성', '금성', '지구', '천왕성', '해왕성', '토성', '목성'];
 const byName = (...names) => names.map(n => DB.findIndex(d => d[0] === n));
 const planet = id => ({id, t: DB[id][1], price: DB[id][2]});
@@ -90,6 +92,8 @@ export const legacyConfig = () => ({
   missions: MISSIONS,
   missionMul: 1,
   spendGate: null,
+  examRetry: 0,
+  sinkTotal: sum(SPRINGS) + sum([500, 8000, 100000]) + 82000 + sum(range(10).map(l => Math.floor(80 * 1.8 ** l))) + sum(range(4).map(k => 1000 * 2 ** k)),
   done: st => st.zone >= 5 && st.dex.size >= 24 && st.slots >= 10 && st.spd >= 10 && st.bag >= 3 && st.springN >= 8,
   rng: mulberry32,
 });
