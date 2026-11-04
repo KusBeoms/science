@@ -1,0 +1,41 @@
+:root {
+  --bg: #05070d;
+  --fg: #e8ecf5;
+  --dim: #9aa4bd;
+  --line: #26304a;
+  --card: #0d1322e6;
+  --acc: #7cc4ff;
+}
+* {
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font:
+    14px/1.4 -apple-system,
+    'Apple SD Gothic Neo',
+    'Noto Sans KR',
+    sans-serif;
+}
+canvas {
+  display: block;
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+}
+body {
+  touch-action: none;
+  overscroll-behavior: none;
+}
+.hud {
+  position: fixed;
+  z-index: 2;
+}

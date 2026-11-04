@@ -1,0 +1,88 @@
+body.touch #lockBtn,
+body.touch #mhint {
+  display: none;
+}
+body.touch #bottom {
+  bottom: 150px;
+}
+body.touch #toast {
+  white-space: normal;
+  max-width: 90vw;
+  text-align: center;
+}
+body.touch #prompt {
+  padding: 14px 26px;
+  font-size: 16px;
+}
+.card {
+  touch-action: pan-y;
+}
+@media (min-width: 700px) and (pointer: coarse) {
+  #joy {
+    left: 36px;
+    bottom: 44px;
+    width: 210px;
+    height: 210px;
+  }
+  .rb {
+    width: 104px;
+    height: 104px;
+    font-size: 18px;
+  }
+  #jump {
+    right: 40px;
+    bottom: 60px;
+  }
+  #run {
+    right: 164px;
+    bottom: 40px;
+  }
+  body.touch #bottom {
+    bottom: 260px;
+  }
+}
+@media (max-width: 640px) {
+  #cr {
+    font-size: 20px;
+  }
+  button {
+    padding: 6px 9px;
+    font-size: 13px;
+  }
+  #btns {
+    gap: 5px;
+    top: 8px;
+    right: 8px;
+  }
+  #menu h1 {
+    font-size: 32px;
+  }
+  #info {
+    max-width: 92vw;
+    font-size: 11px;
+  }
+  #quiz .card,
+  #shop .card,
+  #dex .card {
+    width: 96vw;
+    padding: 14px;
+  }
+  #qq {
+    font-size: 14px;
+  }
+  #sgrid {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  }
+  #mission,
+  #tag,
+  #carryTag {
+    font-size: 11px;
+  }
+}
+#err {
+  display: none;
+  left: 20px;
+  top: 80px;
+  color: #ff8;
+  max-width: 80%;
+}

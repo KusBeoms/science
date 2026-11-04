@@ -1,0 +1,215 @@
+#top {
+  top: 12px;
+  left: 14px;
+  text-shadow: 0 1px 4px #000;
+}
+#cr {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--acc);
+}
+#inc {
+  color: var(--dim);
+  font-size: 12px;
+  margin-left: 6px;
+}
+#btns {
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+}
+button {
+  font: inherit;
+  color: var(--fg);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+button.sel {
+  border-color: var(--acc);
+  color: var(--acc);
+}
+#bottom {
+  left: 0;
+  right: 0;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+#prompt {
+  pointer-events: auto;
+  padding: 10px 20px;
+  background: var(--acc);
+  color: #04101c;
+  font-weight: 700;
+  border-radius: 10px;
+  display: none;
+  cursor: pointer;
+}
+#prompt.off {
+  opacity: 0.5;
+}
+#info {
+  max-width: 560px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--dim);
+  background: var(--card);
+  border-radius: 10px;
+  padding: 8px 14px;
+  display: none;
+}
+#info b {
+  color: var(--fg);
+  font-size: 14px;
+}
+#info i {
+  font-style: normal;
+  color: var(--acc);
+}
+#stamBox {
+  top: 46px;
+  left: 14px;
+  width: 130px;
+  height: 7px;
+  background: #0008;
+  border-radius: 4px;
+  overflow: hidden;
+}
+#stam {
+  height: 100%;
+  width: 100%;
+  background: #7cf09a;
+}
+#stam.tired {
+  background: #ff6a7a;
+}
+#cross {
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border: 2px solid #fff9;
+  border-radius: 50%;
+  display: none;
+  pointer-events: none;
+}
+.tc,
+.rb {
+  display: none;
+  touch-action: none;
+}
+body.touch .tc {
+  display: block;
+}
+body.touch #keys {
+  display: none;
+}
+#joy {
+  left: 22px;
+  bottom: 30px;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: #ffffff14;
+  border: 2px solid #ffffff30;
+}
+#knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 31%;
+  height: 31%;
+  margin: -15.5% 0 0 -15.5%;
+  border-radius: 50%;
+  background: #ffffff66;
+}
+.rb {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #ffffff22;
+  border: 2px solid #ffffff44;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+body.touch .rb {
+  display: flex;
+}
+#jump {
+  right: 26px;
+  bottom: 40px;
+}
+#run {
+  right: 100px;
+  bottom: 26px;
+}
+#run.on {
+  background: #7cc4ff88;
+}
+#lockBtn.on {
+  background: var(--acc);
+  color: #04101c;
+}
+#keys {
+  left: 14px;
+  bottom: 14px;
+  font-size: 11px;
+  color: var(--dim);
+}
+#toast {
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111a2e;
+  border: 1px solid var(--line);
+  padding: 8px 16px;
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+#toast.on {
+  opacity: 1;
+}
+#flash {
+  inset: 0;
+  background: #f33;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+#mission {
+  top: 62px;
+  left: 14px;
+  font-size: 12px;
+  text-shadow: 0 1px 4px #000;
+}
+#tag {
+  top: 82px;
+  left: 14px;
+  font-size: 12px;
+  color: #ffd27a;
+  text-shadow: 0 1px 4px #000;
+}
+#carryTag {
+  top: 100px;
+  left: 14px;
+  font-size: 12px;
+  color: #9dffb0;
+  text-shadow: 0 1px 4px #000;
+}
