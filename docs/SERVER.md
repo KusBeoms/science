@@ -21,10 +21,13 @@ C++17 API 서버 + nginx(정적 클라이언트 서빙 및 `/api/` 리버스 프
 ## 엔드포인트 (모두 `application/json`)
 - `GET /api/health` -> `{"ok":true,"db":bool,"redis":bool}` (실제 연결 상태 확인)
 - `GET /api/save/{pid}` -> 200 `{"data":{...},"updatedAt":ms}` / 404 `{"error":"not_found"}`
-- `PUT /api/save/{pid}` body=JSON 객체(<=256KB; 초과 413, 잘못된 JSON/비객체 400) -> `{"ok":true,"updatedAt":ms}`
-- `POST /api/score` `{"name":1~20자,"score":>=0}` -> `{"ok":true}` (같은 name은 최고점만 유지)
+- `PUT /api/save/{pid}` body=세이브 JSON(<=256KB **바이트**; 초과 413). 검증: 객체이고 `base`(배열)·`ver`(숫자) 필수(`invalid_save` 400, `{}`로 덮어쓰기 방지), 중첩 깊이 ≤32(`too_deep` 400), `\u0000` 포함 시 400(JSONB 저장 불가). 선택 헤더 `If-Match: "<updatedAt>"` — 저장된 버전과 다르면 **409** `{"error":"conflict","updatedAt":현재}`(다른 탭/기기의 최신 진행을 덮어쓰지 않음). 저장소가 쓰기를 거부하면 503 `store_failed`(조용히 메모리에 두지 않음). -> `{"ok":true,"updatedAt":ms}`
+- `POST /api/score` `{"name":1~20자,"score":0~1e12}` -> `{"ok":true}` (같은 name은 최고점만 유지)
 - `GET /api/leaderboard?limit=10` (1~100) -> `[{"name","score"}]` 내림차순
 - pid 정규식 `^[A-Za-z0-9_-]{8,64}$` (불일치 400). 그 외 경로 404 JSON.
+
+## 요청 제한 (`ratelimit.h`, 429 `rate_limited` + `Retry-After`)
+IP 기준(`X-Real-IP`, nginx가 설정): PUT 30/분, GET save 120/분, POST score 20/분. pid 기준: PUT 초당 1회. 인메모리 모드(DB 없음)는 저장 pid 5만 개 상한. 클라이언트는 이미 10초 간격으로만 저장한다.
 
 ## 환경변수
 | 이름 | 설명 |

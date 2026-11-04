@@ -30,3 +30,33 @@ bool parse_limit(const std::string& s, int& out) {
   out = n;
   return true;
 }
+
+bool json_depth_ok(const std::string& text, size_t max_depth) {
+  size_t depth = 0;
+  bool in_str = false, esc = false;
+  for (char c : text) {
+    if (in_str) {
+      if (esc) esc = false;
+      else if (c == '\\') esc = true;
+      else if (c == '"') in_str = false;
+      continue;
+    }
+    if (c == '"') in_str = true;
+    else if (c == '[' || c == '{') {
+      if (++depth > max_depth) return false;
+    } else if (c == ']' || c == '}') {
+      if (depth > 0) --depth;
+    }
+  }
+  return true;
+}
+
+bool has_nul_escape(const std::string& s) {
+  static const std::string kNul = "\\u0000";
+  for (size_t pos = s.find(kNul); pos != std::string::npos; pos = s.find(kNul, pos + 1)) {
+    size_t bs = 0;  // backslashes immediately before this one: even -> this backslash starts an escape
+    while (bs < pos && s[pos - 1 - bs] == '\\') ++bs;
+    if (bs % 2 == 0) return true;
+  }
+  return false;
+}

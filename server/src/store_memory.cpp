@@ -11,9 +11,18 @@ bool MemorySaveStore::get(const std::string& pid, std::string& json, int64_t& up
   return true;
 }
 
-void MemorySaveStore::put(const std::string& pid, const std::string& json, int64_t updated_at) {
+PutResult MemorySaveStore::put(const std::string& pid, const std::string& json, int64_t updated_at,
+                               int64_t expected_ts, int64_t* current) {
   std::lock_guard<std::mutex> lk(mu_);
+  auto it = m_.find(pid);
+  if (it == m_.end()) {
+    if (m_.size() >= kMaxSaves) return PutResult::kFailed;
+  } else if (expected_ts >= 0 && it->second.second != expected_ts) {
+    if (current) *current = it->second.second;
+    return PutResult::kConflict;
+  }
   m_[pid] = {json, updated_at};
+  return PutResult::kOk;
 }
 
 void MemoryLeaderboard::submit(const std::string& name, double score) {

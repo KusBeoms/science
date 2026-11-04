@@ -64,6 +64,7 @@ export async function fetchRemoteSave(): Promise<any | null> {
   if (!r || !r.ok) return null;
   try {
     const j = await r.json();
+    if (j && typeof j.updatedAt === 'number') serverTs = j.updatedAt;
     return j && j.data && typeof j.data === 'object' ? j.data : null;
   } catch (e) {
     return null;
@@ -73,15 +74,28 @@ export async function fetchRemoteSave(): Promise<any | null> {
 let lastPut = 0,
   timer = 0,
   pending = '',
-  off = false;
+  off = false,
+  serverTs = -1; // 마지막으로 아는 서버 세이브 버전(ms). 알면 If-Match 로 보내 다른 탭/기기의 최신 진행을 덮어쓰지 않는다
 async function flush() {
   timer = 0;
   lastPut = Date.now();
   const body = pending;
   pending = '';
   if (!body || off) return;
-  const r = await req('/api/save/' + getPid(), {method: 'PUT', headers: {'Content-Type': 'application/json'}, body});
-  if (r && (r.status === 404 || r.status === 405 || r.status === 501)) off = true; // 서버 API 가 없는 정적 서빙이면 더 시도하지 않는다
+  const headers: Record<string, string> = {'Content-Type': 'application/json'};
+  if (serverTs >= 0) headers['If-Match'] = '"' + serverTs + '"';
+  const r = await req('/api/save/' + getPid(), {method: 'PUT', headers, body});
+  if (!r) return;
+  if (r.status === 404 || r.status === 405 || r.status === 501) off = true; // 서버 API 가 없는 정적 서빙이면 더 시도하지 않는다
+  else if (r.status === 409) {
+    off = true; // 다른 탭/기기가 더 최근에 저장했다 → 이 세션은 서버 저장을 멈춘다(로컬 저장은 계속, 새로고침하면 서버 기준으로 복원)
+    console.warn('[save] 서버에 더 최근 세이브가 있어 이 탭의 서버 저장을 중단합니다');
+  } else if (r.ok) {
+    try {
+      const j = await r.json();
+      if (j && typeof j.updatedAt === 'number') serverTs = j.updatedAt;
+    } catch (e) {}
+  }
 }
 /** save() 가 localStorage 에 쓸 때마다 호출. 10초 이상 간격으로 마지막 내용만 PUT */
 export function queueRemoteSave(json: string) {

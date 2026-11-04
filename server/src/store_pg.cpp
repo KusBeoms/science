@@ -4,6 +4,7 @@
 
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 
 #include "store.h"
 
@@ -42,24 +43,42 @@ class PgSaveStore : public SaveStore {
     return fallback_.get(pid, json, updated_at);
   }
 
-  void put(const std::string& pid, const std::string& json, int64_t updated_at) override {
+  PutResult put(const std::string& pid, const std::string& json, int64_t updated_at,
+                int64_t expected_ts, int64_t* current) override {
     {
       std::lock_guard<std::mutex> lk(mu_);
       if (ensure_locked(false)) {
         std::string ts = std::to_string(updated_at);
-        const char* p[3] = {pid.c_str(), json.c_str(), ts.c_str()};
+        std::string exp = std::to_string(expected_ts);
+        const char* p[4] = {pid.c_str(), json.c_str(), ts.c_str(), exp.c_str()};
+        // Compare-and-set in a single statement: with expected_ts < 0 the WHERE is always true.
         PGresult* r = PQexecParams(
             conn_,
             "INSERT INTO saves(pid,data,updated_at) VALUES($1,$2::jsonb,$3::bigint) "
-            "ON CONFLICT (pid) DO UPDATE SET data=EXCLUDED.data, updated_at=EXCLUDED.updated_at",
-            3, nullptr, p, nullptr, nullptr, 0);
+            "ON CONFLICT (pid) DO UPDATE SET data=EXCLUDED.data, updated_at=EXCLUDED.updated_at "
+            "WHERE $4::bigint < 0 OR saves.updated_at = $4::bigint",
+            4, nullptr, p, nullptr, nullptr, 0);
         bool ok = PQresultStatus(r) == PGRES_COMMAND_OK;
-        if (!ok) std::fprintf(stderr, "pg put failed: %s\n", PQerrorMessage(conn_));
+        if (ok) {
+          bool wrote = std::atoi(PQcmdTuples(r)) > 0;
+          PQclear(r);
+          if (wrote) return PutResult::kOk;
+          const char* q[1] = {pid.c_str()};
+          PGresult* c = PQexecParams(conn_, "SELECT updated_at FROM saves WHERE pid=$1", 1, nullptr, q,
+                                     nullptr, nullptr, 0);
+          if (current && PQresultStatus(c) == PGRES_TUPLES_OK && PQntuples(c) > 0)
+            *current = std::stoll(PQgetvalue(c, 0, 0));
+          PQclear(c);
+          return PutResult::kConflict;
+        }
+        std::fprintf(stderr, "pg put failed: %s\n", PQerrorMessage(conn_));
         PQclear(r);
-        if (ok) return;
+        // Connection still healthy -> the statement itself was rejected (bad data). Report it
+        // instead of silently keeping the save in process memory (it would vanish on restart).
+        if (PQstatus(conn_) == CONNECTION_OK) return PutResult::kFailed;
       }
     }
-    fallback_.put(pid, json, updated_at);
+    return fallback_.put(pid, json, updated_at, expected_ts, current);
   }
 
   bool connected() override {
