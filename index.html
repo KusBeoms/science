@@ -158,8 +158,8 @@ const Z=[
 ].map((z,i)=>Object.assign(z,{x:0,z:-(H+SS*(i+.5))}));
 const SLOTMAX=10,SPDMAX=10;
 const $=s=>document.querySelector(s),rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const fmt=n=>n>=1e6?(n/1e6).toFixed(n>=1e7?0:1)+'M':n>=1e4?(n/1e3).toFixed(n>=1e5?0:1)+'K':Math.floor(n)+'';
-const SAVE='stealPlanet3';
+const fmt=n=>n>=999500?(n/1e6).toFixed(n>=1e7?0:1)+'M':n>=1e4?(n/1e3).toFixed(n>=1e5?0:1)+'K':Math.floor(n)+'';
+const SAVE='stealPlanet4',SAVE_OLD='stealPlanet3'; // v4: 오픈월드 확장용 필드 추가 (v3 세이브는 읽어서 이어받는다)
 const spdCost=l=>Math.floor(80*1.8**l),slotCost=n=>1000*2**(n-6);
 function pickFrom(pool){
   const w=pool.map(i=>RW[P[i].t]),s=w.reduce((a,b)=>a+b);let r=Math.random()*s;
@@ -192,8 +192,14 @@ const LOOK={
 };
 // ---------- 상태 ----------
 let S={cr:0,slots:6,spd:0,base:Array(SLOTMAX).fill(null),dex:{},mi:0,stolen:0,correct:0,bought:0,zone:0,springs:[0],eq:0,bag:0,
-  deco:{floor:0,ped:0,fence:0,flag:0,prop:0,light:0},look:{hat:0,face:0,shirt:0,pants:0,skin:0},own:{},notes:{}};
-try{const l=JSON.parse(localStorage.getItem(SAVE));if(l&&l.base){const d=S.deco;const lk=S.look;S=Object.assign(S,l);S.deco=Object.assign(d,l.deco);S.look=Object.assign(lk,l.look)}}catch(e){}
+  deco:{floor:0,ped:0,fence:0,flag:0,prop:0,light:0},look:{hat:0,face:0,shirt:0,pants:0,skin:0},own:{},notes:{},
+  // v4 신규 필드 (구버전 세이브엔 없으므로 기본값을 여기에 둔다)
+  ver:4,chapter:0,wanted:0,vehicle:0,ach:{},coins:{},playSec:0};
+try{
+  const raw=localStorage.getItem(SAVE)||localStorage.getItem(SAVE_OLD); // v4가 없으면 v3를 이어받는다
+  const l=JSON.parse(raw);
+  if(l&&l.base){const d=S.deco;const lk=S.look;S=Object.assign(S,l);S.deco=Object.assign(d,l.deco);S.look=Object.assign(lk,l.look);S.ver=4}
+}catch(e){}
 const save=()=>{try{
   let d=S; // 라이벌이 훔쳐 도망치는 중인 행성은 아직 되찾을 수 있으므로 저장본에는 제자리에 둔다
   if(rival&&rival.stolen){d=Object.assign({},S,{base:S.base.slice()});const i=S.base[rival.slot]?d.base.findIndex((o,k)=>!o&&k<S.slots):rival.slot;if(i>=0)d.base[i]=rival.stolen}
@@ -710,7 +716,8 @@ function clickAt(cx,cy){
   if(paused())return;
   const v=new THREE.Vector2(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.setFromCamera(v,camera);
   const groups=[npc];nestMesh.forEach(a=>a.forEach(m=>m.grp&&groups.push(m.grp)));baseMesh.forEach(m=>m.grp&&groups.push(m.grp));gates.forEach(g=>groups.push(g.grp));
-  const hit=ray.intersectObjects(groups,true)[0];if(!hit)return;
+  const vis=o=>{for(;o;o=o.parent)if(!o.visible)return false;return true}; // Raycaster는 숨겨진 객체도 맞히므로 보이는 것만 고른다
+  const hit=ray.intersectObjects(groups,true).find(h=>vis(h.object));if(!hit)return;
   let o=hit.object;while(o&&!(o.userData&&o.userData.pick))o=o.parent;if(!o)return;
   const pk=o.userData.pick;
   if(pk.kind==='nest'){
@@ -1111,7 +1118,7 @@ function frame(){
 }
 function startGame(){started=true;$('#menu').classList.remove('on')}
 $('#mstart').onclick=startGame;
-$('#mnew').onclick=()=>{if(S.stolen||S.cr>10||S.zone){if(!confirm('저장된 진행이 사라집니다. 새로 시작할까요?'))return}resetting=true;try{localStorage.removeItem(SAVE)}catch(e){}clearInterval(saveI);location.reload()};
+$('#mnew').onclick=()=>{if(S.stolen||S.cr>10||S.zone){if(!confirm('저장된 진행이 사라집니다. 새로 시작할까요?'))return}resetting=true;try{localStorage.removeItem(SAVE);localStorage.removeItem(SAVE_OLD)}catch(e){}clearInterval(saveI);location.reload()};
 if(S.stolen||S.zone||S.bought||S.cr>10)$('#mstart').textContent='▶ 이어하기';
 let resetting=false;
 const saveI=setInterval(save,5000);
