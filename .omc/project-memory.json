@@ -9,7 +9,7 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": null,
+    "buildCommand": "cd /Users/dalgsiki/Developer/science/client/src && python3 - <<'EOF'\np='core/geometry.ts'\ns=open(p).read()\ns=s.replace(\"export const onGround = (x: number, z: number) => inBase(x, z) || SECTORS.some((_, i) => !locked(i) && inSector(x, z, i));\",\"export const onGround = (x: number, z: number) =>\\n  inBase(x, z) || SECTORS.some((_, i) => !locked(i) && inSector(x, z, i));\")\nopen(p,'w').write(s)\np='render/sectors.ts'\ns=open(p).read()\ns=s.replace(\"  const e = new THREE.Mesh(new THREE.BoxGeometry(sz + 0.5, 0.5, sz + 0.5), new THREE.MeshLambertMaterial({color: edge}));\",\"  const e = new THREE.Mesh(\\n    new THREE.BoxGeometry(sz + 0.5, 0.5, sz + 0.5),\\n    new THREE.MeshLambertMaterial({color: edge})\\n  );\")\ns=s.replace(\"    new THREE.MeshBasicMaterial({color: 0xff3355, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false})\",\"    new THREE.MeshBasicMaterial({\\n      color: 0xff3355,\\n      transparent: true,\\n      opacity: 0.3,\\n      side: THREE.DoubleSide,\\n      depthWrite: false,\\n    })\")\ns=s.replace(\"  return {grp, gate, guard: {m: gd, chase: false, home: new THREE.Vector3(x, 0, z)}, nest: nests[i]!.s.map(() => ({id: -1, grp: null}))};\",\"  return {\\n    grp,\\n    gate,\\n    guard: {m: gd, chase: false, home: new THREE.Vector3(x, 0, z)},\\n    nest: nests[i]!.s.map(() => ({id: -1, grp: null})),\\n  };\")\nopen(p,'w').write(s)\nEOF\ncd .. && npx tsc && echo OK && find src public/style \\( -name \"*.ts\" -o -name \"*.css\" \\) | xargs wc -l | sort -n | tail -4 && git status --short . ../docs",
     "testCommand": null,
     "lintCommand": null,
     "devCommand": null,
@@ -75,14 +75,176 @@
   "hotPaths": [
     {
       "path": "index.html",
-      "accessCount": 19,
-      "lastAccessed": 1793780066863,
+      "accessCount": 28,
+      "lastAccessed": 1793780708792,
+      "type": "file"
+    },
+    {
+      "path": "docs/ROADMAP.md",
+      "accessCount": 3,
+      "lastAccessed": 1793781454041,
+      "type": "file"
+    },
+    {
+      "path": "docs/CURRICULUM.md",
+      "accessCount": 2,
+      "lastAccessed": 1793782005463,
+      "type": "file"
+    },
+    {
+      "path": "docs/README.md",
+      "accessCount": 2,
+      "lastAccessed": 1793782134641,
+      "type": "file"
+    },
+    {
+      "path": "client/src/systems/loop.ts",
+      "accessCount": 2,
+      "lastAccessed": 1793782276034,
+      "type": "file"
+    },
+    {
+      "path": "client/src/main.ts",
+      "accessCount": 2,
+      "lastAccessed": 1793782310867,
       "type": "file"
     },
     {
       "path": "CLAUDE.md",
       "accessCount": 1,
       "lastAccessed": 1793779798736,
+      "type": "file"
+    },
+    {
+      "path": "client/src/data/zones.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793780798971,
+      "type": "file"
+    },
+    {
+      "path": "docs/CLIENT.md",
+      "accessCount": 1,
+      "lastAccessed": 1793781194365,
+      "type": "file"
+    },
+    {
+      "path": "client/src/render/world.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793781457945,
+      "type": "file"
+    },
+    {
+      "path": "client/tests/out/smoke-played.png",
+      "accessCount": 1,
+      "lastAccessed": 1793781610952,
+      "type": "file"
+    },
+    {
+      "path": "client/src/data/pacing.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793781840549,
+      "type": "file"
+    },
+    {
+      "path": "client/src/data/sectors.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793781897057,
+      "type": "file"
+    },
+    {
+      "path": "client/src/core/save-schema.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793781929373,
+      "type": "file"
+    },
+    {
+      "path": "client/src/core/state.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793781944319,
+      "type": "file"
+    },
+    {
+      "path": "client/src/core/progress.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793781982130,
+      "type": "file"
+    },
+    {
+      "path": "client/src/core/geometry.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793781983083,
+      "type": "file"
+    },
+    {
+      "path": "client/src/core/layout.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793782002751,
+      "type": "file"
+    },
+    {
+      "path": "client/src/render/sectors.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793782044197,
+      "type": "file"
+    },
+    {
+      "path": "client/src/render/portals.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793782069881,
+      "type": "file"
+    },
+    {
+      "path": "docs/CONTENT_PLAN.md",
+      "accessCount": 1,
+      "lastAccessed": 1793782133668,
+      "type": "file"
+    },
+    {
+      "path": "client/src/game/interact-core.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793782142879,
+      "type": "file"
+    },
+    {
+      "path": "client/src/game/portal.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793782163020,
+      "type": "file"
+    },
+    {
+      "path": "client/src/systems/registry.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793782218924,
+      "type": "file"
+    },
+    {
+      "path": "client/src/systems/target.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793782228666,
+      "type": "file"
+    },
+    {
+      "path": "client/src/systems/move.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793782256681,
+      "type": "file"
+    },
+    {
+      "path": "client/src/systems/guardians.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793782257601,
+      "type": "file"
+    },
+    {
+      "path": "client/src/debug.ts",
+      "accessCount": 1,
+      "lastAccessed": 1793782301413,
+      "type": "file"
+    },
+    {
+      "path": "docs/STORY.md",
+      "accessCount": 1,
+      "lastAccessed": 1793783404812,
       "type": "file"
     }
   ],

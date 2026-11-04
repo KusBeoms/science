@@ -4,3 +4,4 @@ server/build/
 *.log
 .DS_Store
 .omc/
+CLAUDE.md

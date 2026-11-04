@@ -26,6 +26,7 @@ science/
 | [ROADMAP.md](ROADMAP.md) | 10시간+ 오픈월드 확장 계획(M0~M7)과 진행 상태 |
 | [CURRICULUM.md](CURRICULUM.md) | 고1 통합과학(2022 개정) 교육과정 조사, 출제 가이드라인, 단원 인덱스(curriculum-units.json) |
 | [TESTING.md](TESTING.md) | 헤드리스 브라우저 E2E 하네스 사용법, 마일스톤 QA 체크리스트 |
+| [STORY.md](STORY.md) | **스토리 v2** — 사과 행성에 반한 도둑 이야기, 무문자(그림/애니) 연출 원칙, 비트 시트, 새 메커니즘(시선 수호신·암시장·삼연 추격), 엔딩 후 자유 플레이 |
 | [CONTENT_PLAN.md](CONTENT_PLAN.md) | **콘텐츠 기획서** — 12개 구역·행성 80종·이야기·이동 수단·하이스트·NPC 등 구체 내용과 결정할 것 |
 
 ## 서비스 구성 (docker-compose)
