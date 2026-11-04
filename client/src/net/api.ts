@@ -85,7 +85,7 @@ async function flush() {
 }
 /** save() 가 localStorage 에 쓸 때마다 호출. 10초 이상 간격으로 마지막 내용만 PUT */
 export function queueRemoteSave(json: string) {
-  if (off || json.length > 256 * 1024) return;
+  if (off || new TextEncoder().encode(json).length > 256 * 1024) return; // 서버는 바이트로 잰다(한글·이모지는 UTF-16 길이보다 큼)
   pending = json;
   if (timer) return;
   timer = window.setTimeout(flush, Math.max(0, MIN_GAP - (Date.now() - lastPut)));

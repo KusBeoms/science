@@ -78,6 +78,6 @@ export function migrate(raw: Raw | null): SaveState | null {
   d.look = Object.assign(def.look, d.look);
   while (d.base.length < CAPS.slots.max) d.base.push(null);
   d.zone = zoneFrom(d.unlocked);
-  d.ver = SAVE_VER;
+  d.ver = typeof d.ver === 'number' && d.ver > SAVE_VER ? d.ver : SAVE_VER; // 상위 버전 세이브는 버전을 낮추지 않는다(롤백 후 재마이그레이션 방지)
   return d as SaveState;
 }
