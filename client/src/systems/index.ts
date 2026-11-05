@@ -9,6 +9,7 @@ import {audioSystem} from './audio.js';
 import {cutsceneSystem} from './cutscene.js';
 import {crowdSystem} from './crowd.js';
 import {citySystem} from '../render/city/index.js';
+import {weatherSystem} from '../render/weather.js';
 
 CORE_INTERACTABLES.forEach(registerInteractable);
 registerInteractable(portalIt);
@@ -20,3 +21,4 @@ registerSystem(audioSystem);
 registerSystem(cutsceneSystem);
 registerSystem(crowdSystem);
 registerSystem(citySystem);
+registerSystem(weatherSystem);
