@@ -1,31 +1,61 @@
-# 참조 지도 기반 전역 경관 (2026-11-05)
+# 참조 지도 기반 전역 경관
 
-참조: `client/tests/reference/Snowy Mountain Island Cityscape.png`, `Pastoral Island Mountain and Lakes Map.png`. 외부 3D·텍스처 파일을 추가하지 않고 기존 정점색 로우폴리 방식으로 도시·시골 섬을 다시 구성했다. 핵심 목적지·문·도로·게임 좌표·세이브 키는 유지한다.
+참조는 `client/tests/reference/Snowy Mountain Island Cityscape.png`와 `Pastoral Island Mountain and Lakes Map.png`이다. W7은 Claude가 중단 전에 만든 도시·농촌 변경을 인수하여 통합하고, 도시 경계와 지형 해상도를 추가로 개선한 작업이다. 외부 모델·이미지 텍스처를 추가하지 않고 TypeScript/Three.js 정점색 모델을 사용한다. 기존 기지·건물·호수·섹터의 저장 ID와 로블록스풍 캐릭터는 유지한다.
 
-## 구성과 파일
+## 도시와 산기슭
 
-- `render/island-landscape.ts`: 북서~북~북동 설산의 침엽수 숲, 설선 위 눈 덮인 나무, 해안 바위, 동쪽 반도 산책로·천문대, 북쪽 항법 안테나, 남쪽 해안 야자수.
-- `render/city-natural.ts`: 빈 시가지 블록에 72채의 낮은 주택·상점 전면·작은 사무실. 기존 건물/문/차도/광장/예약 구역과 여유를 두고 생성한다. 배경 건축물에는 새로운 상점·퀘스트를 추가하지 않는다. 충돌체는 외형 발자국과 일치한다.
-- `render/city-gardens.ts`: 북서 분수 공원의 8개 방사형 산책로, 자전거 순환로, 바깥 동심원 보행로·화단.
-- `render/city-waterfront.ts`: 실제 남동 해안 밖 요트항·잔교·계류장·L자 방파제·항구 표지, 남쪽 모래 해변의 파라솔·선베드. 육지 쪽 연결 잔교와 보행 가능한 부두는 표시 모델과 같은 좌표/높이의 데크로 등록한다.
-- `render/rural-landscape.ts`: 불규칙한 농지 패치·둑·과수원, 작은 호수 마을·온실·농가, 중앙 산 나선형 등산로·정자, 큰 호수 벚꽃·해안 바위. 교도소·수면·도로를 비운다.
-- `render/landscape-surface.ts`: 지형 높이를 따라가는 포장 띠·밭·원형 초지. `rural-art.ts`의 정자·온실·허수아비·바위를 함께 사용한다.
-- `render/landscape-batch.ts`: 정적 경관 병합 및 숲 LOD. 가까운 숲은 100u 청크, 원경 표본은 300u 청크에 병합한다. LOD가 바뀐 청크만 인스턴스 행렬을 갱신하며 전체 지도 촬영 시 근거리 모델을 모두 표시한다.
-- `render/terrain.ts`: 원경 땅을 320u 청크로 나눠 시야 밖 섬을 컬링한다. 면별 거친 색 노이즈와 기존 농지 체크색을 제거했다. 코어 높이·지형 판정은 그대로다.
-- `render/city/layout.ts`: 잔디를 연속 면으로 병합한다. 질감 변화는 실제 조경으로 만든다.
-- `render/wild-lake.ts`: 기존 큰 호수 선착장 상면과 동일한 보행 데크를 등록했다.
+- `data/city-w7.ts`, `data/roads-w7.ts`: 기존 블록의 주택·상가·업무 건물, 중앙 광장 동쪽 고층 군집, 방사형 길과 시설 구획. 추가 건물도 기존 실내 시스템을 사용한다. 다리 진입 곡선과 보도를 건축 금지 영역으로 공유한다.
+- `render/city/w7*.ts`, `residential.ts`: 원형 광장, 육상 트랙, 저장 탱크, 체육공원, 원형 아레나와 경량 건물 모델.
+- `core/belt-height.ts`: 높이와 폭이 다른 여러 능선과 계곡. 사각 시가지 밖에서 일정하게 솟던 비탈을 없애고, 위치마다 폭이 다른 저지와 완만한 산기슭으로 전환한다. 사과 행성 시선 축은 낮은 안부로 남긴다.
+- `render/belt-color.ts`: 시가지 잔디→산기슭 초지→숲→암석·눈을 높이·경사·위치에 따라 연속 보간한다.
+- `data/city-fringe.ts`, `render/city-fringe.ts`: 서쪽 주거·북쪽 마을·과수 농가·동쪽 구릉·남서 해안으로 이어지는 8개 비정형 골목. 지형·수면·도로·다른 건물과 겹치지 않는 필지만 집을 세운다. 각 집의 기초·회전 충돌체·진입 데크는 같은 좌표를 읽는다. 텃밭·산장·옹벽·정류장을 함께 배치하며 외곽 숲도 같은 `fringeKeepOut()`으로 생활권을 비운다.
+- `data/mountain-road.ts`, `render/city-mountain*.ts`: 시가지에서 동쪽 반도 천문대까지 높이를 공유하는 산악 도로, 북쪽 봉우리 철탑과 산림.
+- `render/city/detail-lod.ts`: 먼 건물·가로수·가로등의 수를 유지하고 작은 창틀·설비 등의 지오메트리만 간략화한다. 고층 실루엣은 유지한다. 교외 집은 수평 거리 기준 LOD를 사용한다.
+- `data/citygraph-routes.ts`: 새 건물과 겹친 기존 보행 노드·간선만 건물 바깥으로 우회한다. 군중 그래프의 단일 연결과 최소 차수 2를 유지한다.
 
-## 도시 쪽 다리 진입부
+## 농촌
 
-[연결부 수정](../BRIDGE_APPROACH.md) 참고. 짧고 급한 S자 대신 도시 도로 z=272에서 다리 램프 z=372까지 100u에 걸쳐 중심선과 차로 폭을 옮긴다. 양끝 접선·곡률을 직선에 맞추고, 경로와 겹치는 주차·컨테이너·수목·가로등·울타리를 정리했다. 세단 주행 중 충돌·침수 0회를 확인했다.
+- `data/wild-mountain.ts`, `core/wild-{base,mountain,trail,height}.ts`: 비대칭 산체·계곡·유한 스위치백·정상 부지. 주차장·길·밭·마을 부지의 높이 우선순위를 공유한다.
+- `data/wild-road.ts`: 북쪽 다리에서 동부 간선, 큰 호수 순환로, 작은 호수 마을, 서부·목장 농로로 이어지는 망. 확정된 곡선 표본을 높이 계산과 렌더가 함께 사용한다.
+- `data/wild-fields.ts`, `render/rural-{fields,village,models}.ts`: 불규칙 농지·둑·과수·농가·온실·마을 골목. 차도·갓길은 도로 높이를, 그 바깥 경작지는 밭 단 높이를 유지한다.
+- `render/wild-{forest,mountain,coast,prison,lake}.ts`: 혼합 숲·등산로·정상 정자·동쪽 모래 곶·해안 바위·교도소·호수 시설. 교도소는 게임 로직과 같은 y=0 부지다. 선착장과 전망 쉼터의 경사 연결판은 실제 보행 데크로 등록한다. 호수 메시와 바다 셰이더도 섬 윤곽을 공유하여 해안 밖 담수 패치와 바다 수면 구멍을 방지한다.
 
-## 검수
+## 실제 지형 정밀도와 지도 촬영
 
-- 모델 부품·예산·관절 계약·실내 50종: `tests/e2e/modeling.spec.ts`.
-- 기존 문/도로 보존·경관 분포·초기 시야 95k 예산: `tests/e2e/landscape.spec.ts`.
-- 진입 곡률·보도 여유·연결부 이미지: `tests/e2e/bridge-approach.spec.ts`.
-- 기존 도시/월드/다리/차량 파손/포탈/실내·축구 동작은 관련 E2E로 검증한다.
-- 검수 이미지: `client/tests/out/landscape-{city,rural,islands}.png`, `bridge-approach-{top,oblique}.png`, `model-{gallery,interiors}.png`.
-- 계측: `client/tests/out/landscape-stats.json`, `model-stats.json`. 전역 경관 추가 후 초기 시야 101.5k → 원경/바닥 최적화 후 88.6k tris(최종 통합 결과는 모델링 로그에 기록).
+물 셰이더용 기존 5u 격자는 보존한다. 지상은 `core/heightmap.ts`의 **native 2.5u 표본**을 필요할 때 계산·캐시한다. 기존 5u 면을 단순 분할한 결과가 아니다. 근거리 높이·충돌·메시는 같은 표본과 같은 대각선의 삼각 보간을 사용한다.
 
-최종 통합: 농지 62개, 농촌 건물 35채(온실 3동 포함), 벚꽃 77그루. 초기 시야 90,218 tris / 197 calls. 타입 검사와 관련 E2E 33개 통과, 마지막 경관 3개 재검증 통과.
+`render/terrain.ts`, `terrain-mesh.ts`, `terrain-color.ts`는 다음을 담당한다.
+
+- 근거리 2.5u, 중거리 5u, 원경의 거리별 지형 청크.
+- 같은 월드 정점에 공통 법선과 색을 적용하여 면별 삼각 체크와 경계 조명 차이를 줄임.
+- 근경·원경을 겹쳐 그리던 방식과 원경의 이웃 최솟값 변형을 제거. 준비된 하위 청크를 한 묶음으로 교체하고 경계를 stitch 처리.
+- 실제 전체 지도용 `setTerrainOverview(true, 5 | 2.5, bounds)` 지원. 촬영 후 false로 일반 LOD 복귀.
+
+`tests/e2e/map-review.ts`는 지형·숲·도시·교외에 실제 직교 카메라를 전달하고 이름표 없이 촬영한다. 전체 지도는 `setSectorOverview()`로 12개 섬의 시설까지 준비한다. 플레이어가 마지막으로 방문한 위치나 일반 플레이 LOD가 지도 사진을 좌우하지 않는다.
+
+```sh
+cd client
+npx tsc
+npx playwright test tests/e2e/landscape.spec.ts tests/e2e/fringe.spec.ts
+WORLDMAP=1 npx playwright test tests/e2e/zz-worldmap.spec.ts
+CITYTOP=1 CITYTOP_Z='200,-200,850' npx playwright test tests/e2e/zz-citytop.spec.ts
+```
+
+검수 산출물: `client/tests/out/landscape-{city,rural,islands}.png`, `fringe-{west,north,east}.png`, `worldmap-top.png`, `docs/assets/world-map.jpg`. 산출물은 재생성할 수 있어 git에서 제외한다.
+
+## 다리와 검증 계약
+
+[다리 진입부](../BRIDGE_APPROACH.md)의 긴 곡선과 공유 중심선을 유지한다. 새 건물·나무·차량·컨테이너가 보도와 차도를 침범하지 않아야 한다. 다리 야생지 접속면은 y=0으로 이어진다.
+
+검증은 타입 검사, 기존 문·도로·저장 ID, 군중 경로, 산악 도로·농촌 도로·등산로, 집 진입로·선착장 보행, 낮밤 조명, 실제 시야 삼각형 및 참조 사진과 나란히 보는 화면 검수로 구성한다. 스폰의 95k 삼각형 기준을 유지하며 정밀도 증가분은 LOD와 보이지 않는 지형 컬링으로 줄인다.
+
+`terrainStats()`의 `tris`/`farTris`는 메모리에 남아 있는 활성 청크 총량이다. `drawnTris`/`drawnFarTris`는 부모 visibility와 현재 카메라 frustum을 적용한 화면 기여량이다. W7에서 원경 표본이20u에서10u로 늘었으므로 원경 화면 예산은 후자로 검증하고, 기존 총량 지표도 디버그용으로 유지한다. 삼각형 예산 수치 자체는 높이지 않았다.
+
+참조와 차이는 남아 있다. 기존 기능을 담은 중심 시가지의 직교 블록, 간략화한 요트항과 단독주택, 넓은 모래 곶과 호안은 원본보다 도식적이다. 지형의 정밀화와 코드 기반 로우폴리 모델은 사진의 실사 수목·암석 질감을 복제하는 작업과 구분한다.
+
+
+## 최종 검증 (2026-11-06)
+
+도시330채(기존134+W7 추가196), 교외90채·골목8개, 농촌55동(주택44·온실5·농가시설6), 유효 농지113필지. 등산로 약1058u. 최신 스폰 시야94,320 tris /392 calls로95k 삼각형 기준을 유지했다. 일반 GPU의60fps를 보증하는 측정은 아니다.
+
+타입 검사와 기능 스펙106개를 분할 검증했다. 첫 전체 실행은 저장 공간 ENOSPC로 중단되어 단일 브라우저로 남은 검사를 재개했다. 확인된 밭·정상 경사·보행 경로 문제를 수정하고 관련 스펙을 다시 통과했다. 최종 지도/수면 재검증9개도 통과했다. 검사 도구6개는 기능 스펙 수에 포함하지 않는다.

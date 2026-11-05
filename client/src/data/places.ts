@@ -41,11 +41,11 @@ export const PLACES: readonly Place[] = [
   {id: 'leisure', icon: '🏀', name: '레저 광장', x: 222, z: 236},
   {id: 'playground', icon: '🛝', name: '놀이터', x: -246, z: 298},
   {id: 'bridge', icon: '🌉', name: '남쪽 다리', x: BRIDGE_ENDS.x, z: 366},
-  {id: 'plains', icon: '🌾', name: '평야', x: 120, z: 930},
-  {id: 'farm', icon: '🚜', name: '시골 마을', x: -170, z: 1010},
-  {id: 'lake', icon: '🏞️', name: '호수', x: 70, z: 1040},
-  {id: 'desert', icon: '🏜️', name: '사막', x: 400, z: 1560},
-  {id: 'mount', icon: '⛰️', name: '등산로 입구', x: 0, z: 1125},
+  {id: 'plains', icon: '🌾', name: '평야', x: 40, z: 905},
+  {id: 'farm', icon: '🚜', name: '시골 마을', x: -300, z: 1300},
+  {id: 'lake', icon: '🏞️', name: '호수', x: 55, z: 1545},
+  {id: 'desert', icon: '🏖️', name: '모래 반도', x: 600, z: 1478},
+  {id: 'mount', icon: '⛰️', name: '등산로 입구', x: 196, z: 1448},
   {id: 'prison', icon: '⛓️', name: '교도소', x: JAIL.release.x, z: JAIL.release.z},
   {id: 'shopst', icon: '🛍️', name: '상가 골목', x: -238, z: 238}, // W5 SHOPS
   {id: 'finance', icon: '🏙️', name: '금융 지구', x: 140, z: -205}, // W6 DOWNTOWN (순환로 r1-n 보도)

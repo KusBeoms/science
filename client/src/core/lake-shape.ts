@@ -16,3 +16,12 @@ export function lakeT(L: Lake, x: number, z: number): number {
   const w = 0.55 * (fbm(x * 0.009 + k.seed, z * 0.009, 3, k.seed) - 0.5) + 0.3 * (fbm(x * 0.03, z * 0.03 + k.seed, 2, k.seed + 3) - 0.5);
   return t / (1 + w);
 }
+
+/** 호수 중심에서 angle 방향으로 훑어 실제 물가(lakeT=1)를 찾고 extra u 더 바깥 지점을 돌려준다 (호숫가 길·산책로·집 배치용) */
+export function shorePoint(L: Lake, angle: number, extra: number): [number, number] {
+  const dx = Math.cos(angle),
+    dz = Math.sin(angle);
+  let d = 10;
+  while (d < L.rx * 2.5 && lakeT(L, L.x + dx * d, L.z + dz * d) < 1) d += 2;
+  return [L.x + dx * (d + extra), L.z + dz * (d + extra)];
+}

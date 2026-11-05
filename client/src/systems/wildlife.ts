@@ -51,12 +51,12 @@ function build() {
   const rnd = mulberry32(88);
   const [cx0, cz0, cx1, cz1] = COUNTRY;
   for (let k = 0; k < 14; k++) spawn('cow', cx0 + 20 + rnd() * (cx1 - cx0 - 40), cz0 + 20 + rnd() * (cz1 - cz0 - 40), 22);
-  for (let k = 0; k < 16; k++) spawn('rabbit', 60 + rnd() * 180, 930 + rnd() * 100, 40);
+  for (let k = 0; k < 16; k++) spawn('rabbit', -40 + rnd() * 120, 880 + rnd() * 60, 40);
   for (let k = 0; k < 9; k++) {
     const a = rnd() * 6.28;
-    spawn('deer', MOUNTAIN.x + Math.cos(a) * 190, MOUNTAIN.z - 40 + Math.sin(a) * 120, 50);
+    spawn('deer', MOUNTAIN.x + 20 + Math.cos(a) * 150, MOUNTAIN.z + 150 + Math.sin(a) * 120, 50);
   }
-  for (let k = 0; k < 8; k++) spawn('camel', DESERT.x0 + 30 + rnd() * 120, DESERT.z0 + 40 + rnd() * 270, 40);
+  for (let k = 0; k < 8; k++) spawn('camel', DESERT.x0 + 120 + rnd() * 150, DESERT.z0 + 50 + rnd() * 60, 30); // 모래 반도(가지) 위
   for (const L of LAKES) for (let k = 0; k < (L.r > 100 ? 9 : 4); k++) spawn('duck', L.x + (rnd() - 0.5) * L.r, L.z + (rnd() - 0.5) * L.r, L.r * 0.4);
 }
 const wrapA = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));

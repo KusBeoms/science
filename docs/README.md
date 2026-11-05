@@ -29,7 +29,7 @@ docs/
 ├─ design/              # 기획·설계
 ├─ curriculum/          # 교육과정·문제 은행
 ├─ tech/                # 코드 구조·서버·테스트·오디오·배포
-├─ work-logs/           # 작업 단위별 기록 (W5·W6) (git 제외)
+├─ work-logs/           # 작업 단위별 기록 (W5·W6·W7) (git 제외)
 └─ assets/              # 이미지 (전체 지도 사진 등, 재생성 가능) (git 제외)
 ```
 
@@ -41,7 +41,7 @@ docs/
 | [HANDOFF.md](HANDOFF.md) | **인수인계** — 현재 코드 상태, 안 만들어진 것(갭 목록), 사용자 원문 요구, AI가 추가한 미승인 설정, 열린 결정 |
 | [COORDINATION.md](COORDINATION.md) | **작업 조율** — AI별 담당 영역·진행 중 작업·수정 파일 (작업 전 확인, git 제외) |
 | [MODELING_HANDOFF.md](MODELING_HANDOFF.md) | 모델링 담당 AI 인수인계 — 모델링 규칙·해야 할 목록·참조 이미지 |
-| [MAP_ART.md](tech/MAP_ART.md) | 참조 지도 기반 도시·농촌 경관, 모델 배치·LOD·다리 진입부·검수 |
+| [MAP_ART.md](tech/MAP_ART.md) | W7 도시·농촌 재구성, 외곽 주택·농가, native2.5u 지형·LOD·다리 연결·검수 |
 | [MODELING_LOG.md](MODELING_LOG.md) | 모델링 개선·부품별 계약·삼각형 수·검수 이미지 기록 |
 
 ### 기술 (`tech/`)
@@ -87,6 +87,8 @@ docs/
 | [W6_PORTALS.md](work-logs/W6_PORTALS.md) | 포탈 광장·우주 지도·해금 검토 |
 | [W6_DOWNTOWN.md](work-logs/W6_DOWNTOWN.md) | 도심 고층·본사·아파트 단지 |
 | [W6_BRIDGE.md](work-logs/W6_BRIDGE.md) | 금문교·도로 연결 |
+| [W7_PLAN.md](work-logs/W7_PLAN.md) | 참조 이미지 기반 맵 재구성 — 비교 결과·파일 소유권 |
+| [W7_CITY_SURROUND.md](work-logs/W7_CITY_SURROUND.md) | 도시 둘레 산악: 능선·북쪽 주봉·철탑·동쪽 반도 산악 도로·천문대 |
 
 ### 이미지 (`assets/`)
 - [world-map.jpg](assets/world-map.jpg) — 월드 전체 위에서 본 안내 지도(게임에는 포함되지 않음). 재생성: `cd client && WORLDMAP=1 npx playwright test tests/e2e/zz-worldmap.spec.ts`

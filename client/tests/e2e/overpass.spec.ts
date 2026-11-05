@@ -16,7 +16,7 @@ test('deck layer: ramp foot climbs, underpass stays low, side edge drops', async
       mid: h(174, 16, 0), // 램프 중턱 밑을 걸으면 지면(둑이 막는다)
       side: [h(200, 23, 6.2), h(200, 9, 6.2)], // 상판 옆으로 벗어나면 지면
       none: h(200, 16), // y 없으면 기존 동작
-      list: D.deckList().filter((d: any) => !d.id.startsWith('br-')).length, // 금문교(br-) 데크 제외
+      list: D.deckList().filter((d: any) => /^(ev|hv|av)-/.test(d.id)).length, // 고가(ev/hv/av) 데크만 (금문교 br-·마리나·선착장 데크 제외)
       railUp: [T.solidAt(200, 20.8, 0.5, 6.2), T.solidAt(200, 20.8, 0.5, 0), T.solidAt(200, 20.8, 0.5)],
       pier: [T.solidAt(220, 16, 0.3, 0), T.solidAt(220, 16, 0.3, 6.2), T.solidAt(220, 16, 0.3)],
     };

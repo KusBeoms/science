@@ -7,6 +7,8 @@ import {CITY_ROADS} from '../data/city.js';
 import {CARS, carOf} from '../data/cars.js';
 import {LISTINGS, PLACES, type Place} from '../data/places.js';
 import {DESERT, JAIL, LAKES, MOUNTAIN} from '../data/wild.js';
+import {ROAD_LINES} from '../data/wild-road.js';
+import {TRAIL} from '../core/wild-trail.js';
 import {WILD_PLACE, WILD_POLY} from '../data/outline.js';
 import {VEH, exitVeh, spawnOwned, vehOfOwn} from '../systems/vehicle.js';
 import {giveBuff, leaveBuilding} from './interior.js';
@@ -85,11 +87,15 @@ export function renderMap(body: HTMLElement) {
     WILD_POLY.poly.forEach((p, i) => (i ? c.lineTo(X(p[0]), Z(p[1])) : c.moveTo(X(p[0]), Z(p[1]))));
     c.fill();
     c.fillStyle = '#d9b867';
-    c.beginPath(); c.arc(X(DESERT.x0 + 150), Z(DESERT.z0 + 190), 100 * sc, 0, 7); c.fill();
+    c.beginPath(); c.arc(X(DESERT.x0 + 160), Z(DESERT.z0 + 80), 90 * sc, 0, 7); c.fill();
+    c.beginPath(); c.arc(X(DESERT.x0 + 130), Z(DESERT.z0 + 270), 60 * sc, 0, 7); c.fill();
     c.fillStyle = '#3d8fd8';
     for (const L of LAKES) { c.beginPath(); c.ellipse(X(L.x), Z(L.z), L.rx * sc, L.rz * sc, L.rot, 0, 7); c.fill(); }
     c.fillStyle = '#7d8590';
-    c.beginPath(); c.arc(X(MOUNTAIN.x), Z(MOUNTAIN.z), 120 * sc, 0, 7); c.fill();
+    c.beginPath(); c.ellipse(X(MOUNTAIN.x + 10), Z(MOUNTAIN.z + 130), 140 * sc, 150 * sc, 0, 0, 7); c.fill();
+    c.strokeStyle = '#4a4f57'; c.lineWidth = Math.max(1, 6 * sc);
+    for (const L of ROAD_LINES) { c.beginPath(); L.pts.forEach((p, i) => (i ? c.lineTo(X(p.x), Z(p.z)) : c.moveTo(X(p.x), Z(p.z)))); if (L.closed) c.closePath(); c.stroke(); }
+    c.strokeStyle = '#f3e29a'; c.lineWidth = Math.max(1, 3 * sc); c.beginPath(); TRAIL.forEach((p, i) => (i ? c.lineTo(X(p.x), Z(p.z)) : c.moveTo(X(p.x), Z(p.z)))); c.stroke();
   }
   c.strokeStyle = '#e0613a'; // 금문교(남쪽 다리): 진입로 → 상판 → 야생지 접속부
   c.lineWidth = Math.max(2, 6 * sc);

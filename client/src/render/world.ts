@@ -18,6 +18,9 @@ import {tile} from './sectors.js';
 import {initTerrain} from './terrain.js';
 import {buildCity} from './city/index.js';
 import {buildBridge} from './bridge.js';
+import {buildCityMountain} from './city-mountain.js';
+import {buildCityFringe} from './city-fringe.js';
+import {fogDistrict} from './world-visibility.js';
 import {initSky} from './sky.js';
 
 export function initWorld() {
@@ -30,9 +33,11 @@ export function initWorld() {
   initSky(); // 하늘 돔·별·해·달·사과 행성·조명·안개 (render/sky.ts)
   G.baseFloor = tile(G.scene, 0, 0, '#3c8f48', '#358040', 0x1c3a22, TS);
   initTerrain(); // 대륙 높이 지도 굽기 + 원경 지형 (근거리 타일은 streamSectors 가 만든다)
-  G.scene.add(buildCity());
-  G.scene.add(buildBridge()); // 금문교급 현수교 (W6 BRIDGE) — city 그룹 밖, 자체 낮밤 토글
-  G.scene.add(buildWild());
+  G.scene.add(fogDistrict(buildCity()));
+  G.scene.add(fogDistrict(buildCityMountain())); // 산악 도로·천문대·철탑·숲·바위
+  G.scene.add(fogDistrict(buildCityFringe()));
+  G.scene.add(fogDistrict(buildBridge()));
+  G.scene.add(fogDistrict(buildWild()));
   G.scene.add(buildSea(), buildLakes(), buildShoreline());
   const bl = label('내 기지', '#9dffb0', 12);
   bl.position.set(0, 9, 10);

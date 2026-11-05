@@ -1,14 +1,16 @@
-// 대륙 높이 지도 굽기 (docs/design/WORLD.md 7.2, W6): 부팅 때 1회, 5u 격자 Float32Array 하나.
+// 대륙 높이: 물 shader용 5u 기본 격자 + 지상 렌더/충돌 공통 2.5u lazy 표본.
 // 땅 = 도시 외곽선 ∪ 야생지 외곽선 ∪ 임시 다리 ∪ 12개 섹터 섬(사각형). 서로 바다로 떨어져 있고 통로는 없다(이동은 포탈).
 // 땅 밖은 가장자리에서 바깥으로 두 겹의 낭떠러지(−12, −40)로 내려가다 끊긴다. 도시 사각형 ±335 안은 평지, 그 바깥 윤곽까지는 산·숲·남쪽 해변.
+// 도시 둘레 산악(능선·계곡·설산·산악 도로)은 core/belt-height.ts (W7).
 // 구역은 둘레 능선 + 안쪽의 완만한 기복·언덕. 포탈 패드 둘레는 평지로 눌러 둔다.
 import {SECTORS} from '../data/sectors.js';
 import {CITY_HALF, CITY_HILL, TERRAIN, type SectorMap} from '../data/world-map.js';
+import {beachW, beltH} from './belt-height.js';
 import {CITY_POLY, WILD_POLY, BRIDGE_ENDS} from '../data/outline.js';
 import {fbm, mulberry32} from '../render/lowpoly/rng.js';
 import {padPos} from './geometry.js';
 import {WILD_BRIDGE} from '../data/wild.js';
-import {SEABED, approachNear, FLAT_MARGIN, FLAT_FADE} from '../data/bridge.js';
+import {SEABED} from '../data/bridge.js';
 import {wildH} from './wild-height.js';
 import {roadNear} from '../data/wild-road.js';
 
@@ -103,31 +105,7 @@ function sectorH(s: Sec, x: number, z: number, ds: number): number {
   return h + m.ridge.h * mod * ridgeProfile(ds, m.ridge.w);
 }
 
-/** 도시 남쪽 해변 가중(0..1): 사각형 바로 남쪽 + 양옆으로 서서히 산으로 바뀐다 */
-export const beachW = (x: number, z: number) => (z > CITY_HALF ? 1 - smooth(CITY_HALF - 60, CITY_HALF + 170, Math.abs(x)) : 0);
-
-/**
- * 도시 사각형 바깥 ~ 윤곽까지의 띠 높이. d = 윤곽(해안선)까지 안쪽 거리, 사각형 가장자리에서 윤곽까지 가는 비율 q(0..1)로 모양을 잡는다.
- * 북·동·서는 산(마루는 띠 중간, 해안 쪽으로 내려가 바다에 잠긴다), 남쪽은 모래 해변. 다리 어귀(BRIDGE_ENDS.x)는 평지로 이어진다.
- */
-const MOUNT = 52;
-function beltH(x: number, z: number, d: number): number {
-  const dsq = Math.max(Math.abs(x), Math.abs(z)) - CITY_HALF,
-    q = dsq / (dsq + Math.max(d, 0.01)),
-    bw = beachW(x, z),
-    n = 0.75 + 0.5 * fbm(x * 0.045 + 7, z * 0.045 - 3, 4, 91),
-    rr = 0.7 + 0.5 * (1 - Math.abs(fbm(x * 0.09, z * 0.09, 3, 17) * 2 - 1));
-  let m = MOUNT * n * rr * (q < 0.45 ? smooth(0.04, 0.45, q) : 1 - 0.7 * smooth(0.45, 1, q));
-  // 북쪽 사과 시선 축(정북 ±8°·고도 8°↑)을 가리지 않게 낮춘다
-  if (z < -CITY_HALF * 0.5 && Math.abs(z) >= Math.abs(x)) m *= 0.38 + 0.62 * smooth(30, 70, Math.abs(x));
-  const beach = -8 * smooth(0, 1, q) * (0.85 + 0.15 * smooth(0, 0.3, q));
-  let h = m * (1 - bw) + beach * bw;
-  h -= 12 * (1 - smooth(0, 34, d)) * (1 - bw); // 산 해안은 마지막 34u 에서 바다로 내려선다
-  if (z > CITY_HALF) h *= smooth(14, 60, Math.abs(x - BRIDGE_ENDS.x)); // 다리 어귀는 평지 둑길
-  const ap = approachNear(x, z); // W6 BRIDGE: 도시 도로 → 다리 진입로 구간은 평지(0)로 눌러 끊김 없이 잇는다
-  if (ap.d < 1e9) h *= smooth(ap.w + FLAT_MARGIN, ap.w + FLAT_MARGIN + FLAT_FADE, ap.d);
-  return h;
-}
+export {beachW, beltH};
 
 let outReg = 0;
 /** (x,z) 의 높이를 계산해 돌려주고 소속 코드는 outReg 에 둔다 */
@@ -201,15 +179,39 @@ export function bakeContinent(): Float32Array {
 /** 굽기 결과: 높이와 소속 코드 격자 (행 우선, 인덱스 = j*NX + i) */
 export const gridOf = () => ({h: bakeContinent(), reg: RG!});
 
-/** 이중선형 보간 높이 (대륙 밖은 가장자리 값). 땅인지는 호출한 쪽이 판정한다 */
+/** 물 shader용 5u 격자는 유지하고 지상 메시/충돌은 같은 native 2.5u 표본을 공유한다.
+ * 절반 격자의 새 위치만 원래 지형 공식을 평가한다. 미방문 영역은 계산하지 않는다. */
+export const DETAIL_STEP = STEP / 2;
+const DX = (NX - 1) * 2 + 1, DZ = (NZ - 1) * 2 + 1;
+let detail: Float32Array | null = null;
+function detailAt(i: number, j: number): number {
+  i = Math.max(0, Math.min(DX - 1, i));
+  j = Math.max(0, Math.min(DZ - 1, j));
+  const h = bakeContinent();
+  if (!(i & 1) && !(j & 1)) return h[(j / 2) * NX + i / 2];
+  if (!detail) detail = new Float32Array(DX * DZ).fill(NaN);
+  const o = j * DX + i;
+  if (Number.isNaN(detail[o])) detail[o] = evalAt(GX0 + i * DETAIL_STEP, GZ0 + j * DETAIL_STEP);
+  return detail[o];
+}
+/** native 2.5u 메시의 같은 대각선으로 삼각 보간한다. 렌더/보행/차량 표면 일치. */
 export function heightAt(x: number, z: number): number {
-  const h = bakeContinent(),
-    u = Math.min(NX - 1.001, Math.max(0, (x - GX0) / STEP)),
-    v = Math.min(NZ - 1.001, Math.max(0, (z - GZ0) / STEP)),
-    i = Math.floor(u),
-    j = Math.floor(v),
-    fx = u - i,
-    fz = v - j,
-    o = j * NX + i;
-  return (h[o] * (1 - fx) + h[o + 1] * fx) * (1 - fz) + (h[o + NX] * (1 - fx) + h[o + NX + 1] * fx) * fz;
+  const u = Math.min(DX - 1.000001, Math.max(0, (x - GX0) / DETAIL_STEP)),
+    v = Math.min(DZ - 1.000001, Math.max(0, (z - GZ0) / DETAIL_STEP)),
+    i = Math.floor(u), j = Math.floor(v), fx = u - i, fz = v - j;
+  if (fx < 1e-7 && fz < 1e-7) return detailAt(i, j);
+  const b = detailAt(i + 1, j), c = detailAt(i, j + 1);
+  if (fx + fz <= 1) {
+    const a = detailAt(i, j);
+    return a + fx * (b - a) + fz * (c - a);
+  }
+  const d = detailAt(i + 1, j + 1);
+  return d + (1 - fx) * (c - d) + (1 - fz) * (b - d);
+}
+/** LOD/청크와 무관한 월드 좌표 법선. 인접 메시의 공통 정점이 같은 조명을 받는다. */
+export function terrainNormal(x: number, z: number): [number, number, number] {
+  const dx = (heightAt(x + DETAIL_STEP, z) - heightAt(x - DETAIL_STEP, z)) / STEP,
+    dz = (heightAt(x, z + DETAIL_STEP) - heightAt(x, z - DETAIL_STEP)) / STEP,
+    len = Math.hypot(dx, 1, dz);
+  return [-dx / len, 1 / len, -dz / len];
 }

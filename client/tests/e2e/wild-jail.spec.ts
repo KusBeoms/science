@@ -8,24 +8,31 @@ test('wild lands: bridge from the city, climbable mountain, lake under sea level
     const T = await import('/js/core/terrain.js'),
       W = await import('/js/data/wild.js'),
       V = await import('/js/data/world-map.js');
-    // 산 정상까지 경사 0.9 이하로 걸어 올라갈 수 있는가 (북쪽 비탈을 직선으로)
-    let ok = true, y = T.groundH(W.MOUNTAIN.x, W.MOUNTAIN.z - W.MOUNTAIN.r + 10), maxSlope = 0;
-    for (let d = W.MOUNTAIN.r - 10; d >= 0; d -= 2) {
-      const z = W.MOUNTAIN.z - d, ny = T.groundH(W.MOUNTAIN.x, z);
-      if (ny === -Infinity || !T.walkable(W.MOUNTAIN.x, z - 2, y, W.MOUNTAIN.x, z)) ok = false;
-      maxSlope = Math.max(maxSlope, (ny - y) / 2);
-      y = ny;
+    // 산 정상까지 스위치백 등산로(core/wild-trail.ts)를 0.5u 걸음으로 걸어 오른다: 모든 걸음이 walkable, 경사 ≤ 0.9
+    const TR = await import('/js/core/wild-trail.js');
+    let ok = true, maxSlope = 0, y = T.groundH(TR.TRAIL[0].x, TR.TRAIL[0].z), x = TR.TRAIL[0].x, z = TR.TRAIL[0].z, length = 0;
+    for (let k = 1; k < TR.TRAIL.length; k++) {
+      const a = TR.TRAIL[k - 1], b = TR.TRAIL[k], n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 0.5);
+      for (let i = 1; i <= n; i++) {
+        const nx = a.x + (b.x - a.x) * (i / n), nz = a.z + (b.z - a.z) * (i / n), ny = T.groundH(nx, nz);
+        if (ny === -Infinity || !T.walkable(x, z, y, nx, nz) || T.solidAt(nx, nz, 0.4)) ok = false;
+        const st = Math.hypot(nx - x, nz - z);
+        maxSlope = Math.max(maxSlope, (ny - y) / (st || 1));
+        length += st; x = nx; z = nz; y = ny;
+      }
     }
+    const reachedSummit = Math.hypot(x - W.SUMMIT.x, z - W.SUMMIT.z) < 2;
     return {
       bridge: T.groundH(74, 550, 5.5), // 금문교 상판 (BRIDGE_ENDS.x, 상판 높이 5.5)
       bridgeFloor: T.groundH(74, 550), // 상판 밑은 바다 바닥(−12)
       bridgeSide: T.groundH(150, 550),
       summit: T.groundH(W.SUMMIT.x, W.SUMMIT.z),
-      climbable: ok,
+      climbable: ok && reachedSummit,
       maxSlope,
+      trailLength: length,
       lake: T.groundH(W.LAKES[0].x, W.LAKES[0].z),
       sea: V.SEA_Y,
-      desert: T.groundH(340, 1400),
+      desert: T.groundH(520, 1470),
     };
   });
   expect(r.bridge).toBeCloseTo(5.5, 2);
@@ -33,6 +40,8 @@ test('wild lands: bridge from the city, climbable mountain, lake under sea level
   expect(r.bridgeSide).toBe(-Infinity); // 다리 옆은 바다
   expect(r.summit).toBeGreaterThan(70);
   expect(r.climbable).toBe(true);
+  expect(r.maxSlope).toBeLessThan(0.7);
+  expect(r.trailLength).toBeGreaterThan(600); // 꼬불꼬불 스위치백
   expect(r.lake).toBeLessThan(r.sea - 3);
   expect(Math.abs(r.desert)).toBeLessThan(12);
   expect(unexpected(game.problems).pageerrors).toEqual([]);

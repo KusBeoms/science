@@ -76,8 +76,9 @@ function support(p: Pl, dt: number) {
   moveTo(p, tx, tz, dist(p, ball) > 12, dt, 0.95);
 }
 function defend(p: Pl, dt: number, chasers: Pl[]) {
-  const owner = ball.owner!,
-    h = homeOf(p),
+  const owner = ball.owner; // 같은 프레임에 다른 선수가 공을 차서 null 이 될 수 있다
+  if (!owner) return;
+  const h = homeOf(p),
     a = dir(p.team);
   if (chasers.includes(p)) {
     // 압박: 공 가진 선수와 골 사이로

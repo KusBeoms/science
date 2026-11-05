@@ -2,6 +2,7 @@
 // 깊이 = 수면 − 지면(지면 높이 격자를 float 텍스처로 올려 픽셀마다 읽는다) → 얕은 곳 연한 청록, 깊은 곳 진한 남색, 가장자리 투명 + 움직이는 거품띠.
 // 잔물결 = 방향이 다른 사인파 5개의 기울기로 만든 법선 → 하늘 반사(프레넬)·태양 하이라이트·반짝임. 낮밤은 조명 값(uLight/uSunK/uSunDir)으로 반영.
 import {GX0, GZ0, NX, NZ, STEP, gridOf} from '../core/heightmap.js';
+import {WILD_POLY} from '../data/outline.js';
 
 const WAVES = `
 const vec2 D1 = vec2(0.86, 0.50), D2 = vec2(-0.50, 0.87), D3 = vec2(0.20, -0.98), D4 = vec2(-0.90, -0.43), D5 = vec2(0.65, -0.76);
@@ -58,7 +59,9 @@ void main() {
     if (uHoleA[k].z > 0.0) {
       vec2 d = vWorld.xz - uHoleA[k].xy;
       float u = d.x * uHoleB[k].x + d.y * uHoleB[k].y, v = -d.x * uHoleB[k].y + d.y * uHoleB[k].x;
-      if (length(vec2(u / uHoleA[k].z, v / uHoleA[k].w)) < 1.0) discard;
+      // An elliptical lake envelope must never punch a hole in the coastal sea.
+      vec2 maskUv = (clamp((vWorld.xz - uGrid.xy) / uGrid.z, vec2(0.0), uTex - 1.0) + 0.5) / uTex;
+      if (length(vec2(u / uHoleA[k].z, v / uHoleA[k].w)) < 1.0 && texture2D(uGround, maskUv).g > 0.5) discard;
     }
   }
   float depth = uLevel - groundAt(vWorld.xz);
@@ -97,7 +100,11 @@ function groundTexture(): any {
   if (groundTex) return groundTex;
   const h = gridOf().h,
     d = new Float32Array(NX * NZ * 4);
-  for (let k = 0; k < NX * NZ; k++) d[k * 4] = h[k];
+  for (let k = 0; k < NX * NZ; k++) {
+    d[k * 4] = h[k];
+    // Green stores the same rural island footprint used by collision and lake meshes.
+    d[k * 4 + 1] = WILD_POLY.inside(GX0 + (k % NX) * STEP, GZ0 + Math.floor(k / NX) * STEP) ? 1 : 0;
+  }
   const t = new THREE.DataTexture(d, NX, NZ, THREE.RGBAFormat, THREE.FloatType);
   t.minFilter = t.magFilter = THREE.NearestFilter;
   t.generateMipmaps = false;

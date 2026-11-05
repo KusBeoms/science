@@ -1,5 +1,7 @@
-// 남부 야생지(도시 남쪽 다리 건너): 평야·시골·호수·사막·등산 가능한 산·교도소. 순수 데이터 — 높이 굽기(core/heightmap.ts), 색(render/terrain.ts), 장식(render/wild.ts), 교도소(systems/jail.ts)가 같이 쓴다.
-import {BRIDGE_ENDS, WILD_DZ, WILD_POLY} from './outline.js';
+// 남부 야생지(시골 섬, W7 RURAL 재구성): 참조 'Pastoral Island Mountain and Lakes Map' 배치.
+// 북쪽 꼭짓점에서 다리 → 곧은 간선(동쪽 비탈) → 큰 호수 순환로, 가운데 비대칭 산(능선·계곡·스위치백 등산로·정상 정자), 북서 작은 호수 마을,
+// 서쪽 계단식 논밭 모자이크, 동쪽 모래 반도. 순수 데이터 — 높이 굽기(core/wild-height.ts)·색(render/wild-color.ts)·장식(render/wild*.ts, rural-*.ts)·교도소(systems/jail.ts)가 같이 쓴다.
+import {BRIDGE_ENDS, WILD_POLY} from './outline.js';
 import {SEABED_HW} from './bridge.js';
 export type R4 = readonly [number, number, number, number];
 /** 야생지 땅은 사각형이 아니라 data/outline.ts 의 WILD_POLY(시골 사진 윤곽). WILD_RECT = 그 bbox (장식 흩뿌리기 범위용 — 안/밖은 inWild) */
@@ -7,9 +9,11 @@ export const WILD_RECT: R4 = [Math.floor(WILD_POLY.x0), Math.floor(WILD_POLY.z0)
 export const inWild = (x: number, z: number) => WILD_POLY.inside(x, z);
 /** 다리 밑 해협 바닥 띠(W6 BRIDGE, data/bridge.ts): 두 땅 사이 바다 바닥(−12)이 깔리는 사각형. 상판은 core/deck.ts 데크가 따로 맡는다 */
 export const WILD_BRIDGE: R4 = [BRIDGE_ENDS.x - SEABED_HW, BRIDGE_ENDS.city - 10, BRIDGE_ENDS.x + SEABED_HW, BRIDGE_ENDS.wild + 40];
-/** 야생지 내용 좌표는 옛 값 + WILD_DZ (W6: 윤곽 안에 들어가도록 남쪽으로 옮김) */
-const D = WILD_DZ;
-export const MOUNTAIN = {x: 0, z: 1110 + D, r: 200, h: 90};
+
+/** 산: (x,z) = 정상(SUMMIT), h = 정상 높이, r = 능선 포함 발자국 반경(동물·지도용 대략값). 모양은 data/wild-mountain.ts 의 능선들 */
+export const MOUNTAIN = {x: 56, z: 1190, r: 250, h: 90};
+export const SUMMIT = {x: MOUNTAIN.x, z: MOUNTAIN.z};
+
 /** 호수: 타원(rx,rz 반지름, rot 회전) · 수면 높이 level(바다 SEA_Y 와 독립) · 가장 깊은 곳 depth. r = 평균 반지름(동물·장식 배치용) */
 export interface Lake {
   id: string;
@@ -23,37 +27,26 @@ export interface Lake {
   r: number;
 }
 export const LAKES: Lake[] = [
-  // 큰 호수: 산(MOUNTAIN)과 남쪽 산맥 사이 분지, 동서로 길쭉
-  {id: 'grand', x: 90, z: 1425 + D, rx: 235, rz: 105, rot: -0.12, level: -1.2, depth: 16, r: 170},
-  // 시골 옆 작은 연못
-  {id: 'pond', x: -60, z: 805 + D, rx: 62, rz: 44, rot: 0.5, level: -1.0, depth: 6, r: 53},
+  // 남쪽 큰 타원 호수: 순환 도로·벚꽃·갈대·산책로
+  {id: 'grand', x: 85, z: 1662, rx: 243, rz: 112, rot: -0.05, level: -1.2, depth: 16, r: 170},
+  // 북서 작은 둥근 호수: 선착장 + 둘레 마을
+  {id: 'pond', x: -85, z: 1035, rx: 66, rz: 56, rot: 0.3, level: -1.0, depth: 6, r: 58},
 ];
-/** 호수 둘레를 두르는 산줄기(선분 a→b, 반폭 hw, 높이 h). 큰 호수 분지의 서·남·동쪽 벽 */
-export interface Range {
-  a: readonly [number, number];
-  b: readonly [number, number];
-  hw: number;
-  h: number;
-}
-export const RANGES: Range[] = [
-  {a: [-330, 1270 + D], b: [-300, 1600 + D], hw: 95, h: 58},
-  {a: [-380, 1640 + D], b: [380, 1620 + D], hw: 100, h: 74},
-  {a: [445, 1580 + D], b: [440, 1120 + D], hw: 85, h: 60},
-];
-/** 호숫가 길: 큰 호수 둘레 순환로 + 다리 끝(BRIDGE_ENDS)에서 이어지는 길. 폭 W, 길 높이는 호수 수면 + 1.8 */
+/** 호숫가 길 폭(큰 호수 순환로·간선). 갈래길은 data/wild-road.ts 의 줄마다 폭이 다르다 */
 export const LAKE_ROAD_W = 9;
-/** 사막: x > DESERT.x0 이고 z > DESERT.z0 인 쪽, 가장자리는 부드럽게 섞인다 */
-export const DESERT = {x0: 230, z0: 1330};
-/** 시골(농지·마을) */
-export const COUNTRY: R4 = [-250, 940, -70, 1180];
-/** 교도소: 담장 사각형, 감방 위치, 헐거운 벽돌, 담장 틈, 출소 지점 */
+
+/** 동쪽 모래 반도(해변): x > x0 이고 z > z0 인 쪽의 바닷가가 모래·야자·해안 바위 */
+export const DESERT = {x0: 440, z0: 1400};
+/** 목장(소·농가 마당): 서쪽 농지 한가운데의 풀밭 구역. 이 안은 밭을 깔지 않는다 */
+export const COUNTRY: R4 = [-330, 1060, -190, 1170];
+
+/** 교도소: 담장 사각형, 감방 위치, 헐거운 벽돌, 담장 틈, 출소 지점 (서쪽 농지 한가운데 — 좌표는 W6 그대로) */
 export const JAIL = {
-  rect: [-235, 1025 + D, -165, 1095 + D] as R4,
-  flat: [-252, 1008 + D, -150, 1112 + D] as R4,
-  cell: {x: -210, z: 1047 + D},
+  rect: [-235, 1225, -165, 1295] as R4,
+  flat: [-252, 1208, -150, 1312] as R4,
+  cell: {x: -210, z: 1247},
   /** 감방 서쪽 벽의 헐거운 벽돌 (E) */
-  brick: {x: -215.2, z: 1047.5 + D},
-  gap: {x0: -232.5, x1: -228.5, z: 1025 + D},
-  release: {x: -200, z: 1018 + D},
+  brick: {x: -215.2, z: 1247.5},
+  gap: {x0: -232.5, x1: -228.5, z: 1225},
+  release: {x: -200, z: 1218},
 };
-export const SUMMIT = {x: MOUNTAIN.x, z: MOUNTAIN.z};

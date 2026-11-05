@@ -13,6 +13,7 @@ import {CITY_HALF} from '../../core/terrain.js';
 import {PAL, mix} from '../lowpoly/palette.js';
 import {hash2} from '../lowpoly/rng.js';
 import {funSurface} from './fun-ground.js';
+import {w7Surface} from './w7-ground.js';
 import type {Inst} from '../lowpoly/merge.js';
 
 const LAWN_A = mix(PAL.green, PAL.stone, 0.5),
@@ -52,7 +53,7 @@ const LM_RECTS: CityRect[] = CITY_LANDMARKS.filter(l => l.kind !== 'orrery' && l
 ]);
 
 /** 칸 (cx,cz 는 칸 중심 좌표) 의 지면색. 도로 > 보도 > 광장 > 건물 마당 > 잔디 */
-export const surfaceAt = (cx: number, cz: number): number => funSurface(cx, cz, baseSurface(cx, cz)); // W5 FUN: 구역별 바닥색(fun-ground.ts)
+export const surfaceAt = (cx: number, cz: number): number => funSurface(cx, cz, w7Surface(cx, cz, baseSurface(cx, cz))); // W5 FUN: 구역별 바닥색(fun-ground.ts) · W7: 방사 대로·원형 광장·소공원·시설(w7-ground.ts)
 function baseSurface(cx: number, cz: number): number {
   // 긴 진입 곡선은 bridge가 덧그린다. 옛 직선 차도·보도의 남은 꼬리는 잔디로 마감한다.
   if (cz > CITY_APPROACH_START + 12 && cz <= CITY_HALF && Math.abs(cx) < 12) {

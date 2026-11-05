@@ -3,6 +3,7 @@
 import {heightAt} from '../core/heightmap.js';
 import {lakeT} from '../core/lake-shape.js';
 import {LAKES, type Lake} from '../data/wild.js';
+import {WILD_POLY} from '../data/outline.js';
 import {SEA_Y} from '../data/world-map.js';
 import {makeWaterMat, syncWater} from './water-shader.js';
 
@@ -24,7 +25,7 @@ function lakeMesh(L: Lake): any {
         z = z0 + j * CELL,
         o = j * nx + i;
       pos.set([x, L.level, z], o * 3);
-      wet[o] = heightAt(x, z) < L.level + 0.4 && lakeT(L, x, z) < 1.45 ? 1 : 0;
+      wet[o] = WILD_POLY.inside(x, z) && heightAt(x, z) < L.level + 0.4 && lakeT(L, x, z) < 1.45 ? 1 : 0;
     }
   const idx: number[] = [];
   for (let j = 0; j < nz - 1; j++)

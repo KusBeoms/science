@@ -14,6 +14,15 @@ import type {Chunk} from '../core/types.js';
 /** 섹터 사각형까지 이 거리 안이면 로드, UNLOAD 밖이면 해제 (사이 구간은 유지 — 경계에서 깜빡임 방지) */
 export const LOAD = 140,
   UNLOAD = 180;
+let overview = false;
+/** Map export must include all sector scenery, independently of player position. */
+export function setSectorOverview(on: boolean) {
+  overview = on;
+  if (on) {
+    SECTORS.forEach((_, i) => { if (!G.chunks[i]) G.chunks[i] = buildChunk(i); });
+    syncNests(G.gameT);
+  }
+}
 /** 정사각형 타일 (바닥 + 테두리) 을 parent 에 추가하고 바닥 메시를 돌려준다 */
 export function tile(parent: any, cx: number, cz: number, a: string, b: string, edge: number, sz: number) {
   const m = new THREE.Mesh(
@@ -103,6 +112,7 @@ function freeChunk(c: Chunk) {
 }
 /** 거리 기준 로드/해제. 프레임당 최대 1개만 새로 만든다 (끊김 방지) */
 export function streamSectors() {
+  if (overview) { streamTerrain(LOAD, UNLOAD); return; }
   const p = G.me.pos;
   let built = false;
   SECTORS.forEach((_, i) => {

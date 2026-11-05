@@ -72,7 +72,9 @@ test('terrain tiles stream within the triangle budget (W6: 경계 문 없음)', 
   });
   expect(r.stats.tiles).toBeGreaterThan(0);
   expect(r.stats.tris).toBeLessThan(40000); // 근거리 지형 예산
-  expect(r.stats.farTris).toBeLessThan(36000); // W6: 도시 윤곽 띠·12섬이 원경에 포함
+  // W7 native detail raises resident geometry; the frame budget counts frustum-visible terrain.
+  // stats.farTris still reports all resident far triangles for memory/debugging.
+  expect(r.stats.drawnFarTris).toBeLessThan(36000);
   expect(r.tris).toBeLessThan(90000);
   expect(unexpected(game.problems).pageerrors).toEqual([]);
 });

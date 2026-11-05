@@ -1,290 +1,195 @@
-// 지형 메시 (docs/design/WORLD.md 7.1): 굽어 둔 높이 격자(core/heightmap.ts)에서 면마다 색을 칠한 플랫 셰이딩 메시를 뽑는다.
-// 근거리 = 160u 타일(5u 격자, 플레이어 주변만 만들고 멀어지면 해제, 프레임당 1개) / 원경 = 대륙 전체를 10u 격자로 한 번에 1개.
-// 면 색 = ramp(바이옴, 높이, 경사) + 면별 밝기 흔들림. 아직 잠긴 구역의 분지는 안개색으로 가려진다 (능선은 그대로 보임).
+// W7 terrain: native2.5u near /5u middle /10u distant; atomic root LOD transitions.
 import {G} from '../core/runtime.js';
 import {locked} from '../core/progress.js';
-import {GX0, GZ0, NX, NZ, REG_CITY, REG_PASS, REG_WILD, STEP, bakeContinent, beachW, gridOf, CLIFF1} from '../core/heightmap.js';
-import {BRIDGE_ENDS} from '../data/outline.js';
+import {GX0, GZ0, NX, NZ, STEP, CLIFF1, bakeContinent} from '../core/heightmap.js';
 import {SECTORS} from '../data/sectors.js';
-import {COUNTRY, DESERT, LAKES, LAKE_ROAD_W} from '../data/wild.js';
-import {roadNear} from '../data/wild-road.js';
-import {lakeT} from '../core/lake-shape.js';
-import {CITY_HALF, SEA_Y, TERRAIN} from '../data/world-map.js';
 import {registerLandmarkSolids} from './landmarks.js';
-import {PAL, TINT, mix, ramp, rgb, type Biome} from './lowpoly/palette.js';
-import {hash2} from './lowpoly/rng.js';
 import {lowMat} from './lowpoly/merge.js';
-
-/** 타일 한 변(샘플 칸 수 × STEP) */
-const TCELLS = 32,
-  TILE = TCELLS * STEP,
-  TX = Math.ceil((NX - 1) / TCELLS),
-  TZ = Math.ceil((NZ - 1) / TCELLS),
-  /** 지형 전체를 이만큼 내려 기지 타일(윗면 y=0) 과 겹쳐 깜빡이지 않게 한다 */
-  LOWER = 0.08,
-  /** 원경 메시를 근거리 타일보다 더 내리는 양 */
-  FAR_DROP = 0.35;
-
-let root: any,
-  farMesh: any,
-  farMat: any,
-  lockSig = '';
-const tiles = new Map<number, {mesh: any; dirty: boolean}>();
-/** 땅(또는 첫 낭떠러지 겹)이 있는 타일만 만든다 */
-let hasLand: Uint8Array;
-
-const GRASS = mix(PAL.green, PAL.ink, 0.5),
-  CITY_GROUND = mix(PAL.slate, PAL.steel, 0.4),
-  PASS_STONE = mix(PAL.paving, PAL.clay, 0.3);
-const smooth = (a: number, b: number, x: number) => {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
-
-const SAND = mix(PAL.bone, PAL.amber, 0.25),
-  WET_SAND = mix(SAND, PAL.clay, 0.45);
-/** 도시 둘레 띠: 남쪽 해변은 모래(물가는 젖은 모래), 나머지는 풀 → 바위 → 눈 */
-function beltColor(cx: number, cz: number, y: number, slope: number): number {
-  const bw = beachW(cx, cz);
-  if (bw > 0.5 || y < SEA_Y + 1.5) return y < SEA_Y + 1.2 ? WET_SAND : SAND;
-  let c = y < 9 ? mix(GRASS, PAL.stone, smooth(0, 9, y) * 0.5) : mix(PAL.stone, PAL.steel, smooth(9, 30, y));
-  if (y > 33) c = mix(c, PAL.white, smooth(33, 41, y));
-  return mix(c, PAL.stone, smooth(0.45, 0.8, slope) * 0.7);
+import {clearTerrainColors} from './terrain-color.js';
+import {terrainGeometry, type TerrainPatch} from './terrain-mesh.js';
+interface Patch extends TerrainPatch {key: string; owner: number}
+interface Entry {mesh: any; used: number}
+interface Root {patch: Patch; coarse: any; active: string[]}
+export interface TerrainBounds {x0: number; z0: number; x1: number; z1: number}
+const ROOT_SIZE = 320;
+let group: any, roots: Root[] = [], lockSig = '', tick = 0;
+const cache = new Map<string, Entry>();
+let overview: {step: number; bounds?: TerrainBounds} | null = null, overviewKey = '', autoOverview = false;
+const sig = () => SECTORS.map((_, i) => locked(i) ? 1 : 0).join('');
+const distance = (p: TerrainPatch, x: number, z: number) => Math.hypot(
+  Math.max(p.x0 - x, 0, x - p.x1), Math.max(p.z0 - z, 0, z - p.z1));
+function patch(x0: number, z0: number, x1: number, z1: number, step: number, owner: number): Patch {
+  return {x0, z0, x1, z1, step, owner, key: `${x0},${z0},${x1},${z1}/${step}`};
 }
-
-const SANDY = mix(PAL.bone, PAL.amber, 0.45),
-  DUNE = mix(SANDY, PAL.orange, 0.25),
-  WHEAT = mix(PAL.yellow, PAL.amber, 0.4),
-  TILLED = mix(PAL.clay, PAL.green, 0.2),
-  MEADOW = mix(PAL.green, PAL.lime, 0.45);
-/** 남부 야생지 색: 호수 바닥·물가 모래, 사막, 산(숲→바위→눈), 시골 농지 격자, 평야 */
-const MUD = mix(PAL.clay, PAL.slate, 0.45),
-  DEEP_BED = mix(PAL.slate, PAL.teal, 0.35),
-  PEBBLE = mix(SANDY, PAL.stone, 0.35),
-  VERGE = mix(PAL.clay, PAL.stone, 0.5);
-/** 호수 바닥·물가 색 (호수 근처가 아니면 null): 깊을수록 모래 → 진흙 → 어두운 청회색, 수면 위 0.9u 는 젖은 자갈, 그 위 2u 는 풀과 섞인 모래 */
-function lakeColor(cx: number, cz: number, y: number): {c: number; w: number} | null {
-  for (const L of LAKES) {
-    if (Math.abs(cx - L.x) > L.rx * 1.5 || Math.abs(cz - L.z) > L.rx * 1.5) continue;
-    if (lakeT(L, cx, cz) > 1.4) continue;
-    const dep = L.level - y;
-    if (dep > 0.3) return {c: mix(mix(SANDY, MUD, smooth(0.3, 4, dep)), DEEP_BED, smooth(4, 13, dep)), w: 1};
-    if (dep > -0.9) return {c: PEBBLE, w: 1};
-    if (dep > -2.6) return {c: SANDY, w: 0.7 * (1 - (-dep - 0.9) / 1.7)};
+function children(p: Patch, step: number) {
+  // Split on an aligned 80/160u boundary; partial world edge roots remain aligned.
+  const size = p.x1 - p.x0 > 160 || p.z1 - p.z0 > 160 ? 160 : 80, out: Patch[] = [];
+  for (let z = p.z0; z < p.z1; z += size) for (let x = p.x0; x < p.x1; x += size)
+    out.push(patch(x, z, Math.min(p.x1, x + size), Math.min(p.z1, z + size), step, p.owner));
+  return out;
+}
+function mesh(p: Patch, spacing: (x: number, z: number) => number, skirtDepth = 12) {
+  const g = terrainGeometry(p, spacing, skirtDepth), m = new THREE.Mesh(g, lowMat());
+  m.name = `terrain-${p.key}`; m.userData.terrainStep = p.step;
+  m.visible = false; group.add(m); return m;
+}
+/** Small distant chunks allow actual fog/frustum rejection without changing sampling density. */
+function coarseMesh(p: Patch) {
+  const g = new THREE.Group(); g.name = `terrain-distant-${p.key}`;
+  for (let z = p.z0; z < p.z1; z += 80) for (let x = p.x0; x < p.x1; x += 80) {
+    const part = patch(x, z, Math.min(p.x1, x + 80), Math.min(p.z1, z + 80), 10, p.owner),
+      m = mesh(part, () => 10, 0);
+    if (!m.geometry.index.count) { group.remove(m); m.geometry.dispose(); continue; }
+    m.userData.terrainBounds = part; m.visible = true; g.add(m);
   }
-  return null;
+  g.visible = false; group.add(g); return g;
 }
-function wildColor(cx: number, cz: number, y: number, slope: number): number {
-  const lk = lakeColor(cx, cz, y);
-  if (lk && lk.w >= 1) return lk.c;
-  if (!lk && y < SEA_Y - 1.5) return mix(PAL.slate, PAL.teal, 0.4);
-  if (!lk && y < SEA_Y + 1) return SANDY;
-  const rd = roadNear(cx, cz).d;
-  if (rd < LAKE_ROAD_W / 2 + 3.5) return mix(mix(PAL.asphalt, PAL.stone, 0.45), VERGE, smooth(LAKE_ROAD_W / 2 - 1, LAKE_ROAD_W / 2 + 3, rd));
-  const desert = smooth(DESERT.x0 - 30, DESERT.x0 + 30, cx) * smooth(DESERT.z0 - 30, DESERT.z0 + 30, cz);
-  let c = MEADOW; // 농지는 rural-landscape의 실제 패치로 배치하고 바탕은 연속 초지로 둔다.
-  if (hash2(Math.floor(cx / 7), Math.floor(cz / 7), 9) < 0.25) c = mix(c, PAL.green, 0.25);
-  c = mix(c, hash2(Math.floor(cx / 5), Math.floor(cz / 5), 3) < 0.5 ? SANDY : DUNE, desert);
-  if (y > 6) c = mix(c, GRASS, smooth(6, 26, y));
-  if (y > 36) c = mix(c, PAL.stone, smooth(36, 60, y));
-  if (y > 68) c = mix(c, PAL.white, smooth(68, 80, y));
-  if (lk) c = mix(c, lk.c, lk.w);
-  return mix(c, PAL.stone, smooth(0.5, 0.85, slope) * 0.6);
-}
-/** 면(중심 cx,cz · 평균 높이 y · 경사 slope=sin각) 의 색 */
-function faceColor(reg: number, cx: number, cz: number, y: number, slope: number): number {
-  let c: number;
-  if (reg === REG_CITY) {
-    if (Math.max(Math.abs(cx), Math.abs(cz)) > CITY_HALF) return beltColor(cx, cz, y, slope);
-    // 도시 안에서는 북서 언덕과 낭떠러지 경사면만 그려진다 (평지는 render/city 지면)
-    c = y > 0.4 ? mix(CITY_GROUND, GRASS, Math.min(1, y / 4)) : CITY_GROUND;
-    c = mix(c, PAL.stone, smooth(0.35, 0.75, slope) * 0.8);
-  } else if (reg === REG_WILD) {
-    c = wildColor(cx, cz, y, slope);
-  } else if (reg === REG_PASS) {
-    // 임시 다리: 중심선은 아스팔트 (BRIDGE 에이전트가 금문교로 대체)
-    c = mix(Math.abs(cx - BRIDGE_ENDS.x) < 8 ? PAL.asphalt : PASS_STONE, PAL.stone, smooth(0.35, 0.75, slope) * 0.8);
-  } else {
-    const i = reg - 1,
-      s = SECTORS[i],
-      m = TERRAIN[s.id],
-      stripe = m.stripe ? Math.sin(cz * 0.22) * m.stripe : 0;
-    c = ramp(s.id as Biome, (y + 3) / (m.ridge.h + 6) + stripe, slope);
-    if (locked(i)) {
-      const ds = s.size / 2 - Math.max(Math.abs(cx - s.center.x), Math.abs(cz - s.center.z));
-      c = mix(c, TINT.day.fog, 0.8 * smooth(m.ridge.w * 0.5, m.ridge.w * 1.3, ds)); // 잠긴 분지는 안개 속
-    }
+function cullDistant() {
+  const camera = G.camera?.position, far = G.scene?.fog?.far,
+    direction = G.camera?.getWorldDirection(new THREE.Vector3());
+  for (const r of roots) for (const m of r.coarse.children) {
+    const sphere = m.geometry.boundingSphere;
+    // Three fog uses view depth, not radial distance: keep side-of-view surfaces until opaque.
+    const depth = camera && direction ? (sphere.center.x - camera.x) * direction.x
+      + (sphere.center.y - camera.y) * direction.y + (sphere.center.z - camera.z) * direction.z - sphere.radius : 0;
+    m.visible = !!overview || !camera || !Number.isFinite(far) || depth < far;
   }
-  return y < -2 ? mix(c, PAL.ink, Math.min(0.75, (-y - 2) / 30)) : c; // 낭떠러지 아래는 허공 쪽으로 어두워진다
 }
 
-/** 샘플 격자 [i0,i1]×[j0,j1] 을 k 칸 간격으로 훑어 플랫 셰이딩 지오메트리를 만든다. far 면 이웃 중 낮은 값을 써서 근거리 메시를 뚫지 않게 한다 */
-function buildGeo(i0: number, j0: number, i1: number, j1: number, k: number, far: boolean): any {
-  const {h, reg} = gridOf(),
-    at = (i: number, j: number) => {
-      const v = h[j * NX + i];
-      if (!far || v < CLIFF1 + 1) return v;
-      let m = v;
-      for (let dj = -1; dj <= 1; dj++)
-        for (let di = -1; di <= 1; di++) {
-          const a = Math.min(NX - 1, Math.max(0, i + di)),
-            b = Math.min(NZ - 1, Math.max(0, j + dj)),
-            w = h[b * NX + a];
-          if (w > CLIFF1 + 1 && w < m) m = w;
-        }
-      return m;
-    };
-  const cells: number[] = [];
-  for (let j = j0; j < j1; j += k)
-    for (let i = i0; i < i1; i += k) {
-      const b = Math.min(i + k, i1),
-        d = Math.min(j + k, j1);
-      const ha = h[j * NX + i], hb = h[j * NX + b], hc = h[d * NX + i], hd = h[d * NX + b];
-      if (Math.max(ha, hb, hc, hd) < CLIFF1) continue;
-      // 도시의 평평한 안쪽은 render/city 의 지면이 덮으므로 만들지 않는다
-      const inCity = (v: number, o: number) => v >= -CITY_HALF && o <= CITY_HALF;
-      if (!ha && !hb && !hc && !hd && inCity(GX0 + i * STEP, GX0 + b * STEP) && inCity(GZ0 + j * STEP, GZ0 + d * STEP)) continue;
-      cells.push(i, j, b, d);
-    }
-  const n = cells.length / 4,
-    pos = new Float32Array(n * 18),
-    nor = new Float32Array(n * 18),
-    col = new Float32Array(n * 18);
-  let o = 0;
-  const tri = (ax: number, ay: number, az: number, bx: number, by: number, bz: number, cx: number, cy: number, cz: number, r: number, seed: number) => {
-    // 윗면(+y) 이 앞이 되게 감는다
-    const ux = bx - ax, uy = by - ay, uz = bz - az, vx = cx - ax, vy = cy - ay, vz = cz - az;
-    let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
-    if (ny < 0) {
-      [bx, by, bz, cx, cy, cz] = [cx, cy, cz, bx, by, bz];
-      nx = -nx; ny = -ny; nz = -nz;
-    }
-    const len = Math.hypot(nx, ny, nz) || 1;
-    nx /= len; ny /= len; nz /= len;
-    const slope = Math.sqrt(Math.max(0, 1 - ny * ny));
-    for (const [px, py, pz] of [[ax, ay, az], [bx, by, bz], [cx, cy, cz]]) {
-      pos[o] = px; pos[o + 1] = py; pos[o + 2] = pz;
-      nor[o] = nx; nor[o + 1] = ny; nor[o + 2] = nz;
-      // 같은 월드 정점은 같은 색: 타일 경계와 삼각형 대각선의 얼룩을 줄인다.
-      const c = faceColor(r, px, pz, py, slope), jitter = (hash2(Math.floor(px / 18), Math.floor(pz / 18), 5) - 0.5) * 0.025;
-      const [cr, cg, cb] = rgb(mix(c, jitter > 0 ? PAL.white : PAL.ink, Math.abs(jitter)));
-      col[o] = cr; col[o + 1] = cg; col[o + 2] = cb;
-      o += 3;
-    }
-  };
-  for (let c = 0; c < cells.length; c += 4) {
-    const [i, j, b, d] = [cells[c], cells[c + 1], cells[c + 2], cells[c + 3]],
-      x0 = GX0 + i * STEP, x1 = GX0 + b * STEP, z0 = GZ0 + j * STEP, z1 = GZ0 + d * STEP,
-      ha = at(i, j), hb = at(b, j), hc = at(i, d), hd = at(b, d),
-      r = reg[j * NX + i],
-      seed = i * 977 + j;
-    if (((i + j) / k) & 1) {
-      tri(x0, ha, z0, x1, hb, z0, x1, hd, z1, r, seed);
-      tri(x0, ha, z0, x1, hd, z1, x0, hc, z1, r, seed + 1);
-    } else {
-      tri(x0, ha, z0, x1, hb, z0, x0, hc, z1, r, seed);
-      tri(x1, hb, z0, x1, hd, z1, x0, hc, z1, r, seed + 1);
-    }
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
-  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  g.computeBoundingSphere();
-  return g;
-}
-
-const sig = () => SECTORS.map((_, i) => (locked(i) ? 1 : 0)).join('');
-
-function makeTile(ti: number, tj: number) {
-  const g = buildGeo(ti * TCELLS, tj * TCELLS, Math.min(NX - 1, (ti + 1) * TCELLS), Math.min(NZ - 1, (tj + 1) * TCELLS), 1, false),
-    mesh = new THREE.Mesh(g, lowMat());
-  mesh.name = `terrain-near-${ti},${tj}`;
-  mesh.position.y = -LOWER;
-  root.add(mesh);
-  return mesh;
-}
-function makeFar() {
-  if (farMesh) {
-    farMesh.traverse((m: any) => { if (m.geometry) m.geometry.dispose(); });
-    root.remove(farMesh);
-  }
-  // 세계 전체를 한 구로 컬링하면 화면 밖 섬까지 늘 그린다. 320u 청크로 나눠 시야별로 거절한다.
-  farMesh = new THREE.Group();
-  farMesh.name = 'terrain-distant';
-  for (let j = 0; j < NZ - 1; j += 64) for (let i = 0; i < NX - 1; i += 64) {
-    const g = buildGeo(i, j, Math.min(NX - 1, i + 64), Math.min(NZ - 1, j + 64), 4, true);
-    if (!g.attributes.position.count) { g.dispose(); continue; }
-    const mesh = new THREE.Mesh(g, farMat);
-    mesh.name = `terrain-distant-${i},${j}`;
-    mesh.position.y = -LOWER - FAR_DROP;
-    farMesh.add(mesh);
-  }
-  root.add(farMesh);
-}
-
-/** 지형 준비: 높이 굽기 → 타일 목록 → 원경 메시. initWorld 에서 한 번 */
-export function initTerrain() {
-  bakeContinent();
-  const {h} = gridOf();
-  hasLand = new Uint8Array(TX * TZ);
-  for (let tj = 0; tj < TZ; tj++)
-    for (let ti = 0; ti < TX; ti++)
-      for (let j = tj * TCELLS; j <= Math.min(NZ - 1, (tj + 1) * TCELLS) && !hasLand[tj * TX + ti]; j++)
-        for (let i = ti * TCELLS; i <= Math.min(NX - 1, (ti + 1) * TCELLS); i++)
-          if (h[j * NX + i] >= CLIFF1) {
-            hasLand[tj * TX + ti] = 1;
-            break;
+function plan(load: number): Patch[] {
+  const pos = G.me?.pos || {x: 0, z: 0}, out: Patch[] = [];
+  for (const r of roots) {
+    const p = r.patch;
+    if (overview) {
+      const b = overview.bounds;
+      if (!b || !(p.x1 < b.x0 || p.x0 > b.x1 || p.z1 < b.z0 || p.z0 > b.z1))
+        out.push({...p, step: overview.step, key: `${p.key}/overview${overview.step}`});
+      else out.push(p);
+    } else if (distance(p, pos.x, pos.z) < load) {
+      for (const mid of children(p, 5)) {
+        if (distance(mid, pos.x, pos.z) < Math.min(65, load * 0.5)) {
+          for (const near of children(mid, 2.5)) {
+            if (distance(near, pos.x, pos.z) >= Math.min(65, load * 0.5)) {
+              near.step = 5; near.key = near.key.replace('/2.5', '/5');
+            }
+            out.push(near);
           }
-  root = new THREE.Group();
-  root.name = 'terrain';
-  G.scene.add(root);
-  farMat = new THREE.MeshLambertMaterial({vertexColors: true, polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 2});
-  farMat.userData.keep = true;
-  lockSig = sig();
-  makeFar();
+        } else out.push(mid);
+      }
+    } else out.push(p);
+  }
+  return out;
+}
+function spacingAt(list: Patch[], x: number, z: number) {
+  return list.find(p => x >= p.x0 && x < p.x1 && z >= p.z0 && z < p.z1)?.step ?? 10;
+}
+function cacheKey(p: Patch, list: Patch[]) {
+  const edge: number[][] = [];
+  for (let z = p.z0 + 20; z < p.z1; z += 40) edge.push([p.x0 - 0.01, z], [p.x1 + 0.01, z]);
+  for (let x = p.x0 + 20; x < p.x1; x += 40) edge.push([x, p.z0 - 0.01], [x, p.z1 + 0.01]);
+  // Include the complete desired neighborhood so split-edge transitions rebuild safely.
+  return p.key + ':' + edge.map(([x, z]) => spacingAt(list, x, z)).join(',') + ':' + lockSig;
+}
+/** Native mesh overview. Synchronous preparation makes one-call map snapshots deterministic.
+ * Optional bounds limit high-density work; outside the bounds retains normal10u terrain. */
+export function setTerrainOverview(on: boolean, spacing: 2.5 | 5 = 5, bounds?: TerrainBounds) {
+  overview = on ? {step: spacing, bounds} : null;
+  autoOverview = false; overviewKey = '';
+  if (group) update(140, true);
+  if (overview) overviewKey = JSON.stringify(overview);
+}
+export function initTerrain() {
+  const h = bakeContinent();
+  group = new THREE.Group(); group.name = 'terrain'; G.scene.add(group);
+  roots = []; cache.clear(); lockSig = sig();
+  for (let z = GZ0; z < GZ0 + (NZ - 1) * STEP; z += ROOT_SIZE)
+    for (let x = GX0; x < GX0 + (NX - 1) * STEP; x += ROOT_SIZE) {
+      const p = patch(x, z, Math.min(GX0 + (NX - 1) * STEP, x + ROOT_SIZE),
+        Math.min(GZ0 + (NZ - 1) * STEP, z + ROOT_SIZE), 10, roots.length);
+      let land = false;
+      for (let j = (z - GZ0) / STEP; j <= (p.z1 - GZ0) / STEP && !land; j++)
+        for (let i = (x - GX0) / STEP; i <= (p.x1 - GX0) / STEP; i++)
+          if (h[j * NX + i] >= CLIFF1) { land = true; break; }
+      if (!land) continue;
+      p.owner = roots.length;
+      const coarse = coarseMesh(p); coarse.visible = true;
+      roots.push({patch: p, coarse, active: []});
+    }
   registerLandmarkSolids();
 }
-
-/** 매 프레임: 플레이어 주변 타일을 만들고(프레임당 1개) 멀어진 타일은 해제한다. 해금 상태가 바뀌면 색을 다시 칠한다 */
-export function streamTerrain(load: number, unload: number) {
-  const p = G.me.pos,
-    now = sig();
+function update(load: number, sync: boolean) {
+  if (!group) return;
+  tick++;
+  const now = sig();
   if (now !== lockSig) {
-    lockSig = now;
-    tiles.forEach(t => (t.dirty = true));
-    makeFar();
-  }
-  let busy = false;
-  for (let tj = 0; tj < TZ; tj++)
-    for (let ti = 0; ti < TX; ti++) {
-      const x0 = GX0 + ti * TILE,
-        z0 = GZ0 + tj * TILE,
-        d = Math.hypot(Math.max(x0 - p.x, 0, p.x - (x0 + TILE)), Math.max(z0 - p.z, 0, p.z - (z0 + TILE))),
-        key = tj * TX + ti,
-        t = tiles.get(key);
-      if (t && d > unload) {
-        root.remove(t.mesh);
-        t.mesh.geometry.dispose();
-        tiles.delete(key);
-      } else if (t && t.dirty && !busy) {
-        t.mesh.geometry.dispose();
-        root.remove(t.mesh);
-        t.mesh = makeTile(ti, tj);
-        t.dirty = false;
-        busy = true;
-      } else if (!t && d < load && hasLand[key] && !busy) {
-        tiles.set(key, {mesh: makeTile(ti, tj), dirty: false});
-        busy = true;
-      }
+    lockSig = now; clearTerrainColors(); overviewKey = '';
+    for (const r of roots) {
+      const old = r.coarse; r.coarse = coarseMesh(r.patch);
+      r.coarse.visible = old.visible; group.remove(old);
+      old.traverse((m: any) => { if (m.geometry) m.geometry.dispose(); });
     }
+  }
+  const list = plan(load), byOwner = new Map<number, Patch[]>();
+  for (const p of list) (byOwner.get(p.owner) || byOwner.set(p.owner, []).get(p.owner)!).push(p);
+  const needed = new Set<string>(), pending: {p: Patch; key: string}[] = [];
+  for (const p of list) {
+    if (p.step === 10) continue;
+    const key = cacheKey(p, list); needed.add(key);
+    if (!cache.has(key)) pending.push({p, key});
+    else cache.get(key)!.used = tick;
+  }
+  const pos = G.me?.pos || {x: 0, z: 0};
+  pending.sort((a, b) => distance(a.p, pos.x, pos.z) - distance(b.p, pos.x, pos.z));
+  // One detail patch per game frame. Explicit/orthographic overview completes all patches.
+  for (const item of pending.slice(0, sync ? pending.length : 1))
+    cache.set(item.key, {mesh: mesh(item.p, (x, z) => spacingAt(list, x, z)), used: tick});
+  for (const r of roots) {
+    const desired = byOwner.get(r.patch.owner) || [r.patch],
+      keys = desired.map(p => cacheKey(p, list)),
+      coarse = desired.length === 1 && desired[0].step === 10,
+      ready = coarse || keys.every(key => cache.has(key));
+    if (!ready) { r.active.forEach(key => { const e = cache.get(key); if (e) e.used = tick; }); continue; }
+    r.active.forEach(key => { const e = cache.get(key); if (e) e.mesh.visible = false; });
+    r.coarse.visible = coarse;
+    r.active = coarse ? [] : keys;
+    r.active.forEach(key => { const e = cache.get(key)!; e.mesh.visible = true; e.used = tick; });
+  }
+  cullDistant();
+  // Retain only a small warm cache, never evict an active or desired patch.
+  const inactive = [...cache].filter(([key, e]) => !e.mesh.visible && !needed.has(key)).sort((a, b) => a[1].used - b[1].used);
+  while (cache.size > 120 && inactive.length) {
+    const [key, e] = inactive.shift()!; group.remove(e.mesh); e.mesh.geometry.dispose(); cache.delete(key);
+  }
 }
-
-/** 디버그·검증용: 로드된 근거리 타일 수와 그 삼각형 수 (원경 포함 전체는 renderer.info) */
+/** Existing load/unload signature retained; spatial hierarchy handles unloading as whole roots. */
+export function streamTerrain(load: number, _unload: number) {
+  const ortho = !!G.camera?.isOrthographicCamera;
+  if (ortho && !overview) { overview = {step: 5}; autoOverview = true; }
+  if (!ortho && autoOverview) { overview = null; overviewKey = ''; autoOverview = false; }
+  const sync = !!overview && overviewKey !== JSON.stringify(overview);
+  update(load, sync);
+  if (overview) overviewKey = JSON.stringify(overview);
+}
+/** Resident active LOD totals remain stable API; drawn totals additionally reject the current frustum. */
 export function terrainStats() {
-  let tris = 0;
-  tiles.forEach(t => (tris += t.mesh.geometry.attributes.position.count / 3));
-  let farTris = 0;
-  if (farMesh) farMesh.traverse((m: any) => { if (m.geometry) farTris += m.geometry.attributes.position.count / 3; });
-  return {tiles: tiles.size, tris, farTris};
+  let tris = 0, farTris = 0, tiles = 0, drawnTris = 0, drawnFarTris = 0;
+  let frustum: any = null;
+  if (G.camera) {
+    G.scene?.updateMatrixWorld(true);
+    G.camera.updateMatrixWorld(true);
+    const projection = new THREE.Matrix4().multiplyMatrices(G.camera.projectionMatrix, G.camera.matrixWorldInverse);
+    frustum = new THREE.Frustum().setFromProjectionMatrix(projection);
+  }
+  const lod: Record<string, number> = {};
+  group?.traverse((m: any) => {
+    if (!m.isMesh || !m.visible) return;
+    for (let p = m.parent; p && p !== group; p = p.parent) if (!p.visible) return;
+    const n = (m.geometry.index?.count || 0) / 3, step = m.userData.terrainStep;
+    lod[step] = (lod[step] || 0) + n;
+    if (step === 10) farTris += n; else { tris += n; tiles++; }
+    if (frustum && (!m.frustumCulled || frustum.intersectsObject(m))) {
+      if (step === 10) drawnFarTris += n; else drawnTris += n;
+    }
+  });
+  return {tiles, tris, farTris, drawnTris, drawnFarTris, lod, cached: cache.size};
 }

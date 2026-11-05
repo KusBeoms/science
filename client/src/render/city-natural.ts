@@ -16,10 +16,13 @@ type Rect=readonly[number,number,number,number];
 const hit=(a:Rect,b:Rect,m=0)=>a[0]<b[2]+m&&a[2]>b[0]-m&&a[1]<b[3]+m&&a[3]>b[1]-m;
 const roads=CITY_ROADS.map(r=>{const h=r.w/2+r.sidewalk+2;return r.x0===r.x1?[r.x0-h,Math.min(r.z0,r.z1),r.x0+h,Math.max(r.z0,r.z1)]:[Math.min(r.x0,r.x1),r.z0-h,Math.max(r.x0,r.x1),r.z0+h];}) as Rect[];
 const blockers:Rect[]=[...CITY_BUILDINGS.map(footprint),...CITY_LANDMARKS.map(l=>[l.x-(l.w||l.r*2)/2,l.z-(l.d||l.r*2)/2,l.x+(l.w||l.r*2)/2,l.z+(l.d||l.r*2)/2] as Rect),...CITY_PLAZAS.map(p=>p.rect),...RESERVED];
+const SCENERY_IN_CITY=0;
 const groups:{near:any;far:any;x:number;z:number}[]=[];
 export const naturalBuildings:CityBuilding[]=[];
 export function buildNaturalCity() {
   const root=new THREE.Group();root.name='city-neighborhoods';
+  // W7 CITY_DENSITY: 시가지 안 빈 블록은 이제 data/city-w7.ts 의 실제(입장 가능) 건물이 채운다. 배경 건물은 더 만들지 않는다.
+  if(SCENERY_IN_CITY===0){root.userData.count=0;return root;}
   const wall:PalName[]=['plaster','bone','brick','cloud','ash'],roof:PalName[]=['tileRed','slate','tileBlue'];
   const cells=new Map<string,CityBuilding[]>();
   for(let z=-315;z<=315;z+=26)for(let x=-315;x<=315;x+=26) {

@@ -1,8 +1,10 @@
 // 도시 보행 경로 그래프 (WORLD.md 5.2): 중앙 광장 · 사과 대로 · 상점가 (W1) + 암시장 · 우주항 · 정비소 · 과학관 · 주거 (W2). 군중(systems/crowd.ts)이 이 위를 걷는다.
 // 보도 중심선은 data/city.ts 의 도로·광장 데이터에서 구하고, 걷는 도중 건물과의 충돌은 solidAt 으로 막는다.
 // 좌표: x 동, z 남 (사과 대로는 정북 = −z).
-import {CITY_PLAZAS, CITY_ROADS} from './city.js';
+import {CITY_BUILDINGS, CITY_PLAZAS, CITY_ROADS, footprint} from './city.js';
 import {ROADS_W3} from './city-w3.js';
+import {RADIALS} from './roads-w7.js';
+import {buildingRoutes} from './citygraph-routes.js';
 
 /** 구역 id (ZONE_SHARE 의 인덱스) */
 export const Zone = {Plaza: 0, Avenue: 1, Shops: 2, Market: 3, Harbor: 4, Garage: 5, Science: 6, Resi: 7, NewTown: 8} as const;
@@ -23,6 +25,7 @@ export interface CityGraph {
 type Pt = readonly [number, number] | readonly [number, number, 1];
 
 function build(): CityGraph {
+  const routes = buildingRoutes(CITY_BUILDINGS.map(footprint));
   const xs: number[] = [],
     zs: number[] = [],
     zone: number[] = [],
@@ -46,8 +49,15 @@ function build(): CityGraph {
   };
   /** 점들을 차례로 잇는다 */
   const link = (z: number, pts: Pt[]) => {
-    const at = pts.map(p => node(p, z));
+    const safe = pts.map((p): Pt => { const at = routes.point([p[0], p[1]]); return p[2] ? [at[0], at[1], 1] : at; }),
+      path: Pt[] = [safe[0]];
+    for (let i = 1; i < safe.length; i++) {
+      const a = safe[i - 1], b = safe[i], detour = routes.route([a[0], a[1]], [b[0], b[1]]);
+      path.push(...detour.slice(1, -1), b);
+    }
+    const at = path.map(p => node(p, z));
     for (let i = 1; i < at.length; i++) {
+      if (at[i - 1] === at[i]) continue;
       nb[at[i - 1]].add(at[i]);
       nb[at[i]].add(at[i - 1]);
     }
@@ -81,11 +91,12 @@ function build(): CityGraph {
 
   buildW2(link);
   buildW3(link);
+  buildW7(link);
   // 막다른 노드(스타디움 쪽으로 잘린 보도 끝)는 이웃의 다음 이웃과도 이어 한 칸 건너뛰는 갈래를 만든다(통행은 같은 보도 위)
   nb.forEach((set, i) => {
     if (set.size >= 2) return;
     const n1 = [...set][0];
-    for (const n2 of nb[n1]) if (n2 !== i) { set.add(n2); nb[n2].add(i); break; }
+    for (const n2 of nb[n1]) if (n2 !== i) { link(zone[i], [[xs[i], zs[i]], [xs[n2], zs[n2]]]); break; }
   });
 
   return {
@@ -121,11 +132,11 @@ function buildW2(link: (z: number, pts: Pt[]) => void) {
   for (const x of [-36, 36]) link(H, [[x, 116], [x, 131, 1], [x, 146]]);
   // --- 정비소: 도로 서쪽 보도 + 시험로 양옆 보도 + 북쪽·동쪽 고리 ---
   const G = Zone.Garage;
-  link(G, [[R, -R], [55.5, -R], [55.5, -63.5], [55.5, -76.5], [55.5, -100, 1], [55.5, -145]]);
+  link(G, [[R, -R], [55.5, -R], [55.5, -63.5], [55.5, -76.5], [55.5, -100, 1], [55.5, -133]]);
   link(G, [[55.5, -63.5], [75, -63.5, 1], [95, -63.5], [115, -63.5, 1], [140, -63.5]]);
   link(G, [[55.5, -76.5], [78, -76.5], [110, -76.5, 1], [140, -76.5]]);
-  link(G, [[140, -63.5], [140, -76.5], [140, -110, 1], [140, -145]]);
-  link(G, [[55.5, -145], [100, -145, 1], [140, -145]]);
+  link(G, [[140, -63.5], [140, -76.5], [140, -110, 1], [140, -133]]);
+  link(G, [[55.5, -133], [100, -133, 1], [140, -133]]); // W7: 남쪽 고층 띠(z −136 이북)를 비켜 −145 → −133
   // --- 과학관: 도로 양옆 보도 + 돔 앞뜰 고리 ---
   const S = Zone.Science;
   link(S, [[R, R], [R, 55.5], [55.5, 55.5], [80, 55.5, 1], [110, 55.5], [144, 55.5]]);
@@ -208,3 +219,26 @@ function buildW3(link: (z: number, pts: Pt[]) => void) {
 }
 
 export const CITY_GRAPH = build();
+
+/** W7: 방사 대로 4갈래 양옆 보도 — 중앙 원형 광장 보도 고리 모서리 노드(±41,±41)에서 시작해 끝 광장 앞에서 두 보도가 만난다(막다른 곳 없음) */
+function buildW7(link: (z: number, pts: Pt[]) => void) {
+  const R = CITY_PLAZAS[0].rect[2] - 9;
+  for (const rd of RADIALS) {
+    const L = Math.hypot(rd.x1 - rd.x0, rd.z1 - rd.z0),
+      ux = (rd.x1 - rd.x0) / L,
+      uz = (rd.z1 - rd.z0) / L,
+      o = rd.w / 2 + rd.sw / 2,
+      at = (t: number, s: number): [number, number] => [Math.round((rd.x0 + ux * t - uz * o * s) * 10) / 10, Math.round((rd.z0 + uz * t + ux * o * s) * 10) / 10],
+      cx = Math.sign(rd.x0) * R,
+      cz = Math.sign(rd.z0) * R,
+      ts: number[] = [];
+    for (let t = 0; t < L - 5; t += 12) ts.push(t);
+    ts.push(L - 5);
+    for (const s of [-1, 1]) {
+      const lane = ts.map((t, k): Pt => (k % 2 ? [...at(t, s), 1] as Pt : at(t, s)));
+      link(Zone.Plaza, [[cx, cz], ...lane]);
+    }
+    const mid: [number, number] = [Math.round((rd.x0 + ux * (L - 6)) * 10) / 10, Math.round((rd.z0 + uz * (L - 6)) * 10) / 10];
+    link(Zone.Plaza, [at(L - 5, -1), mid, at(L - 5, 1)]);
+  }
+}

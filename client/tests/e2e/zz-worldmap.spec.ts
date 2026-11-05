@@ -2,6 +2,7 @@
 import {test, OUT} from './fixtures';
 import fs from 'node:fs';
 import path from 'node:path';
+import {mapReview} from './map-review';
 test.skip(!process.env.WORLDMAP, 'tool');
 test('worldmap top-down', async ({game}) => {
   test.setTimeout(300_000);
@@ -11,37 +12,15 @@ test('worldmap top-down', async ({game}) => {
   await game.open('?debug=1');
   await page.click('#mstart');
   await page.evaluate(() => { const g = (window as any).__game; g.unlockAll(); g.G.cycT = 100; g.G.night = 0; });
-  // 구역·야생지를 한 번씩 거쳐 모두 만든다
-  const spots: [number, number][] = [[0, 0], [0, 300], [74, 560], [100, 1100], [-200, 1000], [100, 1500], [400, 1500], [-200, 1280], ...[[-200, -1100], [200, -1100], [600, -1100], [1000, -1100], [1300, -400], [1300, 0], [1300, 400], [-1100, 400], [-1100, 0], [-1100, -400], [-1000, -1100], [-600, -1100]] as [number, number][]];
-  for (const [x, z] of spots) { await page.evaluate(([a, b]) => (window as any).__game.teleport(a, b), [x, z]); await page.waitForTimeout(2200); }
-  await page.evaluate(([x0, x1, z0, z1]) => {
-    const G = (window as any).__game.G, T = (window as any).THREE;
-    const st = document.createElement('style'); st.textContent = 'body > *:not(canvas){display:none!important}'; document.head.append(st);
-    const cam = new T.OrthographicCamera(x0, x1, z0, z1, 1, 4000); // 화면 위 = −z(북)
-    cam.up.set(0, 0, -1);
-    cam.position.set(0, 1500, 0);
-    cam.lookAt(0, 0, 0);
-    cam.left = x0; cam.right = x1; cam.top = -z0 * -1 && 0; // 아래에서 재설정
-    cam.left = x0; cam.right = x1;
-    // lookAt(−y) + up(−z): 화면 위 = −z, 화면 오른쪽 = +x
-    cam.top = (z1 - z0) / 2 - (z0 + z1) / 2 * 0; cam.bottom = -(z1 - z0) / 2;
-    cam.position.set((x0 + x1) / 2, 1500, (z0 + z1) / 2);
-    cam.lookAt((x0 + x1) / 2, 0, (z0 + z1) / 2);
-    cam.left = -(x1 - x0) / 2; cam.right = (x1 - x0) / 2;
-    cam.updateProjectionMatrix(); cam.updateMatrixWorld(true);
-    G.scene.fog.near = 1e6; G.scene.fog.far = 2e6;
-    const r = G.renderer, orig = r.render.bind(r);
-    r.render = (s: any) => orig(s, cam);
-    (window as any).__top = {patched: r.render.toString().slice(0, 40), same: r === (window as any).__game.G.renderer};
-  }, [X0, X1, Z0, Z1]);
-  await page.waitForTimeout(1500);
-  console.log(JSON.stringify(await page.evaluate(() => (window as any).__top)));
-  console.log(JSON.stringify(game.problems.pageerrors.slice(0, 3)), JSON.stringify(game.problems.console.slice(0, 3)));
-  await page.screenshot({path: `${OUT}/worldmap-top.png`});
+  const image = await mapReview(page, [X0,X1,Z0,Z1], Math.round((X1-X0)*PX), 5, true);
+  fs.writeFileSync(`${OUT}/worldmap-top.png`,Buffer.from(image.split(',')[1],'base64'));
   const data = await page.evaluate(async () => {
-    const P = await import('/js/data/places.js'), S = await import('/js/data/sectors.js');
-    return {places: P.PLACES.map((p: any) => ({id: p.id, icon: p.icon, name: p.name, x: p.x, z: p.z})), sectors: S.SECTORS.map((s: any, i: number) => ({n: i + 1, icon: s.icon, name: s.name, x: s.center.x, z: s.center.z}))};
+    const P = await import('/js/data/places.js'), S = await import('/js/data/sectors.js'), C = await import('/js/data/city.js');
+    const {G}=(window as any).__game;
+    return {places: P.PLACES.map((p: any) => ({id: p.id, icon: p.icon, name: p.name, x: p.x, z: p.z})), sectors: S.SECTORS.map((s: any, i: number) => ({n: i + 1, icon: s.icon, name: s.name, x: s.center.x, z: s.center.z})), art:{cityBuildings:C.CITY_BUILDINGS.length,fringeBuildings:G.scene.getObjectByName('city-fringe').userData.buildings,rural:G.scene.getObjectByName('rural-landscape').userData.counts}};
   });
+  fs.writeFileSync(`${OUT}/worldmap-stats.json`,JSON.stringify(data.art,null,2));
+  console.log('map art',JSON.stringify(data.art));
   const b64 = fs.readFileSync(`${OUT}/worldmap-top.png`).toString('base64');
   const html = posterHtml(b64, data, {X0, X1, Z0, Z1});
   const pg = await page.context().newPage();

@@ -6,6 +6,10 @@ import type {Purpose} from './interiors.js';
 import {BUILDINGS_W3, LANDMARKS_W3, ROADS_W3, PLAZAS_W3} from './city-w3.js';
 import {BUILDINGS_W4, ROADS_W4} from './city-w4.js';
 import {BUILDINGS_W6, PLAZAS_W6, ROADS_W6} from './city-w6.js';
+import {PLAZAS_W7, ROADS_W7} from './roads-w7.js';
+import {genW7} from './city-w7.js';
+import {RESERVED} from './city-w3.js';
+import {CITY_HILL} from './world-map.js';
 
 /** [x0, z0, x1, z1] */
 export type CityRect = readonly [number, number, number, number];
@@ -37,6 +41,7 @@ export const CITY_ROADS: readonly CityRoad[] = [
   ...ROADS_W3,
   ...ROADS_W4,
   ...ROADS_W6,
+  ...ROADS_W7, // W7 CITY_DENSITY: 새 골목
 ];
 
 /** 광장·마당(보행 전용 포장 사각형). 중앙 광장은 한가운데 기지 부지(±22)를 품는다 */
@@ -53,6 +58,7 @@ export const CITY_PLAZAS: readonly CityPlaza[] = [
   {id: 'pad-e', rect: [132, -116, 148, -84]},
   ...PLAZAS_W3,
   ...PLAZAS_W6,
+  ...PLAZAS_W7,
 ];
 /** 우주항 발착 패드 4개 (바닥에 원 무늬로 그린다, 반지름 5) */
 export const CITY_PADS: readonly {x: number; z: number}[] = [-30, -10, 10, 30].map(x => ({x, z: 128}));
@@ -132,7 +138,7 @@ const AV_SLOT = 98 / 9,
   AV_DEPTH = [14, 16, 13, 15, 16, 14, 15, 16, 13],
   AV_SIGN: SignIcon[] = ['gem', 'planet', 'cube', 'cone', 'cross'];
 export const CITY_SLOT_CLOCK = 5;
-export const CITY_BUILDINGS: readonly CityBuilding[] = [
+const BASE_BUILDINGS: readonly CityBuilding[] = [
   ...[-1, 1].flatMap(sgn =>
     AV_STYLE.flatMap((style, k): CityBuilding[] => {
       const west = sgn < 0,
@@ -216,3 +222,9 @@ export const CITY_LANDMARKS: readonly CityLandmark[] = [
   {id: 'L7', kind: 'castle', x: -105, z: -105, h: 30, r: 15, w: 28, d: 28, y: 12},
   ...LANDMARKS_W3,
 ];
+
+/** W7 CITY_DENSITY: 기존 건물·도로·랜드마크·예약 구역을 피해 대로변을 채운 건물과 남은 빈 땅(소공원 자리) — data/city-w7.ts. 마지막에 합쳐 앞의 모든 데이터를 장애물로 본다 */
+const W7 = genW7({roads: CITY_ROADS, plazas: CITY_PLAZAS, buildings: BASE_BUILDINGS, landmarks: CITY_LANDMARKS, reserved: RESERVED, hill: CITY_HILL}, ROADS_W7);
+export const CITY_BUILDINGS: readonly CityBuilding[] = [...BASE_BUILDINGS, ...W7.buildings];
+/** W7: 건물로 못 채운 14×14 이상 빈 땅 (render/city/w7-parks.ts 가 소공원·광장으로 꾸민다) */
+export const CITY_PARKS: readonly CityRect[] = W7.parks;

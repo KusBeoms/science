@@ -60,7 +60,8 @@ export const CITY_OUTLINE: Pt[] = pairs(CITY_RAW);
 export const WILD_OUTLINE: Pt[] = pairs(WILD_RAW);
 
 /** 월드 배치: 도시는 사각형(±335) 이 윤곽 안에 여유 60u 이상으로 들어가도록, 야생지는 호수·산·시골이 들어가도록 (docs/work-logs/W6_CONTINENT.md) */
-export const CITY_PLACE: Placement = {scale: 1620, x: 160, z: -110};
+/** W7: 산악(북쪽 봉우리·서쪽 능선·동쪽 반도)이 들어갈 공간을 위해 1620 → 1800. 시가지 사각형 모서리 여유 ≥ 80u, 남안은 x=74 에서 z=404 로 유지(다리 호환) */
+export const CITY_PLACE: Placement = {scale: 1800, x: 160, z: -167};
 export const WILD_PLACE: Placement = {scale: 1300, x: 110, z: 1345};
 /** 야생지 내용(호수·산·교도소…)을 옛 좌표에서 남쪽으로 옮긴 거리 — 데이터 좌표가 `옛 z + WILD_DZ` 인 이유 */
 export const WILD_DZ = 200;

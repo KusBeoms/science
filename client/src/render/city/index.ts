@@ -10,9 +10,12 @@ import {buildWaterfront} from '../city-waterfront.js';
 import {buildIslandLandscape} from '../island-landscape.js';
 import {buildNaturalCity, updateNaturalCity} from '../city-natural.js';
 import {updateLandscapeLOD} from '../landscape-batch.js';
+import {updateCityFringe} from '../city-fringe.js';
+import {updateWorldVisibility} from '../world-visibility.js';
 import {facadeDetails} from './facade-art.js';
 import {makeBuilding} from './building.js';
 import {makeHighrise} from './highrise.js';
+import {makeArena, makeHouse, makeLite} from './residential.js';
 import {barrierGeo, benchGeo, lampGeo, pineGeo, roundTreeGeo} from './props.js';
 import {clockTower, marketArch, orrery} from './landmarks.js';
 import {castle, controlTower, hangar, observatory} from './landmarks2.js';
@@ -21,6 +24,8 @@ import {STADIUM} from '../../data/soccer.js';
 import {tradeLine} from './tradeline.js';
 import {groundGeometry, planProps} from './layout.js';
 import {buildFun} from './fun.js';
+import {buildW7} from './w7.js';
+import {cityDetail, distantBuilding, detailInstances, distantTree, distantLamp, distantBench, updateCityDetail} from './detail-lod.js';
 import {buildDowntown} from './downtown.js';
 import {buildOverpasses} from '../overpass.js';
 import {buildCrosswalks} from '../crosswalks.js';
@@ -35,16 +40,21 @@ let spinner: any = null,
 /** 건물 한 무리를 solid / lit 메시 2개로 병합해 grp 에 붙인다 */
 function addBuildings(grp: any, list: readonly CityBuilding[]) {
   const solid: Placed[] = [],
-    lit: Placed[] = [];
+    lit: Placed[] = [], far: Placed[] = [], persistent: Placed[] = [];
   for (const b of list) {
-    const built = facadeDetails(b, b.hr ? makeHighrise(b) : makeBuilding(b)),
+    const built = facadeDetails(b, b.hr ? makeHighrise(b) : b.district === 'w7-house' ? makeHouse(b) : b.district === 'w7-arena' ? makeArena(b) : b.district.startsWith('w7-') ? makeLite(b) : makeBuilding(b)),
       at = {x: b.x, z: b.z, ry: FACE_RY[b.face]};
-    solid.push({g: built.solid, ...at});
+    if (b.hr || b.district === 'w7-arena') persistent.push({g: built.solid, ...at});
+    else { solid.push({g: built.solid, ...at}); far.push({g: distantBuilding(b), ...at}); }
     lit.push({g: built.lit, ...at});
     const [x0, z0, x1, z1] = footprint(b);
     addSolid(x0, z0, x1, z1);
   }
-  addMesh(grp, mergePlaced(solid), false);
+  if (solid.length) {
+    const nearMesh = addMesh(grp, mergePlaced(solid), false), farMesh = addMesh(grp, mergePlaced(far), false);
+    cityDetail(nearMesh, farMesh, list.reduce((s,b)=>s+b.x,0)/list.length, list.reduce((s,b)=>s+b.z,0)/list.length);
+  }
+  if (persistent.length) addMesh(grp, mergePlaced(persistent), false);
   addMesh(grp, mergePlaced(lit), true);
 }
 function addMesh(grp: any, geo: any, night: boolean, x = 0, z = 0) {
@@ -70,7 +80,7 @@ export function buildCity(): any {
   ground.position.y = -0.05;
   grp.add(ground);
 
-  const where = (b: CityBuilding) => `${Math.floor(b.x / 110)},${Math.floor(b.z / 110)}`;
+  const where = (b: CityBuilding) => `${Math.floor(b.x / 70)},${Math.floor(b.z / 70)}`;
   const keys = [...new Set(CITY_BUILDINGS.map(where))];
   for (const key of keys) addBuildings(grp, CITY_BUILDINGS.filter(b => where(b) === key));
 
@@ -123,6 +133,7 @@ export function buildCity(): any {
   }
   grp.add(buildIslandLandscape(), buildNaturalCity(), buildWaterfront(), buildCityGardens());
   grp.add(buildDowntown()); // W6 DOWNTOWN: 단지 정문·놀이터·주차장·금융 지구 화단
+  grp.add(buildW7(m => { m.visible = false; nightMeshes.push(m); })); // W7 CITY_DENSITY: 가로수·시설·원형 광장 소품
   grp.add(buildFun()); // W5 FUN: 구역별 즐길 거리(공원·테마파크·해변·항구·문화·레저·놀이터)
   // 거래의 선: 도시 둘레 금빛 기둥 띠 (바닥 인레이는 layout.ts)
   addMesh(grp, tradeLine(), false);
@@ -132,16 +143,16 @@ export function buildCity(): any {
   // 소품(인스턴싱)
   const plan = planProps(),
     lamp = lampGeo();
-  grp.add(instancedChunks(keep(lamp.pole), lowMat(), plan.lamps));
+  grp.add(detailInstances(keep(lamp.pole), distantLamp(), plan.lamps, 'city-lamps'));
   const bulbs = instancedChunks(keep(lamp.bulb), glowMat(), plan.lamps);
   bulbs.children.forEach((m: any) => {
     m.visible = false;
     nightMeshes.push(m);
   });
   grp.add(bulbs);
-  grp.add(instancedChunks(roundTreeGeo(), lowMat(), plan.trees));
-  grp.add(instancedChunks(pineGeo(), lowMat(), plan.pines));
-  grp.add(instancedChunks(benchGeo(), lowMat(), plan.benches));
+  grp.add(detailInstances(roundTreeGeo(), distantTree(), plan.trees, 'city-trees'));
+  grp.add(detailInstances(pineGeo(), distantTree(true), plan.pines, 'city-pines'));
+  grp.add(detailInstances(benchGeo(), distantBench(), plan.benches, 'city-benches'));
   return grp;
 }
 
@@ -154,6 +165,9 @@ export const citySystem: GameSystem = {
   update(_dt, raw) {
     updateLandscapeLOD();
     updateNaturalCity();
+    updateCityDetail();
+    updateCityFringe();
+    updateWorldVisibility();
     const on = G.night > 0;
     if (nightMeshes.length && nightMeshes[0].visible !== on) setCityNight(on);
     if (spinner) spinner.rotation.y += raw * 0.35;

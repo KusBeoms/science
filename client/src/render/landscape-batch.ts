@@ -17,7 +17,7 @@ interface ForestFar {
   state: string;
 }
 const nearTiles: ForestNear[] = [], farTiles: ForestFar[] = [];
-const NEAR_CELL = 100, FAR_CELL = 300, NEAR_DISTANCE = 220, FAR_DISTANCE = 620;
+const NEAR_CELL = 100, FAR_CELL = 300, NEAR_DISTANCE = 210, FAR_DISTANCE = 620;
 
 export function landscapeBatch(parts: Placed[], name: string, cell = 100) {
   const group = new THREE.Group();

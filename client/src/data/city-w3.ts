@@ -5,6 +5,7 @@ import {mulberry32} from '../render/lowpoly/rng.js';
 import type {CityBuilding, CityLandmark, CityPlaza, CityRoad, Facing, SignIcon} from './city.js';
 import type {Purpose} from './interiors.js';
 import {ROADS_W4_RESERVED} from './roads-w4.js';
+import {W7_RESERVED} from './roads-w7.js';
 
 const road = (id: string, x0: number, z0: number, x1: number, z1: number, w: number, car = true): CityRoad => ({id, x0, z0, x1, z1, w, sidewalk: 3, car});
 export const ROADS_W3: readonly CityRoad[] = [
@@ -54,6 +55,7 @@ export const RESERVED: readonly (readonly [number, number, number, number])[] = 
   [-190, 126, -48, 190], // 아파트 단지 B
   [-190, 80, -144, 114], // 빌라촌 서
   [38, 152, 190, 190], // 주상복합·빌라촌 동
+  ...W7_RESERVED, // W7 CITY_DENSITY 특색 시설 구획 (data/roads-w7.ts W7_FEATURES)
 ];
 
 const wc: PalName[] = ['plaster', 'bone', 'brick', 'ash', 'cloud', 'clay', 'stone', 'steel'],

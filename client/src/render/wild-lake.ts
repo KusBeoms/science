@@ -3,32 +3,17 @@
 import {addDeck} from '../core/deck.js';
 import {groundH} from '../core/terrain.js';
 import {LAKES} from '../data/wild.js';
-import {ROAD_LINES, ROAD_W, type RoadPt} from '../data/wild-road.js';
-import {lakeT} from '../core/lake-shape.js';
+import {ROAD_LINES, roadNear, type RoadPt} from '../data/wild-road.js';
+import {lakeT, shorePoint} from '../core/lake-shape.js';
+import {terrainRibbon, type PathPoint} from './landscape-surface.js';
+import {landscapeBatch, landscapeForest} from './landscape-batch.js';
+import {worldPart} from './rural-fields.js';
+import {walkway} from './rural-models.js';
+import {benchGeo, roundTreeGeo} from './city/props.js';
 import {PAL, NEUTRAL, ACCENT, mix, rgb} from './lowpoly/palette.js';
-import {box, cone, ico, type Geo} from './lowpoly/prim.js';
+import {box, cone, cyl, ico, type Geo} from './lowpoly/prim.js';
 import {hash2} from './lowpoly/rng.js';
-import {lowMat, mergePlaced, type Placed} from './lowpoly/merge.js';
-
-/** 폴리라인을 Catmull-Rom 으로 step 간격 재샘플 */
-function resample(pts: RoadPt[], closed: boolean, step: number): RoadPt[] {
-  const n = pts.length,
-    at = (i: number) => (closed ? pts[((i % n) + n) % n] : pts[Math.min(n - 1, Math.max(0, i))]),
-    out: RoadPt[] = [],
-    m = closed ? n : n - 1;
-  for (let i = 0; i < m; i++) {
-    const p0 = at(i - 1), p1 = at(i), p2 = at(i + 1), p3 = at(i + 2),
-      len = Math.hypot(p2.x - p1.x, p2.z - p1.z),
-      k = Math.max(1, Math.round(len / step));
-    for (let s = 0; s < k; s++) {
-      const t = s / k, t2 = t * t, t3 = t2 * t,
-        f = (a: number, b: number, c: number, d: number) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
-      out.push({x: f(p0.x, p1.x, p2.x, p3.x), z: f(p0.z, p1.z, p2.z, p3.z), y: p1.y + (p2.y - p1.y) * t});
-    }
-  }
-  if (!closed) out.push(pts[n - 1]);
-  return out;
-}
+import {lowMat, mergePlaced, type Inst, type Placed} from './lowpoly/merge.js';
 
 /** 길 한 줄의 띠들을 pos/col 배열에 쌓는다. off = 중심선에서 옆으로, hw = 반폭 */
 function ribbon(P: RoadPt[], closed: boolean, off: number, hw: number, dy: number, color: number, pos: number[], col: number[], dash = 0) {
@@ -55,11 +40,11 @@ function ribbon(P: RoadPt[], closed: boolean, off: number, hw: number, dy: numbe
 function roadMesh(): any {
   const pos: number[] = [], col: number[] = [];
   for (const L of ROAD_LINES) {
-    const P = resample(L.pts, L.closed, 3);
-    ribbon(P, L.closed, 0, ROAD_W / 2, 0.1, PAL.asphalt, pos, col);
-    ribbon(P, L.closed, -(ROAD_W / 2 - 0.9), 0.14, 0.13, PAL.white, pos, col);
-    ribbon(P, L.closed, ROAD_W / 2 - 0.9, 0.14, 0.13, PAL.white, pos, col);
-    ribbon(P, L.closed, 0, 0.12, 0.13, PAL.yellow, pos, col, 3);
+    const P = L.pts, W = L.w;
+    ribbon(P, L.closed, 0, W / 2, 0.1, L.id === 'farm' ? mix(PAL.clay, PAL.bone, 0.35) : PAL.asphalt, pos, col);
+    ribbon(P, L.closed, -(W / 2 - 0.9), 0.14, 0.13, PAL.white, pos, col);
+    ribbon(P, L.closed, W / 2 - 0.9, 0.14, 0.13, PAL.white, pos, col);
+    if (W > 8) ribbon(P, L.closed, 0, 0.12, 0.13, PAL.yellow, pos, col, 3);
   }
   const g = new THREE.BufferGeometry(),
     nor = new Float32Array(pos.length);
@@ -89,6 +74,9 @@ export function buildLakeside(): any {
     if (k % 2 === 0) for (const sx of [-1.3, 1.3]) S.push({g: box(0.4, 3.2, 0.4, NEUTRAL.coal), x: dx + sx, y: L.level - 2.4, z});
   }
   addDeck({id: 'rural-grand-dock', ax: dx, az: zs - 7.8, bx: dx, bz: zs + 24.6, hw: 1.5, h0: L.level + 0.9, h1: L.level + 0.9});
+  const landZ = zs - 21, landY = groundH(dx, landZ) + 0.15, dockZ = zs - 7.8, dockY = L.level + 0.9;
+  S.push({g: walkway(3, dockZ - landZ, dockY - landY), x: dx, y: landY - 0.22, z: (landZ + dockZ) / 2});
+  addDeck({id: 'rural-grand-gangway', ax: dx, az: landZ, bx: dx, bz: dockZ, hw: 1.5, h0: landY, h1: dockY});
   S.push({g: mergeBoat(), x: dx + 7, y: L.level + 0.05, z: zs + 22, ry: 0.5});
   // --- 호숫가 갈대·바위 ---
   for (const lk of LAKES)
@@ -103,7 +91,28 @@ export function buildLakeside(): any {
       if (k % 4 === 0) S.push({g: ico(0.7 + hash2(k, 5, 2) * 1.1, 0, mix(NEUTRAL.stone, PAL.clay, 0.3), 0, 0.2, 0, 0, 0.7), x, y, z, ry: k});
       else S.push({g: reed(), x, y, z, ry: k * 2.1});
     }
-  grp.add(new THREE.Mesh(mergePlaced(S), lowMat()));
+  // --- 벚꽃 둑길: 순환로와 물가 사이 산책로(+ 벤치)와 벚나무 ---
+  const cherry: Inst[] = [], pk: Placed[] = [];
+  let walk: PathPoint[] = [];
+  const flush = () => {
+    if (walk.length > 1) pk.push(worldPart(terrainRibbon(walk, 2.4, mix(PAL.bone, PAL.clay, 0.15), 0.18), walk[0][0], walk[0][1]));
+    walk = [];
+  };
+  for (let i = 0; i <= 120; i++) {
+    const a = (i / 120) * Math.PI * 2, [wx, wz] = shorePoint(L, a, 8);
+    if (groundH(wx, wz) > L.level + 0.4) walk.push([wx, wz]);
+    else flush();
+  }
+  flush();
+  for (let i = 0; i < 120; i++) {
+    const a = (i / 120) * Math.PI * 2, [x, z] = shorePoint(L, a + 0.02, 13), y = groundH(x, z);
+    if (!Number.isFinite(y) || y < L.level + 0.4 || lakeT(L, x, z) < 1.04 || roadNear(x, z).d < roadNear(x, z).hw + 3) continue;
+    cherry.push({x, y, z, s: 1.25 + hash2(i, 0, 333) * 0.5, ry: hash2(i, 0, 334) * 6});
+    if (i % 17 === 0) S.push({g: benchGeo(), x: x + Math.cos(a) * -3, y: groundH(x, z), z: z - Math.sin(a) * 3, ry: -a - Math.PI / 2, s: 1.3});
+  }
+  const cherryGeo = mergePlaced([{g: cyl(0.25, 2.6, PAL.wood, 0, 0, 0, 0, 5)}, {g: ico(2, 0, mix(PAL.pink, PAL.white, 0.4), 0, 3.6, 0)}, {g: ico(1.2, 0, PAL.pink, 1, 3.6, 0.4)}]);
+  grp.add(new THREE.Mesh(mergePlaced(S), lowMat()), landscapeBatch(pk, 'lake-promenade', 400), landscapeForest(cherryGeo, cone(2.3, 4.5, PAL.pink, 0, 0, 0, 0, 5), cherry, 'lake-cherries'));
+  void roundTreeGeo;
   return grp;
 }
 function reed(): Geo {

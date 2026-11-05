@@ -147,3 +147,20 @@ test('screenshots of the lakes (day, dusk, close shore, sea beach)', async ({gam
   await shot(game, 'pond', -60, 960, Math.PI, 0.4, 50, 0);
   expect(unexpected(game.problems).pageerrors).toEqual([]);
 });
+
+test('lake surface does not create a detached freshwater patch outside the rural coast',async({game})=>{
+  await game.open('?debug=1');
+  const r=await game.page.evaluate(async()=>{
+    const {G}=(window as any).__game,O=await import('/js/data/outline.js');
+    const x=-190,z=1750,geo=G.scene.getObjectByName('lake:grand').geometry,a=geo.attributes.position.array,index=geo.index.array;
+    const cross=(ax:number,az:number,bx:number,bz:number)=>ax*bz-az*bx;
+    let covered=false;
+    for(let k=0;k<index.length;k+=3) {
+      const ids=[index[k]*3,index[k+1]*3,index[k+2]*3],p=ids.map(i=>[a[i]-x,a[i+2]-z]);
+      const s=[cross(p[0][0],p[0][1],p[1][0],p[1][1]),cross(p[1][0],p[1][1],p[2][0],p[2][1]),cross(p[2][0],p[2][1],p[0][0],p[0][1])];
+      if(s.every(v=>v>=0)||s.every(v=>v<=0)){covered=true;break;}
+    }
+    return{land:O.WILD_POLY.inside(x,z),covered};
+  });
+  expect(r.land).toBe(false);expect(r.covered).toBe(false);
+});
