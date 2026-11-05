@@ -83,7 +83,7 @@ export function surfaceAt(cx: number, cz: number): number {
   if (inRect(cx, cz, PARK_R)) {
     if (Math.hypot(cx - POND.x, cz - POND.z) < POND.r) return PAL.cyan;
     if (Math.hypot(cx - POND.x, cz - POND.z) < POND.r + 2) return PAL.bone;
-    return hash2(Math.floor(cx / 6), Math.floor(cz / 6), 11) < 0.5 ? LAWN_A : mix(PAL.green, PAL.lime, 0.4);
+    return LAWN_A;
   }
   if (inRect(cx, cz, THEME_R)) return (Math.floor(cx / 6) + Math.floor(cz / 6)) % 2 ? PAVE_B : mix(PAVE_A, PAL.pink, 0.2);
   if (CITY_SIDEWALKS.some(s => inRect(cx, cz, s))) return PAVE_A;
@@ -98,7 +98,7 @@ export function surfaceAt(cx: number, cz: number): number {
   }
   if (LM_RECTS.some(r => inRect(cx, cz, r, 1.5))) return PAVE_A;
   if (nearFoot(cx, cz)) return PAVE_A;
-  return hash2(Math.floor(cx / 8), Math.floor(cz / 8), 3) < 0.5 ? LAWN_A : LAWN_B;
+  return LAWN_A; // 잔디는 연속 면으로 병합하고 변화는 배치된 나무·정원으로 만든다.
 }
 
 /** 지면 평면: 같은 색 칸을 가로로 이은 뒤 위아래로 겹쳐 합친 사각형들(위로 향한 면) */

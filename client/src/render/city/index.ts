@@ -5,6 +5,11 @@ import {addSolid} from '../../core/terrain.js';
 import {CITY_BUILDINGS, CITY_LANDMARKS, footprint, type CityBuilding, type Facing} from '../../data/city.js';
 import {glowMat, instanced, instancedChunks, keep, lowMat, mergePlaced, type Placed} from '../lowpoly/merge.js';
 import type {GameSystem} from '../../core/types.js';
+import {buildCityGardens} from '../city-gardens.js';
+import {buildWaterfront} from '../city-waterfront.js';
+import {buildIslandLandscape} from '../island-landscape.js';
+import {buildNaturalCity, updateNaturalCity} from '../city-natural.js';
+import {updateLandscapeLOD} from '../landscape-batch.js';
 import {facadeDetails} from './facade-art.js';
 import {makeBuilding} from './building.js';
 import {barrierGeo, benchGeo, lampGeo, pineGeo, roundTreeGeo} from './props.js';
@@ -109,6 +114,7 @@ export function buildCity(): any {
     addMesh(grp, lm.lit, true, l.x, l.z);
     addSolid(l.x - l.w! / 2, l.z - l.d! / 2, l.x + l.w! / 2, l.z + l.d! / 2);
   }
+  grp.add(buildIslandLandscape(), buildNaturalCity(), buildWaterfront(), buildCityGardens());
   // 거래의 선: 도시 둘레 금빛 기둥 띠 (바닥 인레이는 layout.ts)
   addMesh(grp, tradeLine(), false);
 
@@ -135,6 +141,8 @@ export function setCityNight(on: boolean) {
 export const citySystem: GameSystem = {
   id: 'city',
   update(_dt, raw) {
+    updateLandscapeLOD();
+    updateNaturalCity();
     const on = G.night > 0;
     if (nightMeshes.length && nightMeshes[0].visible !== on) setCityNight(on);
     if (spinner) spinner.rotation.y += raw * 0.35;

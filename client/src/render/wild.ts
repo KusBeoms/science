@@ -1,8 +1,9 @@
 // 남부 야생지 장식: 숲·농장(헛간·사일로·풍차·울타리·건초)·사막 선인장/바위·호수 선착장·산길 이정표와 정상 깃발·오두막, 그리고 교도소 단지.
 // 전부 병합/인스턴싱. 충돌체는 건물·교도소 벽만 등록한다(나무는 지나갈 수 있다).
+import {buildRuralLandscape, ruralFieldAt} from './rural-landscape.js';
 import {uniform} from './uniform.js';
 import {G} from '../core/runtime.js';
-import {addSolid, groundH} from '../core/terrain.js';
+import {addSolid, groundH, solidAt} from '../core/terrain.js';
 import {COUNTRY, DESERT, JAIL, LAKES, MOUNTAIN, SUMMIT, WILD_RECT} from '../data/wild.js';
 import {SEA_Y} from '../data/world-map.js';
 import {ACCENT, NEUTRAL, PAL, mix} from './lowpoly/palette.js';
@@ -111,6 +112,7 @@ export function buildWild(): any {
     else put(mergePlaced(parts([ico(1.2 + rnd() * 1.6, 0, mix(PAL.stone, PAL.clay, 0.4), 0, 1, 0)])), x, z, rnd() * 6);
   }
   grp.add(new THREE.Mesh(mergePlaced(solids), lowMat()));
+  const rural = buildRuralLandscape();
   // --- 숲: 평야·시골·산기슭에 나무 ---
   const pines: Inst[] = [],
     trees: Inst[] = [];
@@ -119,7 +121,7 @@ export function buildWild(): any {
       const x = gx + (hash2(gx, gz, 5) - 0.5) * 9,
         z = gz + (hash2(gx, gz, 6) - 0.5) * 9,
         y = groundH(x, z);
-      if (y < SEA_Y + 1.2 || y > 55) continue;
+      if (y < SEA_Y + 1.2 || y > 55 || ruralFieldAt(x, z, 3) || solidAt(x, z, 2)) continue;
       if (x > DESERT.x0 && z > DESERT.z0) continue; // 사막엔 나무 없음
       const inFarm = x < COUNTRY[2] && z > COUNTRY[1] && z < COUNTRY[3];
       const m = Math.hypot(x - M.x, z - M.z) / M.r;
@@ -134,6 +136,7 @@ export function buildWild(): any {
   grp.add(w);
   wheel = w;
   buildPrison(grp);
+  grp.add(rural);
   return grp;
 }
 

@@ -60,8 +60,7 @@ function wildColor(cx: number, cz: number, y: number, slope: number): number {
   if (y < SEA_Y - 1.5) return mix(PAL.slate, PAL.teal, 0.4);
   if (y < SEA_Y + 1) return SANDY;
   const desert = smooth(DESERT.x0 - 30, DESERT.x0 + 30, cx) * smooth(DESERT.z0 - 30, DESERT.z0 + 30, cz);
-  const field = cx < COUNTRY[2] && cz > COUNTRY[1] && cz < COUNTRY[3] ? (Math.floor(cx / 36) + Math.floor(cz / 28) * 3 + 99) % 4 : -1;
-  let c = field >= 0 ? [WHEAT, MEADOW, TILLED, GRASS][field] : MEADOW;
+  let c = MEADOW; // 농지는 rural-landscape의 실제 패치로 배치하고 바탕은 연속 초지로 둔다.
   if (hash2(Math.floor(cx / 7), Math.floor(cz / 7), 9) < 0.25) c = mix(c, PAL.green, 0.25);
   c = mix(c, hash2(Math.floor(cx / 5), Math.floor(cz / 5), 3) < 0.5 ? SANDY : DUNE, desert);
   if (y > 6) c = mix(c, GRASS, smooth(6, 26, y));
@@ -180,20 +179,28 @@ const sig = () => SECTORS.map((_, i) => (locked(i) ? 1 : 0)).join('');
 function makeTile(ti: number, tj: number) {
   const g = buildGeo(ti * TCELLS, tj * TCELLS, Math.min(NX - 1, (ti + 1) * TCELLS), Math.min(NZ - 1, (tj + 1) * TCELLS), 1, false),
     mesh = new THREE.Mesh(g, lowMat());
+  mesh.name = `terrain-near-${ti},${tj}`;
   mesh.position.y = -LOWER;
   root.add(mesh);
   return mesh;
 }
 function makeFar() {
-  const g = buildGeo(0, 0, NX - 1, NZ - 1, 2, true);
   if (farMesh) {
-    farMesh.geometry.dispose();
-    farMesh.geometry = g;
-  } else {
-    farMesh = new THREE.Mesh(g, farMat);
-    farMesh.position.y = -LOWER - FAR_DROP;
-    root.add(farMesh);
+    farMesh.traverse((m: any) => { if (m.geometry) m.geometry.dispose(); });
+    root.remove(farMesh);
   }
+  // 세계 전체를 한 구로 컬링하면 화면 밖 섬까지 늘 그린다. 320u 청크로 나눠 시야별로 거절한다.
+  farMesh = new THREE.Group();
+  farMesh.name = 'terrain-distant';
+  for (let j = 0; j < NZ - 1; j += 64) for (let i = 0; i < NX - 1; i += 64) {
+    const g = buildGeo(i, j, Math.min(NX - 1, i + 64), Math.min(NZ - 1, j + 64), 4, true);
+    if (!g.attributes.position.count) { g.dispose(); continue; }
+    const mesh = new THREE.Mesh(g, farMat);
+    mesh.name = `terrain-distant-${i},${j}`;
+    mesh.position.y = -LOWER - FAR_DROP;
+    farMesh.add(mesh);
+  }
+  root.add(farMesh);
 }
 
 /** 지형 준비: 높이 굽기 → 타일 목록 → 원경 메시. initWorld 에서 한 번 */
@@ -210,6 +217,7 @@ export function initTerrain() {
             break;
           }
   root = new THREE.Group();
+  root.name = 'terrain';
   G.scene.add(root);
   farMat = new THREE.MeshLambertMaterial({vertexColors: true, polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 2});
   farMat.userData.keep = true;
@@ -256,5 +264,7 @@ export function streamTerrain(load: number, unload: number) {
 export function terrainStats() {
   let tris = 0;
   tiles.forEach(t => (tris += t.mesh.geometry.attributes.position.count / 3));
-  return {tiles: tiles.size, tris, farTris: farMesh ? farMesh.geometry.attributes.position.count / 3 : 0};
+  let farTris = 0;
+  if (farMesh) farMesh.traverse((m: any) => { if (m.geometry) farTris += m.geometry.attributes.position.count / 3; });
+  return {tiles: tiles.size, tris, farTris};
 }
