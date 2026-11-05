@@ -152,7 +152,7 @@ body.cine-nohud :is(#top, #stamBox, #mission, #tag, #carryTag, #lines, #cross, #
   gap: 6px;
   pointer-events: none;
 }
-.it {
+.itk {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -164,7 +164,7 @@ body.cine-nohud :is(#top, #stamBox, #mission, #tag, #carryTag, #lines, #cross, #
   border-radius: 24px;
   animation: pop 0.3s ease-out;
 }
-.it .cnt {
+.itk .cnt {
   font-size: 16px;
   color: var(--fg);
 }
@@ -276,7 +276,7 @@ body.cine-nohud :is(#top, #stamBox, #mission, #tag, #carryTag, #lines, #cross, #
   .bub,
   .bub.pop-shake,
   .bub.pop-pulse,
-  .it {
+  .itk {
     animation: fadein 0.15s;
   }
   .fx.rain {
@@ -292,9 +292,69 @@ body.cine-nohud :is(#top, #stamBox, #mission, #tag, #carryTag, #lines, #cross, #
 body.rm .bub,
 body.rm .bub.pop-shake,
 body.rm .bub.pop-pulse,
-body.rm .it {
+body.rm .itk {
   animation: fadein 0.15s;
 }
 body.rm .fx.rain {
   animation: none;
+}
+/* 시작 연출: 지구 → 로켓 → 달 (글 없음) */
+#moonintro {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: radial-gradient(ellipse at 70% 30%, #1a2350 0%, #070a1c 70%);
+  overflow: hidden;
+  cursor: pointer;
+}
+#moonintro i {
+  position: absolute;
+  font-style: normal;
+  line-height: 1;
+}
+#moonintro .mi-earth {
+  left: 6%;
+  bottom: 8%;
+  font-size: 110px;
+  animation: mi-fade 9s ease-in forwards;
+}
+#moonintro .mi-moon {
+  right: 10%;
+  top: 14%;
+  font-size: 40px;
+  animation: mi-moon 9s ease-in forwards;
+}
+#moonintro .mi-rocket {
+  left: 14%;
+  bottom: 20%;
+  font-size: 56px;
+  animation: mi-fly 9s ease-in-out forwards;
+}
+#moonintro .mi-dust {
+  right: 28%;
+  top: 40%;
+  font-size: 40px;
+  opacity: 0;
+  animation: mi-puff 9s ease-out forwards;
+}
+@keyframes mi-fly {
+  0% { transform: translate(0, 0) rotate(40deg) scale(1); }
+  70% { transform: translate(52vw, -38vh) rotate(40deg) scale(0.7); }
+  100% { transform: translate(58vw, -34vh) rotate(180deg) scale(0.5); }
+}
+@keyframes mi-moon {
+  0% { transform: scale(1); }
+  100% { transform: scale(7) translate(-6vw, 4vh); }
+}
+@keyframes mi-fade {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.3); opacity: 0.2; }
+}
+@keyframes mi-puff {
+  0%, 85% { opacity: 0; transform: scale(0.5); }
+  95% { opacity: 1; transform: scale(2); }
+  100% { opacity: 0; transform: scale(3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #moonintro i { animation-duration: 3s !important; }
 }

@@ -4,7 +4,7 @@ import {G, paused} from '../core/runtime.js';
 import {clamp, rnd} from '../core/util.js';
 import {groundH, solidAt} from '../core/terrain.js';
 import {CITY_GRAPH as GR, ZONE_SHARE} from '../data/citygraph.js';
-import {ARCHETYPES, HEAD_TOP, SHIRTS, createCrowdView} from '../render/crowd.js';
+import {ARCHETYPES, CITIZEN_SCALE, HEAD_TOP, SHIRTS, createCrowdView} from '../render/crowd.js';
 import type {CrowdSprite, CrowdView} from '../render/crowd.js';
 import type {GameSystem} from '../core/types.js';
 
@@ -19,7 +19,7 @@ const ACTIVE_MARGIN = 60,
   DESPAWN_DIST = 100,
   /** 카메라 전방 이 각도(라디안) 안에는 스폰하지 않는다 */
   SPAWN_CONE = (70 * Math.PI) / 180,
-  BODY_R = 0.45,
+  BODY_R = 0.7, // 시민 몸 반지름(배율 반영)
   BUBBLES = 6,
   BUBBLE_MAX_DIST = 40,
   /** 플레이어가 이 속도 이상이면 달리는 중 (걷기 14, 달리기 ×1.7) */
@@ -111,7 +111,7 @@ function spawn(minDist: number): boolean {
   agents.push({
     x: GR.x[best], y: 0, z: GR.z[best], yaw: Math.atan2(GR.x[b] - GR.x[best], GR.z[b] - GR.z[best]),
     w: 0, h: 0, swing: 0, bob: 0, color: SHIRTS[Math.floor(Math.random() * SHIRTS.length)],
-    a: best, b, t: 0, len: Math.hypot(GR.x[b] - GR.x[best], GR.z[b] - GR.z[best]), speed: rnd(1.8, 3.6), arch: ar,
+    a: best, b, t: 0, len: Math.hypot(GR.x[b] - GR.x[best], GR.z[b] - GR.z[best]), speed: rnd(2.9, 5.8), arch: ar,
     idle: 0, look: 0, lookCd: 0, stepCd: 0, face: 0, off: 0, phase: rnd(0, 6.28), mv: 1, age: 0, leaving: false, gone: false, bub: 0, emoji: '',
   });
   return true;
@@ -243,7 +243,7 @@ function showBubbles(show: boolean) {
       el.style.visibility = 'hidden';
       return;
     }
-    v3.set(p.x, p.y + HEAD_TOP * p.h + 0.35, p.z).project(cam);
+    v3.set(p.x, p.y + HEAD_TOP * p.h * CITIZEN_SCALE + 0.5, p.z).project(cam);
     el.style.visibility = v3.z < 1 ? 'visible' : 'hidden';
     el.style.transform = `translate(${(v3.x * 0.5 + 0.5) * innerWidth}px,${(-v3.y * 0.5 + 0.5) * innerHeight}px) translate(-50%,-100%)`;
     if (el.textContent !== p.emoji) el.textContent = p.emoji;

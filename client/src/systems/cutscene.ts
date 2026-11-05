@@ -1,4 +1,5 @@
 // 컷신 시스템: 매 프레임 타임라인 진행 + 첫 실행 C01 자동 재생(S.story.seen 으로 1회) + 건너뛰기 입력(⏭ 버튼 / Space·Enter·Esc)
+import {moonIntroDone, playMoonIntro} from '../game/moon-intro.js';
 import {S} from '../core/state.js';
 import {G} from '../core/runtime.js';
 import {$} from '../core/util.js';
@@ -39,7 +40,11 @@ export const cutsceneSystem: GameSystem = {
   id: 'cutscene',
   update(_dt, raw) {
     tickCut(raw);
-    if (AUTO && G.started && !G.cine && !S.story.seen.c01_love) playCut('c01_love');
+    // 새 게임: 먼저 달 도착 연출 → 달 구역 해금·시작 → 첫눈에 반함(C01)
+    if (AUTO && G.started && !G.cine && G.modal === null && !S.story.seen.c01_love) {
+      if (!moonIntroDone()) playMoonIntro(() => {});
+      else playCut('c01_love');
+    }
     if (!hooked) {
       hooked = true; // ?debug=1 일 때만: __game.cine.play('id') / skip() / iconToast([...]) / addHudWidget(fn)
       const g = (window as any).__game;

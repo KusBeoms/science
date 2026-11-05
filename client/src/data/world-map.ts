@@ -3,6 +3,11 @@
 
 /** 도시 허브 반변 (한 변 300, 중심 (0,0)) */
 export const CITY_HALF = 150;
+/** 도시 둘레 산악 띠 폭 (북·동·서는 산, 남쪽은 해변). 띠 바깥 끝 = CITY_OUT */
+export const BELT_W = 28;
+export const CITY_OUT = CITY_HALF + BELT_W;
+/** 해수면 높이. 남쪽 해변은 이 아래로 완만하게 가라앉는다 */
+export const SEA_Y = -4.6;
 /** 구역 사이 통로 폭 = 문 개구 폭 */
 export const PASS_W = 40;
 /** 통로가 양 끝 땅에 겹쳐 들어가는 길이 (이음매 틈 방지) */

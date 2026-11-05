@@ -17,8 +17,8 @@ type Row = Omit<Sector, 'gravityMul' | 'timeMul' | 'units' | 'solo' | 'requires'
 const ROWS: Row[] = [
   {
     id: 'solar',
-    name: '태양계',
-    icon: '☄️',
+    name: '달',
+    icon: '🌙',
     region: 'near',
     center: {x: 0, z: -260},
     size: 160,
@@ -31,7 +31,7 @@ const ROWS: Row[] = [
     solo: 10,
     gate: 's',
     units: ['Z01'],
-    note: '🌍 대기가 없는 곳이 많다 — 낮밤 온도 차가 크다',
+    note: '🌙 달에서 시작 — 대기가 없어 낮밤 온도 차가 크다. 여기서 행성을 훔쳐 돈을 모으자',
   },
   {
     id: 'belt',

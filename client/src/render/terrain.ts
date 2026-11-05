@@ -5,7 +5,7 @@ import {G} from '../core/runtime.js';
 import {locked} from '../core/progress.js';
 import {GX0, GZ0, NX, NZ, REG_CITY, REG_PASS, STEP, bakeContinent, gridOf, CLIFF1} from '../core/heightmap.js';
 import {SECTORS} from '../data/sectors.js';
-import {CITY_HALF, TERRAIN} from '../data/world-map.js';
+import {CITY_HALF, SEA_Y, TERRAIN} from '../data/world-map.js';
 import {registerLandmarkSolids} from './landmarks.js';
 import {PAL, TINT, mix, ramp, rgb, type Biome} from './lowpoly/palette.js';
 import {hash2} from './lowpoly/rng.js';
@@ -39,10 +39,21 @@ const smooth = (a: number, b: number, x: number) => {
   return t * t * (3 - 2 * t);
 };
 
+const SAND = mix(PAL.bone, PAL.amber, 0.25),
+  WET_SAND = mix(SAND, PAL.clay, 0.45);
+/** 도시 둘레 띠: 남쪽 해변은 모래(물가는 젖은 모래), 나머지는 풀 → 바위 → 눈 */
+function beltColor(cx: number, cz: number, y: number, slope: number): number {
+  if (cz > CITY_HALF && Math.abs(cx) < CITY_HALF) return y < SEA_Y + 1.2 ? WET_SAND : SAND;
+  let c = y < 9 ? mix(GRASS, PAL.stone, smooth(0, 9, y) * 0.5) : mix(PAL.stone, PAL.steel, smooth(9, 30, y));
+  if (y > 33) c = mix(c, PAL.white, smooth(33, 41, y));
+  return mix(c, PAL.stone, smooth(0.45, 0.8, slope) * 0.7);
+}
+
 /** 면(중심 cx,cz · 평균 높이 y · 경사 slope=sin각) 의 색 */
 function faceColor(reg: number, cx: number, cz: number, y: number, slope: number): number {
   let c: number;
   if (reg === REG_CITY) {
+    if (Math.max(Math.abs(cx), Math.abs(cz)) > CITY_HALF) return beltColor(cx, cz, y, slope);
     // 도시 안에서는 북서 언덕과 낭떠러지 경사면만 그려진다 (평지는 render/city 지면)
     c = y > 0.4 ? mix(CITY_GROUND, GRASS, Math.min(1, y / 4)) : CITY_GROUND;
     c = mix(c, PAL.stone, smooth(0.35, 0.75, slope) * 0.8);

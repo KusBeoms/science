@@ -2,7 +2,7 @@
 // 땅 = 도시 ∪ 구역 사각형 ∪ 통로. 땅 밖은 땅 가장자리에서 바깥으로 두 겹의 낭떠러지(−12, −40)로 내려가다 끊긴다.
 // 도시와 통로는 평지, 구역은 둘레 능선(통로 개구만 열림) + 안쪽의 완만한 기복·언덕. 포탈 패드·문 앞은 평지로 눌러 둔다.
 import {SECTORS} from '../data/sectors.js';
-import {CITY_HALF, CITY_HILL, PASSES, PASS_W, TERRAIN, type SectorMap} from '../data/world-map.js';
+import {BELT_W, CITY_HALF, CITY_HILL, CITY_OUT, PASSES, PASS_W, TERRAIN, type SectorMap} from '../data/world-map.js';
 import {fbm, mulberry32} from '../render/lowpoly/rng.js';
 import {padPos} from './geometry.js';
 
@@ -108,10 +108,24 @@ function sectorH(s: Sec, x: number, z: number, ds: number, pw: number): number {
   return h + m.ridge.h * mod * ridgeProfile(ds, m.ridge.w) * smooth(PASS_W / 2 + 1, PASS_W / 2 + 11, pw);
 }
 
+/** 도시 둘레 띠의 높이: 북·동·서는 산, 남쪽(z>150, |x|<150)은 바다로 가라앉는 해변 */
+const MOUNT = 48;
+function beltH(x: number, z: number, pw: number): number {
+  const m = Math.max(Math.abs(x), Math.abs(z)),
+    q = (m - CITY_HALF) / BELT_W; // 0 = 도시 쪽, 1 = 바깥 끝
+  if (z > CITY_HALF && Math.abs(x) < CITY_HALF) return -8 * smooth(0, 1, q) * (0.85 + 0.15 * smooth(0, 0.3, q)); // 해변: 완만한 모래 경사
+  const n = 0.75 + 0.5 * fbm(x * 0.045 + 7, z * 0.045 - 3, 4, 91),
+    rr = 0.7 + 0.5 * (1 - Math.abs(fbm(x * 0.09, z * 0.09, 3, 17) * 2 - 1));
+  let h = MOUNT * n * rr * (q < 0.45 ? smooth(0.04, 0.45, q) : 1 - 0.85 * smooth(0.45, 1, q));
+  // 북쪽 사과 시선 축(정북 ±8°·고도 8°↑)을 가리지 않게 낮춘다
+  if (z < -CITY_HALF * 0.5 && Math.abs(z) >= Math.abs(x)) h *= 0.38 + 0.62 * smooth(30, 70, Math.abs(x));
+  return h * smooth(PASS_W / 2 + 1, PASS_W / 2 + 14, pw); // 통로 앞은 평지
+}
+
 let outReg = 0;
 /** (x,z) 의 높이를 계산해 돌려주고 소속 코드는 outReg 에 둔다 */
 function evalAt(x: number, z: number): number {
-  let d = CITY_HALF - Math.max(Math.abs(x), Math.abs(z)),
+  let d = CITY_OUT - Math.max(Math.abs(x), Math.abs(z)),
     reg = REG_CITY,
     ds = -1e9,
     si: Sec | null = null;
@@ -144,6 +158,7 @@ function evalAt(x: number, z: number): number {
   if (reg === REG_CITY) {
     const hl = CITY_HILL;
     h = hl.h * (1 - smooth(hl.flat, hl.foot, Math.hypot(x - hl.x, z - hl.z)));
+    if (Math.max(Math.abs(x), Math.abs(z)) > CITY_HALF) h = beltH(x, z, pw);
   } else if (si && reg <= SEC.length) h = sectorH(si, x, z, ds, pw);
   return reg === REG_CITY ? h : h - COAST_DIP * (1 - smooth(0, COAST, d)); // 도시 가장자리는 지면 판과 높이를 맞춘다
 }

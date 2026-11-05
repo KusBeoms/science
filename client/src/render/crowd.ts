@@ -18,6 +18,8 @@ export const ARCHETYPES = [
 export const SHIRTS = [PAL.red, PAL.blue, PAL.amber, PAL.green, PAL.violet, PAL.teal, PAL.pink, PAL.orange, PAL.cloud, PAL.cyan];
 /** 키 1.0 일 때 머리 꼭대기 높이 */
 export const HEAD_TOP = 1.95;
+/** 시민 배율: 플레이어(블록 캐릭터, 키 약 3.1u)와 같은 크기로 보이게 한다 */
+export const CITIZEN_SCALE = 1.6;
 
 const NEAR = 35,
   FAR = 80,
@@ -167,8 +169,8 @@ export function createCrowdView(cap: number): CrowdView {
         const p = list[k],
           d = Math.hypot(p.x - camX, p.z - camZ);
         if (d >= FAR) continue;
-        const sx = p.w,
-          sy = p.h,
+        const sx = p.w * CITIZEN_SCALE,
+          sy = p.h * CITIZEN_SCALE,
           y = p.y + p.bob * sy;
         if (d >= NEAR) {
           put(fm, nf, p.x, y, p.z, p.yaw, 0, sx, sy);

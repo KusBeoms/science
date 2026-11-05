@@ -11,6 +11,8 @@ test('C01 plays on first start: locks input, no text nodes, ends with beat=1 and
   const {page} = game;
   await game.open('?debug=1&cine=1');
   await page.click('#mstart');
+  await page.waitForSelector('#moonintro');
+  await page.keyboard.press('Space'); // 달 도착 연출 건너뛰기 → 이어서 C01
   await page.waitForFunction(() => (window as any).__game.G.cine?.id === 'c01_love');
   expect(await gameEval(page, 'g.G.cine.lock')).toBe(true);
   for (const t of [2, 6, 10, 12.7, 15, 19]) {
@@ -30,6 +32,8 @@ test('skip: ⏭ button fades out then applies onEnd exactly like a normal end; C
   const {page} = game;
   await game.open('?debug=1&cine=1');
   await page.click('#mstart');
+  await page.waitForSelector('#moonintro');
+  await page.keyboard.press('Space'); // 달 도착 연출 건너뛰기 → 이어서 C01
   await page.waitForFunction(() => (window as any).__game.G.cine?.t >= 2.2, undefined, {timeout: 10000});
   await expect(page.locator('#cineSkip')).toHaveClass(/on/); // 최초 시청: 2초 뒤 표시
   await page.click('#cineSkip');
@@ -50,6 +54,8 @@ test('keyboard skip (Space) works for a lock cutscene and keys do not leak to th
   const {page} = game;
   await game.open('?debug=1&cine=1');
   await page.click('#mstart');
+  await page.waitForSelector('#moonintro');
+  await page.keyboard.press('Space'); // 달 도착 연출 건너뛰기 → 이어서 C01
   await page.waitForFunction(() => (window as any).__game.G.cine?.t >= 0.6);
   await page.keyboard.press('KeyB'); // 도감 키가 새지 않아야 한다
   expect(await gameEval(page, 'g.G.dexOpen')).toBe(false);
@@ -85,26 +91,26 @@ test('iconToast: icons only, merges repeats into ×n, queue max 2, held during c
     g.cine.iconToast(['money']);
     g.cine.iconToast(['money']);
   });
-  await expect(page.locator('#itoast .it')).toHaveCount(1);
+  await expect(page.locator('#itoast .itk')).toHaveCount(1);
   await expect(page.locator('#itoast .cnt')).toHaveText('×2');
   await page.evaluate(() => {
     const g = (window as any).__game;
     g.cine.iconToast(['quest']);
     g.cine.iconToast(['apple', 'sparkle']);
   });
-  await expect(page.locator('#itoast .it')).toHaveCount(2);
+  await expect(page.locator('#itoast .itk')).toHaveCount(2);
   expect((await page.locator('#itoast').innerText()).replace(/[×0-9\s]/g, '')).not.toMatch(NO_TEXT);
   await page.waitForTimeout(2200);
-  await expect(page.locator('#itoast .it')).toHaveCount(0);
+  await expect(page.locator('#itoast .itk')).toHaveCount(0);
   // 컷신 중 보류 → 종료 후 표시
   await page.evaluate(() => {
     const g = (window as any).__game;
     g.cine.play('x_sample');
     g.cine.iconToast(['joy']);
   });
-  await expect(page.locator('#itoast .it')).toHaveCount(0);
+  await expect(page.locator('#itoast .itk')).toHaveCount(0);
   await page.waitForFunction(() => (window as any).__game.G.cine === null, undefined, {timeout: 12000});
-  await expect(page.locator('#itoast .it')).toHaveCount(1);
+  await expect(page.locator('#itoast .itk')).toHaveCount(1);
 });
 
 test('HudWidget: slot caps and total cap are enforced by the renderer', async ({game}) => {

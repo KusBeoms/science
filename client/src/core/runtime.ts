@@ -4,6 +4,8 @@ import type {Carry, Chunk, CineState, Pick, QuizCtx, Target} from './types.js';
 
 export const G = {
   // 입력/플레이어
+  /** 앉아 있는 자리(벤치 등). null 이면 서 있음. 이동 입력이 들어오면 일어난다 */
+  sit: null as null | {x: number; y: number; z: number; ry: number},
   jumpHeld: false,
   runHeld: false,
   stam: 100,

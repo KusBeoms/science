@@ -91,3 +91,9 @@ export const animateWalk = (m: any, ph: number, hold?: boolean) => {
     p.armR.rotation.x = s;
   }
 };
+/** 앉은 자세: 다리는 앞으로, 팔은 무릎 위 */
+export const sitPose = (m: any) => {
+  const p = m.userData;
+  p.legL.rotation.x = p.legR.rotation.x = -1.45;
+  p.armL.rotation.x = p.armR.rotation.x = -0.5;
+};

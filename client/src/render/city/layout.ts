@@ -144,6 +144,8 @@ export interface PropPlan {
   pines: Inst[];
   benches: Inst[];
 }
+/** 앉을 수 있는 벤치 자리 (planProps 가 한 번 정한 목록) */
+export let BENCH_SPOTS: readonly Inst[] = [];
 export function planProps(): PropPlan {
   const lamps: Inst[] = [],
     trees: Inst[] = [],
@@ -183,8 +185,14 @@ export function planProps(): PropPlan {
   }
   // 벤치: 기지 부지 둘레를 향해(정면 = 로컬 +z)
   for (const s of [-1, 1]) {
-    for (const o of [-10, 10]) benches.push({x: s * 27, y: 0, z: o, ry: -s * Math.PI / 2});
-    benches.push({x: s * 10, y: 0, z: 28, ry: Math.PI});
+    for (const o of [-10, 10]) benches.push({x: s * 27, y: 0, z: o, ry: -s * Math.PI / 2, s: 1.6});
+    benches.push({x: s * 10, y: 0, z: 28, ry: Math.PI, s: 1.6});
   }
+  // 길가 벤치: 사과 대로 · 상점가 · 우주항 광장 · 과학관 앞뜰 (정면이 길 쪽)
+  for (const z of [-70, -95, -130]) benches.push({x: -14.2, y: 0, z, ry: Math.PI / 2, s: 1.6}, {x: 14.2, y: 0, z: z + 10, ry: -Math.PI / 2, s: 1.6});
+  for (const x of [70, 110, 130]) benches.push({x, y: 0, z: 7.2, ry: Math.PI, s: 1.6}, {x: x - 10, y: 0, z: -7.2, ry: 0, s: 1.6});
+  for (const x of [-20, 20]) benches.push({x, y: 0, z: 121, ry: 0, s: 1.6});
+  for (const x of [86, 114]) benches.push({x, y: 0, z: 82, ry: 0, s: 1.6});
+  BENCH_SPOTS = benches;
   return {lamps, trees, pines, benches};
 }

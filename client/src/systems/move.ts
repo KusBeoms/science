@@ -9,7 +9,7 @@ import {blockedAt} from '../core/geometry.js';
 import {groundH, solidAt, walkable} from '../core/terrain.js';
 import {P} from '../data/planets.js';
 import {SPR} from '../data/shop.js';
-import {animateWalk} from '../render/characters.js';
+import {animateWalk, sitPose} from '../render/characters.js';
 import {respawn} from '../game/actions.js';
 import {gravityNow} from './hazards.js';
 import {hovering, speedMul} from './registry.js';
@@ -73,6 +73,17 @@ export function movePlayer(dt: number, t: number) {
     if (G.tired && G.stam >= 30) G.tired = false;
   }
   setStam(Math.round(G.stam) + '%', G.tired);
+  if (G.sit) {
+    // 앉아 있는 동안: 이동·점프 입력이 들어오면 일어나고, 아니면 자리에 붙어 앉은 자세를 유지한다
+    if (moving || G.keys.Space || G.jumpHeld) G.sit = null;
+    else {
+      G.me.pos.set(G.sit.x, G.sit.y, G.sit.z);
+      G.me.vy = 0;
+      G.me.rotation.y = G.sit.ry;
+      sitPose(G.me);
+      return;
+    }
+  }
   const hold = G.carry.length > 0,
     wasOn = G.me.pos.y <= groundH(G.me.pos.x, G.me.pos.z) + 0.02; // 이번 프레임 시작에 땅에 서 있었나
   if (moving) {

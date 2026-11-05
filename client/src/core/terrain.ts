@@ -1,7 +1,7 @@
 // 지면 판정 (docs/WORLD.md 7.3): 걸을 수 있는 땅 = 도시 ∪ 해금된 섹터 사각형 ∪ 구역 사이 통로. 나머지는 허공(−Infinity).
 // 높이는 core/heightmap.ts 가 부팅 때 구운 격자에서 보간한다. 이동·수배·비행 시스템은 이 함수들만 부르면 된다.
 import {SECTORS} from '../data/sectors.js';
-import {CITY_HALF, PASSES, PASS_W, type Rect} from '../data/world-map.js';
+import {CITY_HALF, CITY_OUT, PASSES, PASS_W, type Rect} from '../data/world-map.js';
 import {inSector} from './geometry.js';
 import {heightAt} from './heightmap.js';
 import {locked} from './progress.js';
@@ -13,7 +13,7 @@ const inRect = (x: number, z: number, r: Rect) => x >= r[0] && x <= r[2] && z >=
 /** 지면 높이. 걸을 수 있는 땅이 아니면(허공·잠긴 섹터) −Infinity */
 export function groundH(x: number, z: number): number {
   const land =
-    (Math.abs(x) <= CITY_HALF && Math.abs(z) <= CITY_HALF) ||
+    (Math.abs(x) <= CITY_OUT && Math.abs(z) <= CITY_OUT) ||
     PASSES.some(r => inRect(x, z, r)) ||
     SECTORS.some((_, i) => !locked(i) && inSector(x, z, i));
   return land ? heightAt(x, z) : -Infinity;

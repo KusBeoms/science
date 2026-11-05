@@ -217,3 +217,12 @@ registerInteractable<T extends Target>({
 ## 원본 버그 후보 (수정하지 않음)
 - `save()`는 라이벌이 훔쳐 도망치는 중인 행성을 첫 빈 슬롯에 임시로 끼워 저장하는데, 모든 슬롯이 가득 차 있으면(`findIndex`=-1) 저장본에서 그 행성이 사라진다 (훔친 직후 슬롯이 비므로 사실상 발생 불가).
 - `deposit()`의 슬롯 가득 참 토스트는 `break` 후에도 `syncCarry()`를 호출해 불필요한 재생성이 일어난다 (성능만).
+
+### 달 시작·둘레 지형 (추가)
+| 파일 | 역할 |
+|---|---|
+| game/moon-intro.ts | 새 게임 달 도착 연출 + 달 해금/시작 위치 |
+| game/goal.ts | 다음 해금 목표 HUD 한 줄 |
+| game/bench.ts | 벤치 앉기(E), `G.sit` |
+| render/sea.ts | 해변 남쪽 바다 평면 |
+| core/heightmap.ts `beltH` | 도시 둘레 산/해변 높이 |

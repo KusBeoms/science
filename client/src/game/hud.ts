@@ -79,7 +79,7 @@ export function iconToast(icons: IconKey[], sec = 1.2) {
   }
   const el = document.createElement('div'),
     cnt = document.createElement('span');
-  el.className = 'it';
+  el.className = 'itk'; // 상점 칸(.it)과 이름이 겹쳐 글자가 커지던 문제로 분리
   icons.slice(0, 3).forEach(k => el.append(iconEl(k)));
   cnt.className = 'cnt';
   el.append(cnt);
