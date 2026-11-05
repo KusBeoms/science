@@ -123,7 +123,7 @@ export function setupPointers() {
     if (ptrs.size === 2) {
       // 두 손가락: 핀치 줌 + 회전
       const m = meas();
-      G.camDist = clamp((G.camDist * pinch!.d) / m.d, 6, 44);
+      G.camDist = clamp((G.camDist * pinch!.d) / m.d, 4, 36);
       rot(m.mx - pinch!.mx, m.my - pinch!.my);
       pinch = m;
       tap = false;
@@ -153,14 +153,14 @@ export function setupPointers() {
       if (paused()) return;
       e.preventDefault();
       if (e.ctrlKey) {
-        G.camDist = clamp(G.camDist + e.deltaY * 0.06, 6, 44);
+        G.camDist = clamp(G.camDist + e.deltaY * 0.06, 4, 36);
         return;
       }
       const wheelMouse =
         e.deltaMode === 1 ||
         (e.deltaX === 0 && Math.abs(e.deltaY) >= 100 && Number.isInteger(e.deltaY) && e.deltaY % 100 === 0);
       if (wheelMouse) {
-        G.camDist = clamp(G.camDist + Math.sign(e.deltaY) * 2, 6, 44);
+        G.camDist = clamp(G.camDist + Math.sign(e.deltaY) * 2, 4, 36);
         return;
       }
       G.yaw += e.deltaX * 0.006;
@@ -177,7 +177,7 @@ export function setupPointers() {
   addEventListener('gesturechange', (e: any) => {
     e.preventDefault();
     if (TOUCH) return;
-    G.camDist = clamp((G.camDist * gsc) / (e.scale || 1), 6, 44);
+    G.camDist = clamp((G.camDist * gsc) / (e.scale || 1), 4, 36);
     gsc = e.scale || 1;
   });
   addEventListener('contextmenu', e => e.preventDefault());

@@ -54,7 +54,7 @@ test('spawn north view: the apple sits at the top centre of the frame, in day an
 
   await look(page, 'g.yaw = Math.PI'); // 정남: 사과가 없다
   await page.waitForTimeout(400);
-  expect((await redBlob(page, 0.35)).n).toBeLessThan(5); // 하늘 영역만: 남쪽 건물의 붉은 기와는 제외
+  expect((await redBlob(page, 0.15)).n).toBeLessThan(5); // 하늘 영역만: 남쪽 건물의 붉은 기와는 제외
 
   await look(page, 'g.yaw = 0; g.cycT = 5; g.night = 6');
   await page.waitForTimeout(600);

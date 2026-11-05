@@ -12,6 +12,7 @@ const ARROWS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'];
 export const nextGoal = () => SECTORS.findIndex((_, i) => isNext(i));
 
 addHudLine(() => {
+  if (G.inside) return null;
   const i = nextGoal();
   if (i < 0) return null;
   const s = SECTORS[i],
@@ -20,5 +21,5 @@ addHudLine(() => {
     dz = f.z - G.me.pos.z,
     arrow = ARROWS[Math.round((Math.atan2(dx, -dz) / (Math.PI / 4) + 8) % 8) % 8], // 위쪽 = 정북(−z)
     miss = reqMissing(i);
-  return `🔓 ${s.icon} ${s.name} ${arrow} ${Math.round(Math.hypot(dx, dz))}m — ${miss.length ? '필요: ' + miss.join(' · ') : '문 앞에서 E: 시험 통과'}`;
+  return `🔓 ${s.icon} ${s.name} ${arrow} ${Math.round(Math.hypot(dx, dz))}m — ${miss.length ? '필요: ' + miss.join(' · ') : '문 앞에서 E — 입장 시험'}`;
 });

@@ -1,4 +1,5 @@
 // 씬 구성: 렌더러·카메라·하늘·허브 타일·상점·포탈 패드·플레이어·라이벌 (섹터는 render/sectors.ts)
+import {PLAYER_SCALE} from '../core/scale.js';
 import {buildSea} from './sea.js';
 import {G} from '../core/runtime.js';
 import {SHOP_AT, SPAWN, slotPos} from '../core/geometry.js';
@@ -71,7 +72,7 @@ export function initWorld() {
   poly.position.set(a4.center.x, 40, a4.center.z - a4.size / 2 - 40);
   G.scene.add(poly);
   // 플레이어 / 라이벌
-  G.me = blocky(0x3b82f6, 0x4a9a4a, '#f4d03f');
+  G.me = blocky(0x3b82f6, 0x4a9a4a, '#f4d03f', PLAYER_SCALE);
   G.me.pos = G.me.position;
   G.me.vy = 0;
   G.me.pos.set(SPAWN.x, 0, SPAWN.z);

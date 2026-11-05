@@ -11,7 +11,15 @@ export type {Rect};
 const inRect = (x: number, z: number, r: Rect) => x >= r[0] && x <= r[2] && z >= r[1] && z <= r[3];
 
 /** 지면 높이. 걸을 수 있는 땅이 아니면(허공·잠긴 섹터) −Infinity */
+/** 건물 내부 방: 켜져 있는 동안 지면은 방 안의 평지(y=0)뿐이고, 벽·가구는 solidAt 이 막는다 (game/interior.ts) */
+interface Room {
+  rect: Rect;
+  solids: Rect[];
+}
+let room: Room | null = null;
+export const setRoom = (r: Room | null) => (room = r);
 export function groundH(x: number, z: number): number {
+  if (room) return inRect(x, z, room.rect) ? 0 : -Infinity;
   const land =
     (Math.abs(x) <= CITY_OUT && Math.abs(z) <= CITY_OUT) ||
     PASSES.some(r => inRect(x, z, r)) ||
@@ -29,7 +37,7 @@ export const walkable = (x0: number, z0: number, y0: number, x1: number, z1: num
 
 // 건물·큰 소품 충돌체: 16u 해시 격자의 AABB
 const CELL = 16;
-interface Solid {
+export interface Solid {
   x0: number;
   z0: number;
   x1: number;
@@ -44,8 +52,27 @@ export function addSolid(x0: number, z0: number, x1: number, z1: number) {
       (grid.get(k) || grid.set(k, []).get(k)!).push(s);
     }
 }
+/** 움직이는 충돌체(세워 둔 차): 등록·제거할 수 있는 AABB 집합 */
+const dyn = new Set<Solid>();
+export const addDynSolid = (x0: number, z0: number, x1: number, z1: number): Solid => {
+  const s = {x0, z0, x1, z1};
+  dyn.add(s);
+  return s;
+};
+export const dropDynSolid = (s: Solid | null) => s && dyn.delete(s);
+const hitBox = (s: Solid, x: number, z: number, r: number) => {
+  const dx = x - Math.max(s.x0, Math.min(x, s.x1)),
+    dz = z - Math.max(s.z0, Math.min(z, s.z1));
+  return dx * dx + dz * dz < r * r;
+};
 /** 반지름 r 인 원이 등록된 충돌체와 겹치는가 */
 export function solidAt(x: number, z: number, r: number) {
+  if (room) {
+    const [a, b, c, d] = room.rect;
+    if (x - r < a || x + r > c || z - r < b || z + r > d) return true;
+    return room.solids.some(s => x + r > s[0] && x - r < s[2] && z + r > s[1] && z - r < s[3]);
+  }
+  for (const d of dyn) if (hitBox(d, x, z, r)) return true;
   for (let i = Math.floor((x - r) / CELL); i <= Math.floor((x + r) / CELL); i++)
     for (let j = Math.floor((z - r) / CELL); j <= Math.floor((z + r) / CELL); j++)
       for (const s of grid.get(i + ',' + j) || []) {

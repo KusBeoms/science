@@ -1,4 +1,5 @@
 // 매 프레임: 시간/성장/밤낮 → 이동 → 섹터 스트리밍·시간 진행 → 문/수호자 → 입고 → 등록 시스템 → 메시 동기화 → 대상 → 카메라/렌더 → HUD
+import {EYE_Y} from '../core/scale.js';
 import {S, income, dexN} from '../core/state.js';
 import {G, paused} from '../core/runtime.js';
 import {$, fmt, setTxt} from '../core/util.js';
@@ -86,11 +87,11 @@ export function frame() {
   const cp = Math.cos(G.pitch);
   G.camera.position.set(
     G.me.pos.x + Math.sin(G.yaw) * cp * G.camDist,
-    G.me.pos.y + 2.5 + Math.sin(G.pitch) * G.camDist,
+    G.me.pos.y + EYE_Y + Math.sin(G.pitch) * G.camDist,
     G.me.pos.z + Math.cos(G.yaw) * cp * G.camDist
   );
   G.camera.position.y = Math.max(G.camera.position.y, heightAt(G.camera.position.x, G.camera.position.z) + 0.8); // 언덕·능선 속으로 파고들지 않게
-  G.camera.lookAt(G.me.pos.x, G.me.pos.y + 2.5, G.me.pos.z);
+  G.camera.lookAt(G.me.pos.x, G.me.pos.y + EYE_Y, G.me.pos.z);
   cineCamera(); // 컷신 중이면 카메라 덮어쓰기
   updateSky(dt, t); // 천구를 카메라에 붙이고 낮밤 틴트·조명·안개 갱신
   G.renderer.render(G.scene, G.camera);

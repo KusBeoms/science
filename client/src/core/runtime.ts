@@ -6,6 +6,10 @@ export const G = {
   // 입력/플레이어
   /** 앉아 있는 자리(벤치 등). null 이면 서 있음. 이동 입력이 들어오면 일어난다 */
   sit: null as null | {x: number; y: number; z: number; ry: number},
+  /** 들어가 있는 건물 방 (game/interior.ts). null 이면 야외 */
+  inside: null as null | {i: number; grp: any; spots: {kind: string; x: number; z: number; ry?: number}[]; ret: {x: number; z: number}},
+  /** 운전 중인 차 (systems/vehicle.ts) */
+  drive: null as any,
   jumpHeld: false,
   runHeld: false,
   stam: 100,
@@ -16,10 +20,10 @@ export const G = {
   keys: {} as Record<string, boolean>,
   yaw: 0,
   pitch: 0.45,
-  camDist: 16,
+  camDist: 11,
   // 게임 진행
   carry: [] as Carry[],
-  raidT: 50,
+  raidT: 1200,
   toastT: 0,
   target: null as Target | null,
   cycT: 0,

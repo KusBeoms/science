@@ -1,6 +1,6 @@
 // 플레이어 이동: 입력 → 걷기/달리기(스태미나) → 막힘 판정 → 점프·중력·바닥 (속도 배율·비행은 시스템 레지스트리 훅)
 /** 몸 반지름 (충돌체 판정) · 내리막에서 떨어지지 않고 바닥에 붙는 최대 낙차 */
-const BODY_R = 0.6,
+const BODY_R = 0.42,
   SNAP_DOWN = 2.5;
 import {S} from '../core/state.js';
 import {G, paused} from '../core/runtime.js';
@@ -13,6 +13,7 @@ import {animateWalk, sitPose} from '../render/characters.js';
 import {respawn} from '../game/actions.js';
 import {gravityNow} from './hazards.js';
 import {hovering, speedMul} from './registry.js';
+import {MOVE_MUL, JUMP_MUL} from '../core/scale.js';
 import {SPD_BASE, SPD_PER_LV} from '../data/pacing.js';
 
 let stamEl: HTMLElement | null = null,
@@ -56,7 +57,7 @@ export function movePlayer(dt: number, t: number) {
     mx = 0;
     mz = 0;
   }
-  let spd = (SPD_BASE + SPD_PER_LV * S.spd + SPR[S.eq][4]) * speedMul();
+  let spd = (SPD_BASE + SPD_PER_LV * S.spd + SPR[S.eq][4]) * speedMul() * MOVE_MUL;
   if (G.carry.length) spd /= 1 + G.carry.reduce((a, c) => a + Math.min(120, P[c.id].ve), 0) / 220;
   const ml = Math.hypot(mx, mz),
     moving = ml > 0.05 && !paused();
@@ -73,6 +74,7 @@ export function movePlayer(dt: number, t: number) {
     if (G.tired && G.stam >= 30) G.tired = false;
   }
   setStam(Math.round(G.stam) + '%', G.tired);
+  if (G.drive) return; // 운전 중: 차 물리는 systems/vehicle.ts
   if (G.sit) {
     // 앉아 있는 동안: 이동·점프 입력이 들어오면 일어나고, 아니면 자리에 붙어 앉은 자세를 유지한다
     if (moving || G.keys.Space || G.jumpHeld) G.sit = null;
@@ -109,7 +111,7 @@ export function movePlayer(dt: number, t: number) {
   }
   const gnd = groundH(G.me.pos.x, G.me.pos.z);
   if (!paused() && (G.keys.Space || G.jumpHeld) && G.me.pos.y <= gnd + 0.02 && gnd > -Infinity) {
-    G.me.vy = 14 * SPR[S.eq][3];
+    G.me.vy = 14 * JUMP_MUL * SPR[S.eq][3];
   }
   const prevY = G.me.pos.y;
   if (dt > 0) {

@@ -19,7 +19,7 @@ export const SHIRTS = [PAL.red, PAL.blue, PAL.amber, PAL.green, PAL.violet, PAL.
 /** 키 1.0 일 때 머리 꼭대기 높이 */
 export const HEAD_TOP = 1.95;
 /** 시민 배율: 플레이어(블록 캐릭터, 키 약 3.1u)와 같은 크기로 보이게 한다 */
-export const CITIZEN_SCALE = 1.6;
+export const CITIZEN_SCALE = 1.1;
 
 const NEAR = 35,
   FAR = 80,

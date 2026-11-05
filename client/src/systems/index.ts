@@ -11,11 +11,21 @@ import {cutsceneSystem} from './cutscene.js';
 import {crowdSystem} from './crowd.js';
 import {citySystem} from '../render/city/index.js';
 import '../game/goal.js';
+import {enterIt, roomIt, interiorSystem} from '../game/interior.js';
+import {carIt, carExitIt} from '../game/cars.js';
+import {vehicleSystem} from './vehicle.js';
+import {addHudLine} from '../game/hud.js';
+import {S} from '../core/state.js';
+import {G} from '../core/runtime.js';
 import {weatherSystem} from '../render/weather.js';
 
 CORE_INTERACTABLES.forEach(registerInteractable);
 registerInteractable(portalIt);
 registerInteractable(benchIt);
+registerInteractable(enterIt);
+registerInteractable(roomIt);
+registerInteractable(carIt);
+registerInteractable(carExitIt);
 
 registerSystem(hazardSystem);
 registerSystem(rivalSystem);
@@ -25,3 +35,6 @@ registerSystem(cutsceneSystem);
 registerSystem(crowdSystem);
 registerSystem(citySystem);
 registerSystem(weatherSystem);
+registerSystem(interiorSystem);
+registerSystem(vehicleSystem);
+addHudLine(() => (G.drive ? `🚗 ${Math.round(Math.abs(G.drive.v) * 3.6)} km/h` : null));

@@ -100,6 +100,29 @@ export interface SaveState {
   collectibles: Record<string, 1>;
   // v6
   story: StoryState;
+  /** 자동차 (data/cars.ts): 차고 레벨 + 보유 목록 */
+  cars: CarSave;
+}
+export interface OwnedCar {
+  t: string;
+  /** 차체 색(0xRRGGBB) */
+  c: number;
+  /** 번호판, '' = 미등록 */
+  plate: string;
+  /** 1 = 훔친 차(튜닝샵에서 내 차로 만들기 전) */
+  stolen: 0 | 1;
+  eng: number;
+  tire: number;
+  neon: number;
+  /** 1 = 차고에 보관 중(길에 없음) */
+  stored: 0 | 1;
+  x: number;
+  z: number;
+  h: number;
+}
+export interface CarSave {
+  garage: number;
+  list: OwnedCar[];
 }
 /** 스토리 진행 (STORY 7.1 / UX_CUTSCENE 2장). seen = 컷신 id → 0|1, mid 는 beat===4 일 때만 1~5 */
 export interface StoryState {

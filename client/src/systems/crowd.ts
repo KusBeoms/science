@@ -19,7 +19,7 @@ const ACTIVE_MARGIN = 60,
   DESPAWN_DIST = 100,
   /** 카메라 전방 이 각도(라디안) 안에는 스폰하지 않는다 */
   SPAWN_CONE = (70 * Math.PI) / 180,
-  BODY_R = 0.7, // 시민 몸 반지름(배율 반영)
+  BODY_R = 0.5, // 시민 몸 반지름(배율 반영)
   BUBBLES = 6,
   BUBBLE_MAX_DIST = 40,
   /** 플레이어가 이 속도 이상이면 달리는 중 (걷기 14, 달리기 ×1.7) */

@@ -226,3 +226,14 @@ registerInteractable<T extends Target>({
 | game/bench.ts | 벤치 앉기(E), `G.sit` |
 | render/sea.ts | 해변 남쪽 바다 평면 |
 | core/heightmap.ts `beltH` | 도시 둘레 산/해변 높이 |
+
+### 건물 내부·자동차 (추가)
+| 파일 | 역할 |
+|---|---|
+| core/scale.ts | 플레이어 크기·속도·카메라 기준값 |
+| data/interiors.ts | 입장 가능 건물(87)·용도·방 크기 |
+| render/interior.ts | 방 생성(가구·벽·문), 용도별 가구 |
+| game/interior.ts | 입장/퇴장·방 상호작용(계산대·딜러·침대·의자) |
+| data/cars.ts · render/vehicle.ts | 차 15종 데이터·모델 |
+| systems/vehicle.ts | 길가 차·운전 물리·내리기 |
+| game/cars.ts · game/car-shop.ts | 구매·튜닝·등록·차고·판매 규칙과 UI |

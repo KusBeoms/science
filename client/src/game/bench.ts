@@ -14,7 +14,7 @@ export const benchIt: Interactable<BenchT> = {
   kind: 'bench',
   tier: 0,
   find(me) {
-    if (G.sit) return null;
+    if (G.sit || G.drive || G.inside) return null;
     let best = -1,
       bd = 3.2;
     BENCH_SPOTS.forEach((b, i) => {
@@ -24,7 +24,7 @@ export const benchIt: Interactable<BenchT> = {
     return best < 0 ? null : {kind: 'bench', d: bd, i: best};
   },
   info: () => '벤치',
-  prompt: () => 'E 앉기',
+  prompt: () => 'E 🪑 착석',
   act(t, key) {
     if (key !== 'e') return;
     const b = BENCH_SPOTS[t.i];
