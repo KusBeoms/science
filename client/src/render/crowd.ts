@@ -3,7 +3,7 @@
 //   중거리(< FAR): 서 있는 자세로 굳힌 통짜 메시 1개(포즈 없음). 그 밖은 그리지 않는다.
 // 셔츠색은 인스턴스 색이 셔츠 부위(tintMask=1)에만 곱해지도록 정점 속성 tintMask 로 구분한다. 아키타입 4종은 체형(배율)으로 나눈다.
 import {PAL, rgb} from './lowpoly/palette.js';
-import {box, ico} from './lowpoly/prim.js';
+import {box} from './lowpoly/prim.js';
 import {mergeGeometries} from './lowpoly/merge.js';
 import type {Geo} from './lowpoly/prim.js';
 
@@ -62,7 +62,7 @@ const SKIN = PAL.plaster,
 /** 몸통 + 머리 + 머리카락 (발바닥 y=0) */
 const torso = (): Part[] => [
   [box(0.5, 0.7, 0.3, SHIRT, 0, HIP, 0), 1],
-  [ico(0.23, 0, SKIN, 0, 1.68, 0), 0],
+  [box(0.36, 0.36, 0.36, SKIN, 0, 1.5, 0), 0], // 사각 머리(로블록스식)
   [box(0.36, 0.1, 0.36, PAL.coal, 0, 1.82, -0.02), 0],
 ];
 /** 다리 1개: 엉덩이 y=0 에서 아래로 */

@@ -113,7 +113,10 @@ export function dress(hg: any, hat: number, hatColor: number, face: number, face
   });
   const put = (make: Maker | undefined, c: number) => make && make(c).forEach(m => hg.add(m));
   put(HATS[hat], hatColor);
+  const n = hg.children.length;
   put(FACES[face], faceColor);
+  // 머리가 사각 블록(앞면 z=0.8)이라 얼굴 장식을 앞으로 살짝 내민다
+  hg.children.slice(n).forEach((c: any) => (c.position.z += 0.1));
 }
 
 /** 상점에서 고른 꾸미기(S.look)를 플레이어에게 적용한다 */

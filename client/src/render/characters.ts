@@ -1,9 +1,9 @@
-// 로우폴리 캐릭터(플레이어·점원·라이벌·수호자), 걷기 애니메이션
+// 로블록스식 사각 블록 캐릭터(플레이어·점원·라이벌·수호자), 걷기 애니메이션 — 사용자 요청으로 사각형 느낌을 유지한다(둥글리지 말 것)
 // 모양은 정점색 지오메트리(전 캐릭터 공유)이고, 옷·바지·피부 색은 재질 색으로 바꾼다 → 꾸미기는 재질만 건드린다.
 // userData 계약: legL/legR/armL/armR(관절 그룹, rotation.x 로 흔듦), headG(모자·얼굴 장식 자리),
 // head(머리+얼굴, 숨기기용), mat{shirt,pants,sk}
 import {NEUTRAL, PAL} from './lowpoly/palette.js';
-import {box, frustum, ico, taper, type Geo} from './lowpoly/prim.js';
+import {box, type Geo} from './lowpoly/prim.js';
 import {keep, lowMat, mergeGeometries} from './lowpoly/merge.js';
 import {dress} from './characters-look.js';
 
@@ -25,32 +25,29 @@ function getShapes(): Shapes {
   if (shapes) return shapes;
   const W = PAL.white;
   shapes = {
-    // 상체: 어깨가 넓은 테이퍼 몸통 + 골반
-    torso: mergeGeometries([taper(1.75, 1, 2, 1, 1.65, W, 0, 2.35, 0), box(1.9, 0.6, 0.95, W, 0, 1.85, 0)]),
+    // 로블록스식 사각 블록: 몸통 2×2×1, 팔다리 0.9×2×0.9, 머리 1.6 정육면체
+    torso: box(2, 2, 1, W, 0, 2, 0),
     // 다리(바지) / 신발. 엉덩이 관절에서 아래로
-    leg: frustum(8, 0.47, 0.4, 1.65, W, 0, -1.65, 0),
-    shoe: box(0.85, 0.35, 1.05, NEUTRAL.coal, 0, -2, 0.1),
-    // 팔: 소매(옷 색) + 팔뚝·손(피부). 어깨 관절에서 아래로
-    sleeve: frustum(8, 0.5, 0.43, 0.95, NEUTRAL.cloud, 0, -0.7, 0),
-    arm: mergeGeometries([frustum(8, 0.38, 0.33, 1, W, 0, -1.7, 0), box(0.56, 0.42, 0.56, W, 0, -2.1, 0)]),
-    // 머리(이코스피어) + 귀 + 목, 그리고 어두운 눈·입
-    head: mergeGeometries([
-      ico(0.88, 1, W, 0, 0, 0),
-      box(0.2, 0.3, 0.26, W, -0.86, -0.15, 0),
-      box(0.2, 0.3, 0.26, W, 0.86, -0.15, 0),
-      frustum(6, 0.3, 0.34, 0.4, W, 0, -0.95, 0),
-    ]),
+    leg: box(0.9, 2, 0.9, W, 0, -2, 0),
+    shoe: box(0.96, 0.3, 0.98, NEUTRAL.coal, 0, -2, 0.04),
+    // 팔: 윗부분은 소매(옷 색), 아래는 피부. 어깨 관절에서 아래로
+    sleeve: box(0.94, 1.0, 0.94, W, 0, -0.8, 0),
+    arm: box(0.9, 1.0, 0.9, W, 0, -1.8, 0),
+    head: box(1.6, 1.6, 1.6, W, 0, -0.8, 0),
+    // 얼굴: 네모 눈 둘 + 입
     face: mergeGeometries([
-      box(0.2, 0.36, 0.12, NEUTRAL.ink, -0.33, -0.02, 0.72),
-      box(0.2, 0.36, 0.12, NEUTRAL.ink, 0.33, -0.02, 0.72),
-      box(0.36, 0.08, 0.1, NEUTRAL.ink, 0, -0.4, 0.75),
+      box(0.2, 0.34, 0.06, NEUTRAL.ink, -0.33, -0.1, 0.8),
+      box(0.2, 0.34, 0.06, NEUTRAL.ink, 0.33, -0.1, 0.8),
+      box(0.5, 0.08, 0.06, NEUTRAL.ink, 0, -0.5, 0.8),
+      box(0.1, 0.1, 0.06, NEUTRAL.ink, -0.3, -0.42, 0.8),
+      box(0.1, 0.1, 0.06, NEUTRAL.ink, 0.3, -0.42, 0.8),
     ]),
   };
   Object.values(shapes).forEach(keep);
   return shapes;
 }
 
-/** 로우폴리 사람. hat 을 주면 그 색의 야구모자를 쓴다(점원). big = 배율 */
+/** 블록형 사람. hat 을 주면 그 색의 야구모자를 쓴다(점원). big = 배율 */
 export function blocky(shirt: number | string, pants: number | string, skin: string, big?: number, hat?: number): any {
   const g = new THREE.Group(),
     sh = getShapes(),
@@ -67,8 +64,8 @@ export function blocky(shirt: number | string, pants: number | string, skin: str
   const parts: any = {mat};
   parts.legL = joint(-0.5, 2, mesh(sh.leg, mat.pants), mesh(sh.shoe, lowMat()));
   parts.legR = joint(0.5, 2, mesh(sh.leg, mat.pants), mesh(sh.shoe, lowMat()));
-  parts.armL = joint(-1.42, 3.8, mesh(sh.sleeve, mat.shirt), mesh(sh.arm, mat.sk));
-  parts.armR = joint(1.42, 3.8, mesh(sh.sleeve, mat.shirt), mesh(sh.arm, mat.sk));
+  parts.armL = joint(-1.45, 3.8, mesh(sh.sleeve, mat.shirt), mesh(sh.arm, mat.sk));
+  parts.armR = joint(1.45, 3.8, mesh(sh.sleeve, mat.shirt), mesh(sh.arm, mat.sk));
   g.add(mesh(sh.torso, mat.shirt));
   parts.head = new THREE.Group();
   parts.head.position.set(0, 5, 0);
