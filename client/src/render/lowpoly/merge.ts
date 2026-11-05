@@ -112,6 +112,27 @@ export function instanced(geo: Geo, mat: any, items: Inst[]): any {
   return m;
 }
 
+/** 인스턴스를 cell(u) 칸으로 나눠 칸마다 InstancedMesh 를 만들고 칸 단위로 컬링한다(큰 월드의 나무·가로등용). 반환은 Group */
+export function instancedChunks(geo: Geo, mat: any, items: Inst[], cell = 96, reach = 6): any {
+  const g = new THREE.Group(),
+    by = new Map<string, Inst[]>();
+  for (const it of items) {
+    const k = Math.floor(it.x / cell) + ',' + Math.floor(it.z / cell);
+    (by.get(k) || by.set(k, []).get(k)!).push(it);
+  }
+  by.forEach(list => {
+    const m = instanced(geo.clone(), mat, list);
+    let cx = 0, cy = 0, cz = 0;
+    list.forEach(i => ((cx += i.x), (cy += i.y), (cz += i.z)));
+    cx /= list.length; cy /= list.length; cz /= list.length;
+    const r = Math.max(...list.map(i => Math.hypot(i.x - cx, i.y - cy, i.z - cz))) + reach * 2;
+    m.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(cx, cy, cz), r);
+    m.frustumCulled = true;
+    g.add(m);
+  });
+  return g;
+}
+
 /** 지오메트리 1개의 정점·삼각형 수 */
 export function geoStats(g: Geo): {verts: number; tris: number} {
   const verts = g.attributes.position.count;

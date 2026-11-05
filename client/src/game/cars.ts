@@ -5,6 +5,8 @@ import {dist2} from '../core/util.js';
 import {CARS, GARAGE_LV, GARAGE_NEAR, GARAGE_OUT, OWN_COST, PAINTS, REG_COST, SELL_BACK, TUNE, carOf, tuneCost, type TuneKey} from '../data/cars.js';
 import {VEH, enterVeh, exitVeh, refreshOwned, removeVeh, spawnOwned, vacateSpot, vehOfOwn, type Veh} from '../systems/vehicle.js';
 import {sfx} from '../audio/index.js';
+import {crowdApi} from '../systems/crowd.js';
+import {addStars} from '../systems/police.js';
 import {toast} from './hud.js';
 import type {Interactable, OwnedCar, Target} from '../core/types.js';
 
@@ -137,6 +139,11 @@ export function takeCar(v: Veh) {
   }
   // 길가 차량 시승: 튜닝샵에서 개조하면 내 차가 된다 (내부 플래그 stolen=1 = 개조 대기)
   vacateSpot(v);
+  const witness = crowdApi.nearest(v.x, v.z, 26);
+  if (witness >= 0) {
+    crowdApi.react(witness, '😱', 3);
+    addStars(1, '👀');
+  }
   if (hasRoom()) {
     const o: OwnedCar = {t: v.t, c: v.c, plate: '', stolen: 1, eng: 0, tire: 0, neon: 0, stored: 0, x: v.x, z: v.z, h: v.h};
     S.cars.list.push(o);
@@ -157,6 +164,7 @@ export const carIt: Interactable<CarT> = {
     let best: Veh | null = null,
       bd = 1e9;
     for (const v of VEH) {
+      if (v.own <= -3) continue; // 경찰차
       const t = carOf(v.t),
         d = dist2(me.pos, v) - t.len / 2 + 1;
       if (d < 3.4 && d < bd) [best, bd] = [v, d];

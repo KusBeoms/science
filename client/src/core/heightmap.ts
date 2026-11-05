@@ -5,16 +5,18 @@ import {SECTORS} from '../data/sectors.js';
 import {BELT_W, CITY_HALF, CITY_HILL, CITY_OUT, PASSES, PASS_W, TERRAIN, type SectorMap} from '../data/world-map.js';
 import {fbm, mulberry32} from '../render/lowpoly/rng.js';
 import {padPos} from './geometry.js';
+import {DESERT, JAIL, LAKES, MOUNTAIN, WILD_BRIDGE, WILD_RECT} from '../data/wild.js';
 
 /** 격자: 샘플 간격 · 원점 · 개수 (대륙 x −400~380, z −640~450) */
 export const STEP = 5,
-  GX0 = -400,
-  GZ0 = -640,
-  NX = 157,
-  NZ = 219;
+  GX0 = -640,
+  GZ0 = -850,
+  NX = 257,
+  NZ = 431;
 /** 구역 소속 코드: 0 = 허공, 1..12 = 구역(인덱스+1), CITY, PASS */
 export const REG_CITY = 13,
-  REG_PASS = 14;
+  REG_PASS = 14,
+  REG_WILD = 15;
 /** 땅 가장자리 낭떠러지 높이 (첫 겹, 둘째 겹) 와 끊김 */
 export const CLIFF1 = -12,
   CLIFF2 = -40,
@@ -122,6 +124,28 @@ function beltH(x: number, z: number, pw: number): number {
   return h * smooth(PASS_W / 2 + 1, PASS_W / 2 + 14, pw); // 통로 앞은 평지
 }
 
+/** 남부 야생지 높이: 평야 + 시골 구릉 + 사막 사구 + 호수 + 산(등산 가능한 완만한 S 단면) + 교도소 평지 */
+function wildH(x: number, z: number): number {
+  const n = (fbm(x * 0.02 + 11, z * 0.02 - 7, 4, 321) - 0.5) * 2;
+  let h = n * 1.3;
+  const M = MOUNTAIN,
+    t = Math.hypot(x - M.x, z - M.z) / M.r;
+  if (t < 1) {
+    const prof = 1 - smooth(0, 1, t);
+    h += M.h * prof + 3 * prof * (fbm(x * 0.035, z * 0.035, 3, 77) - 0.5) * 2;
+  }
+  const dw = smooth(DESERT.x0 - 30, DESERT.x0 + 30, x) * smooth(DESERT.z0 - 30, DESERT.z0 + 30, z);
+  h += dw * (4 * Math.sin(x * 0.05 + z * 0.03) + 2.5 * Math.sin(z * 0.07 - x * 0.02) + 2);
+  for (const L of LAKES) {
+    const lt = Math.hypot(x - L.x, z - L.z) / L.r;
+    if (lt < 1) h += -L.depth * (1 - smooth(0.5, 1, lt)) - 1.2 * (1 - lt) * 0;
+  }
+  const j = JAIL.flat,
+    jd = Math.max(j[0] - x, x - j[2], j[1] - z, z - j[3], 0);
+  h *= smooth(0, 22, jd); // 교도소 둘레는 평지
+  h *= smooth(705, 745, z); // 다리 끝도 평지
+  return h;
+}
 let outReg = 0;
 /** (x,z) 의 높이를 계산해 돌려주고 소속 코드는 outReg 에 둔다 */
 function evalAt(x: number, z: number): number {
@@ -139,6 +163,19 @@ function evalAt(x: number, z: number): number {
   if (ds > d) {
     d = ds;
     reg = si!.idx + 1;
+  }
+  const dw = Math.min(x - WILD_RECT[0], WILD_RECT[2] - x, z - WILD_RECT[1], WILD_RECT[3] - z);
+  if (dw > d) {
+    d = dw;
+    reg = REG_WILD;
+  }
+  const B = WILD_BRIDGE;
+  if (z >= B[1] && z <= B[3]) {
+    const e = (B[2] - B[0]) / 2 - Math.abs(x - (B[0] + B[2]) / 2);
+    if (e > d) {
+      d = e;
+      reg = REG_PASS;
+    }
   }
   let pw = 1e9;
   for (const p of PS) {
@@ -159,7 +196,8 @@ function evalAt(x: number, z: number): number {
     const hl = CITY_HILL;
     h = hl.h * (1 - smooth(hl.flat, hl.foot, Math.hypot(x - hl.x, z - hl.z)));
     if (Math.max(Math.abs(x), Math.abs(z)) > CITY_HALF) h = beltH(x, z, pw);
-  } else if (si && reg <= SEC.length) h = sectorH(si, x, z, ds, pw);
+  } else if (reg === REG_WILD) h = wildH(x, z);
+  else if (si && reg <= SEC.length) h = sectorH(si, x, z, ds, pw);
   return reg === REG_CITY ? h : h - COAST_DIP * (1 - smooth(0, COAST, d)); // 도시 가장자리는 지면 판과 높이를 맞춘다
 }
 

@@ -5,15 +5,19 @@ import {box, cyl} from './lowpoly/prim.js';
 import {glowMat, lowMat, mergePlaced, type Placed} from './lowpoly/merge.js';
 import {PURPOSE_INFO, type Enterable, type Purpose} from '../data/interiors.js';
 import type {Rect} from '../core/terrain.js';
+import {furnish2} from './interior-furn2.js';
 
 export const RX = 1500,
   RZ = 1500;
-export type SpotKind = 'exit' | 'shop' | 'dealer' | 'tuning' | 'garage' | 'bed' | 'seat' | 'tv';
+export type SpotKind = 'exit' | 'shop' | 'dealer' | 'tuning' | 'garage' | 'bed' | 'seat' | 'tv' | 'use';
 export interface Spot {
   kind: SpotKind;
   x: number;
   z: number;
   ry?: number;
+  /** kind='use': 효과(rest·snack·coin·look·sing·train·bowl·read·swim·heal) 와 표시 이모지 */
+  fx?: string;
+  icon?: string;
 }
 export interface Room {
   grp: any;
@@ -22,7 +26,7 @@ export interface Room {
   spots: Spot[];
   spawn: {x: number; z: number};
 }
-interface Item {
+export interface Item {
   w: number;
   h: number;
   d: number;
@@ -54,6 +58,8 @@ function furnish(p: Purpose, w: number, d: number, seed: number, spots: Spot[]):
     if (kind) spots.push({kind, x, z: z + 1.6});
   };
   const crate = (x: number, z: number, c: number = PAL.wood) => add({w: 1.1, h: 1.1, d: 1.1, c, x, z});
+  const more = furnish2(p, w, d, spots, add);
+  if (more) return it.filter(i => i.w > 0.05);
   switch (p) {
     case 'shop': {
       counter(0, -hz + 3.5, Math.min(6, w - 4), 'shop');

@@ -15,10 +15,10 @@ test('heightmap: flat city, north-west hill, ridge with an opening, void between
       bake: M.bakeMs,
       city: [h(0, 0), h(60, 60), h(0, -100)],
       hill: h(-105, -105),
-      crest: Math.max(...[...Array(18)].map((_, k) => h(79 - k, -300))),
-      opening: [h(0, -180), h(10, -190), h(0, -200)],
-      void: [h(100, 200), h(-120, 260), h(115, -215)],
-      pass: [h(0, -165), h(115, -260), h(270, -165)],
+      crest: Math.max(...[...Array(18)].map((_, k) => h(79 - k, -500))),
+      opening: [h(0, -365), h(10, -375), h(0, -385)],
+      void: [h(100, 390), h(-120, 390), h(200, -390)],
+      pass: [h(0, -350), h(200, -445), h(455, -250)],
       pad: h((window as any).__game.G.pads.alpha.x, (window as any).__game.G.pads.alpha.z),
     };
   });
@@ -40,7 +40,7 @@ test('walking into the ridge is blocked, the opening is not', async ({game}) => 
     const g = (window as any).__game;
     g.unlockAll();
     g.SECTORS.forEach((s: any) => (s.guard.speed = 0));
-    g.teleport(40, -310);
+    g.teleport(40, -500);
     g.G.yaw = 0;
   });
   await page.keyboard.down('KeyD'); // 동쪽 능선으로
@@ -59,7 +59,7 @@ test('terrain tiles stream within the triangle budget and the gate follows the l
   const {page} = game;
   await game.open('?debug=1');
   await page.click('#mstart');
-  await page.evaluate(() => (window as any).__game.teleport(0, -150));
+  await page.evaluate(() => (window as any).__game.teleport(0, -335));
   await page.waitForFunction(() => (window as any).__game.G.chunks[0], undefined, {timeout: 20000});
   await page.waitForTimeout(1500);
   const r = await page.evaluate(async () => {

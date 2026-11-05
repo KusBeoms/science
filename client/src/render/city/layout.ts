@@ -3,7 +3,10 @@ import {
   CITY_BUILDINGS, CITY_LANDMARKS, CITY_PADS, CITY_PLAZAS, CITY_ROADS, CITY_SIDEWALKS, footprint,
   type CityRect, type CityRoad,
 } from '../../data/city.js';
+import {ROADS_W3} from '../../data/city-w3.js';
 import {CITY_HILL} from '../../data/world-map.js';
+import {PITCH, STADIUM} from '../../data/soccer.js';
+import {RESERVED} from '../../data/city-w3.js';
 import {TRADE_EDGE} from './tradeline.js';
 import {CITY_HALF} from '../../core/terrain.js';
 import {PAL, mix} from '../lowpoly/palette.js';
@@ -29,6 +32,16 @@ const roadRect = (r: CityRoad): CityRect => {
 };
 const ROAD_RECTS = CITY_ROADS.map(roadRect);
 const FOOTPRINTS = CITY_BUILDINGS.map(b => footprint(b));
+/** 건물 발자국 공간 해시(16u 칸): 1u 칸마다 전부 훑지 않게 한다 */
+const FGRID = new Map<string, CityRect[]>();
+for (const f of FOOTPRINTS)
+  for (let i = Math.floor((f[0] - 3) / 16); i <= Math.floor((f[2] + 3) / 16); i++)
+    for (let j = Math.floor((f[1] - 3) / 16); j <= Math.floor((f[3] + 3) / 16); j++) (FGRID.get(i + ',' + j) || FGRID.set(i + ',' + j, []).get(i + ',' + j)!).push(f);
+const nearFoot = (x: number, z: number) => (FGRID.get(Math.floor(x / 16) + ',' + Math.floor(z / 16)) || []).some(f => inRect(x, z, f, 1.2));
+const POND = {x: -275, z: -268, r: 22},
+  PITCH_RECT: CityRect = [PITCH.cx - PITCH.hl - 3, PITCH.cz - PITCH.hw - 3, PITCH.cx + PITCH.hl + 3, PITCH.cz + PITCH.hw + 3],
+  PARK_R: CityRect = RESERVED[1] as CityRect,
+  THEME_R: CityRect = RESERVED[2] as CityRect;
 /** 분수(L2) 둘레 정사각 바닥 */
 const FOUNTAIN = CITY_LANDMARKS.find(l => l.kind === 'orrery')!;
 /** 큰 랜드마크(발자국 사각형) 둘레는 포장 */
@@ -58,6 +71,15 @@ export function surfaceAt(cx: number, cz: number): number {
     } else if (r.id === 'harbor' && (lane === -1 || lane === 0) && Math.floor(cz / 3) % 2 === 0) return LINE_Y;
     return PAL.asphalt;
   }
+  // 스타디움: 경기장은 8u 폭 줄무늬 잔디, 둘레는 콘크리트
+  if (inRect(cx, cz, PITCH_RECT)) return Math.floor((cx - PITCH_RECT[0]) / 8) % 2 ? PAL.lime : mix(PAL.lime, PAL.green, 0.5);
+  if (inRect(cx, cz, STADIUM.rect as unknown as CityRect)) return PAVE_A;
+  if (inRect(cx, cz, PARK_R)) {
+    if (Math.hypot(cx - POND.x, cz - POND.z) < POND.r) return PAL.cyan;
+    if (Math.hypot(cx - POND.x, cz - POND.z) < POND.r + 2) return PAL.bone;
+    return hash2(Math.floor(cx / 6), Math.floor(cz / 6), 11) < 0.5 ? LAWN_A : mix(PAL.green, PAL.lime, 0.4);
+  }
+  if (inRect(cx, cz, THEME_R)) return (Math.floor(cx / 6) + Math.floor(cz / 6)) % 2 ? PAVE_B : mix(PAVE_A, PAL.pink, 0.2);
   if (CITY_SIDEWALKS.some(s => inRect(cx, cz, s))) return PAVE_A;
   for (const p of CITY_PLAZAS) {
     if (!inRect(cx, cz, p.rect)) continue;
@@ -69,7 +91,7 @@ export function surfaceAt(cx: number, cz: number): number {
     return chk && (Math.floor(cx / 10) + Math.floor(cz / 10)) % 2 === 0 ? PAVE_B : PAVE_A;
   }
   if (LM_RECTS.some(r => inRect(cx, cz, r, 1.5))) return PAVE_A;
-  if (FOOTPRINTS.some(f => inRect(cx, cz, f, 1.2))) return PAVE_A;
+  if (nearFoot(cx, cz)) return PAVE_A;
   return hash2(Math.floor(cx / 8), Math.floor(cz / 8), 3) < 0.5 ? LAWN_A : LAWN_B;
 }
 
@@ -169,14 +191,29 @@ export function planProps(): PropPlan {
   for (const sx of [-1, 1]) {
     lamps.push({x: sx * 30, y: 0, z: -36, ry: 0}, {x: sx * 30, y: 0, z: 36, ry: 0}, {x: sx * 45, y: 0, z: 45, ry: 0});
   }
+  // 신도심 도로 가로등: 차도 양쪽 28u 간격
+  for (const r of ROADS_W3) {
+    if (!r.car) continue;
+    const vert = r.x0 === r.x1,
+      a0 = Math.min(vert ? r.z0 : r.x0, vert ? r.z1 : r.x1) + 14,
+      a1 = Math.max(vert ? r.z0 : r.x0, vert ? r.z1 : r.x1) - 10,
+      o = r.w / 2 + 1.4;
+    for (let a = a0; a < a1; a += 28)
+      for (const s of [-1, 1]) {
+        const x = vert ? r.x0 + s * o : a,
+          z = vert ? a : r.z0 + s * o;
+        if (Math.abs(x) < 150 && Math.abs(z) < 150) continue;
+        lamps.push({x, y: 0, z, ry: vert ? (s > 0 ? Math.PI : 0) : s > 0 ? Math.PI / 2 : -Math.PI / 2});
+      }
+  }
   // 나무: 대로 가로수(시계탑 앞마당 쪽은 비움), 광장, 빈 잔디에 드문드문
   for (const z of [-72, -92, -112, -132]) {
     if (z !== -112) trees.push({x: -13.8, y: 0, z, s: 0.95 + hash2(z, 1) * 0.3});
     trees.push({x: 13.8, y: 0, z, s: 0.95 + hash2(z, 2) * 0.3});
   }
   for (const [x, z] of [[-40, -28], [40, -28], [-40, 28], [40, 28]]) trees.push({x, y: 0, z, s: 1.15});
-  for (let gx = -140; gx <= 140; gx += 14) {
-    for (let gz = -140; gz <= 140; gz += 14) {
+  for (let gx = -326; gx <= 326; gx += 14) {
+    for (let gz = -326; gz <= 326; gz += 14) {
       const x = gx + (hash2(gx, gz, 5) - 0.5) * 8,
         z = gz + (hash2(gx, gz, 6) - 0.5) * 8;
       if (hash2(gx, gz, 7) > 0.2 || !openLawn(x, z) || Math.hypot(x - CITY_HILL.x, z - CITY_HILL.z) < CITY_HILL.foot) continue;

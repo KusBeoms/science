@@ -2,6 +2,7 @@
 // W1 에선 상호작용 없음. 상태는 저장하지 않는다(외형 시드도 매번 새로 뽑는다). 렌더는 render/crowd.ts (InstancedMesh).
 import {G, paused} from '../core/runtime.js';
 import {clamp, rnd} from '../core/util.js';
+import {CITY_HALF} from '../data/world-map.js';
 import {groundH, solidAt} from '../core/terrain.js';
 import {CITY_GRAPH as GR, ZONE_SHARE} from '../data/citygraph.js';
 import {ARCHETYPES, CITIZEN_SCALE, HEAD_TOP, SHIRTS, createCrowdView} from '../render/crowd.js';
@@ -9,11 +10,10 @@ import type {CrowdSprite, CrowdView} from '../render/crowd.js';
 import type {GameSystem} from '../core/types.js';
 
 /** 동시 최대 인원: 데스크톱 / 모바일(pointer:coarse). W2 에서 데스크톱 66, 모바일 Q0 24 */
-export const CROWD_MAX = {desktop: 66, mobile: 24};
+export const CROWD_MAX = {desktop: 110, mobile: 36};
 const CAP = matchMedia('(pointer:coarse)').matches ? CROWD_MAX.mobile : CROWD_MAX.desktop;
 /** 플레이어가 도시 경계에서 이만큼 안에 있을 때만 시뮬레이션 */
 const ACTIVE_MARGIN = 60,
-  CITY_HALF = 150,
   SPAWN_PER_SEC = 2,
   SPAWN_MIN_DIST = 40,
   DESPAWN_DIST = 100,
@@ -50,6 +50,11 @@ interface Agent extends CrowdSprite {
   age: number;
   leaving: boolean;
   gone: boolean;
+  /** 치여서 쓰러져 있는 시간 · 겁먹어 도망치는 시간 · 미끄러지는 속도 */
+  down: number;
+  panic: number;
+  vx: number;
+  vz: number;
   bub: number;
   emoji: string;
 }
@@ -112,7 +117,7 @@ function spawn(minDist: number): boolean {
     x: GR.x[best], y: 0, z: GR.z[best], yaw: Math.atan2(GR.x[b] - GR.x[best], GR.z[b] - GR.z[best]),
     w: 0, h: 0, swing: 0, bob: 0, color: SHIRTS[Math.floor(Math.random() * SHIRTS.length)],
     a: best, b, t: 0, len: Math.hypot(GR.x[b] - GR.x[best], GR.z[b] - GR.z[best]), speed: rnd(2.9, 5.8), arch: ar,
-    idle: 0, look: 0, lookCd: 0, stepCd: 0, face: 0, off: 0, phase: rnd(0, 6.28), mv: 1, age: 0, leaving: false, gone: false, bub: 0, emoji: '',
+    idle: 0, look: 0, lookCd: 0, stepCd: 0, face: 0, off: 0, phase: rnd(0, 6.28), mv: 1, age: 0, leaving: false, gone: false, down: 0, panic: 0, vx: 0, vz: 0, bub: 0, emoji: '',
   });
   return true;
 }
@@ -162,6 +167,28 @@ function place(p: Agent): boolean {
 
 function step(p: Agent, dt: number) {
   p.age += dt;
+  if (p.panic > 0) p.panic -= dt;
+  if (p.down > 0) {
+    // 치여서 쓰러져 미끄러지다가 일어난다
+    p.down -= dt;
+    p.lay = Math.min(1, (p.lay || 0) + dt * 6);
+    p.x += p.vx * dt;
+    p.z += p.vz * dt;
+    p.vx *= Math.exp(-3 * dt);
+    p.vz *= Math.exp(-3 * dt);
+    if (solidAt(p.x, p.z, BODY_R)) [p.x, p.z, p.vx, p.vz] = [p.x - p.vx * dt, p.z - p.vz * dt, 0, 0];
+    p.mv = 0;
+    p.swing = 0;
+    p.bob = 0;
+    const g0 = groundH(p.x, p.z);
+    p.y = g0 > -Infinity ? g0 : p.y;
+    p.bub -= dt;
+    return;
+  }
+  if (p.lay) {
+    p.lay = Math.max(0, p.lay - dt * 4);
+    if (p.lay === 0) p.lay = undefined;
+  }
   p.lookCd -= dt;
   p.stepCd -= dt;
   p.bub -= dt;
@@ -205,7 +232,7 @@ function step(p: Agent, dt: number) {
     p.mv = Math.max(0, p.mv - dt * 6);
   } else {
     p.mv = Math.min(1, p.mv + dt * 6);
-    p.t += (p.speed * dt) / (p.len || 1);
+    p.t += (p.speed * (p.panic > 0 ? 1.9 : 1) * dt) / (p.len || 1);
     if (p.t >= 1) {
       const n = p.b,
         nx = nextNode(p);
@@ -289,7 +316,29 @@ function update(dt: number, raw: number) {
 export const crowdSystem: GameSystem = {id: 'crowd', update};
 
 /** 다른 시스템(위장 수호신 W5, 테스트)이 쓰는 읽기 전용 창구 */
+/** 차 등이 시민을 친다: (x,z) 반경 r 안의 시민을 (vx,vz) 방향으로 날려 보낸다. 친 수를 돌려준다 */
+function hitAt(x: number, z: number, r: number, vx: number, vz: number): number {
+  let n = 0;
+  for (const p of agents) {
+    if (p.leaving || p.down > 0 || Math.hypot(p.x - x, p.z - z) > r) continue;
+    p.down = 2.8;
+    p.vx = vx * 0.6 + (Math.random() - 0.5) * 2;
+    p.vz = vz * 0.6 + (Math.random() - 0.5) * 2;
+    p.bub = 0;
+    p.emoji = '😵';
+    p.bub = 2.5;
+    n++;
+  }
+  if (n) for (const q of agents) if (!q.leaving && q.down <= 0 && Math.hypot(q.x - x, q.z - z) < 16) [q.panic, q.emoji, q.bub] = [4, '😱', 2];
+  return n;
+}
 export const crowdApi = {
+  hitAt,
+  /** 머리 위 이모지 (말풍선 6개 제한 적용) */
+  react(i: number, e: string, sec = 2) {
+    const p = agents[i];
+    if (p) emoji(p, e, sec);
+  },
   count: () => agents.filter(p => !p.leaving).length,
   positions: () => agents.map(p => ({x: p.x, z: p.z})),
   /** 반지름 r 안에서 가장 가까운 행인의 번호 (없으면 −1) */

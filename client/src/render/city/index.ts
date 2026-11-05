@@ -3,12 +3,14 @@
 import {G} from '../../core/runtime.js';
 import {addSolid} from '../../core/terrain.js';
 import {CITY_BUILDINGS, CITY_LANDMARKS, footprint, type CityBuilding, type Facing} from '../../data/city.js';
-import {glowMat, instanced, keep, lowMat, mergePlaced, type Placed} from '../lowpoly/merge.js';
+import {glowMat, instanced, instancedChunks, keep, lowMat, mergePlaced, type Placed} from '../lowpoly/merge.js';
 import type {GameSystem} from '../../core/types.js';
 import {makeBuilding} from './building.js';
 import {barrierGeo, benchGeo, lampGeo, pineGeo, roundTreeGeo} from './props.js';
 import {clockTower, marketArch, orrery} from './landmarks.js';
 import {castle, controlTower, hangar, observatory} from './landmarks2.js';
+import {aquarium, ferris, lighthouse, stadium, tvTower} from './landmarks3.js';
+import {STADIUM} from '../../data/soccer.js';
 import {tradeLine} from './tradeline.js';
 import {groundGeometry, planProps} from './layout.js';
 
@@ -16,7 +18,8 @@ const FACE_RY: Record<Facing, number> = {s: 0, n: Math.PI, e: Math.PI / 2, w: -M
 
 /** 밤에만 보이는 메시들 */
 const nightMeshes: any[] = [];
-let spinner: any = null;
+let spinner: any = null,
+  wheel: any = null;
 
 /** 건물 한 무리를 solid / lit 메시 2개로 병합해 grp 에 붙인다 */
 function addBuildings(grp: any, list: readonly CityBuilding[]) {
@@ -54,8 +57,9 @@ export function buildCity(): any {
   ground.position.y = -0.05;
   grp.add(ground);
 
-  const where = (b: CityBuilding) => (b.district === 'avenue' ? (b.x < 0 ? 'w' : 'e') : b.district);
-  for (const key of ['w', 'e', 'shops', 'alley', 'market', 'garage', 'port', 'science', 'resi']) addBuildings(grp, CITY_BUILDINGS.filter(b => where(b) === key));
+  const where = (b: CityBuilding) => `${Math.floor(b.x / 110)},${Math.floor(b.z / 110)}`;
+  const keys = [...new Set(CITY_BUILDINGS.map(where))];
+  for (const key of keys) addBuildings(grp, CITY_BUILDINGS.filter(b => where(b) === key));
 
   // 랜드마크
   const [L1, L2, L3] = CITY_LANDMARKS,
@@ -79,25 +83,45 @@ export function buildCity(): any {
     for (const lit of [false, true]) addMesh(grp, lit ? lm.lit : lm.solid, lit, L.x, L.z).position.y = y;
     addSolid(L.x - (L.w ?? 2 * L.r) / 2, L.z - (L.d ?? 2 * L.r) / 2, L.x + (L.w ?? 2 * L.r) / 2, L.z + (L.d ?? 2 * L.r) / 2);
   }
-  // 골목 막다른 곳의 공사 울타리
-  const fence = new THREE.Mesh(barrierGeo(12), lowMat());
-  fence.position.set(-140, 0, 0);
-  grp.add(fence);
-  addSolid(-140.4, -6, -139.6, 6);
+  // W3 랜드마크: 스타디움 · 대관람차 · 수족관 · 전망 타워 · 등대
+  const L = (id: string) => CITY_LANDMARKS.find(l => l.id === id)!;
+  const st = stadium(),
+    s8 = L('L8'),
+    [sx0, sz0, sx1, sz1] = STADIUM.rect;
+  addMesh(grp, st.solid, false, s8.x, s8.z);
+  addMesh(grp, st.lit, true, s8.x, s8.z);
+  const D = STADIUM.stand;
+  addSolid(sx0, sz0, sx1, sz0 + D);
+  addSolid(sx0, sz0, sx0 + D, sz1);
+  addSolid(sx1 - D, sz0, sx1, sz1);
+  addSolid(sx0, sz1 - D, STADIUM.gateX - STADIUM.gateHalf, sz1);
+  addSolid(STADIUM.gateX + STADIUM.gateHalf, sz1 - D, sx1, sz1);
+  const fw = ferris(),
+    s9 = L('L9');
+  addMesh(grp, fw.solid, false, s9.x, s9.z);
+  wheel = addMesh(grp, fw.spin, false, s9.x, s9.z);
+  wheel.position.y = 26;
+  addSolid(s9.x - 9, s9.z - 5, s9.x + 9, s9.z + 5);
+  for (const [id, lm] of [['L10', aquarium()], ['L11', tvTower()], ['L12', lighthouse()]] as const) {
+    const l = L(id);
+    addMesh(grp, lm.solid, false, l.x, l.z);
+    addMesh(grp, lm.lit, true, l.x, l.z);
+    addSolid(l.x - l.w! / 2, l.z - l.d! / 2, l.x + l.w! / 2, l.z + l.d! / 2);
+  }
   // 거래의 선: 도시 둘레 금빛 기둥 띠 (바닥 인레이는 layout.ts)
   addMesh(grp, tradeLine(), false);
 
   // 소품(인스턴싱)
   const plan = planProps(),
     lamp = lampGeo();
-  grp.add(instanced(keep(lamp.pole), lowMat(), plan.lamps));
-  const bulbs = instanced(keep(lamp.bulb), glowMat(), plan.lamps);
+  grp.add(instancedChunks(keep(lamp.pole), lowMat(), plan.lamps));
+  const bulbs = instancedChunks(keep(lamp.bulb), glowMat(), plan.lamps);
   bulbs.visible = false;
   nightMeshes.push(bulbs);
   grp.add(bulbs);
-  grp.add(instanced(roundTreeGeo(), lowMat(), plan.trees));
-  grp.add(instanced(pineGeo(), lowMat(), plan.pines));
-  grp.add(instanced(benchGeo(), lowMat(), plan.benches));
+  grp.add(instancedChunks(roundTreeGeo(), lowMat(), plan.trees));
+  grp.add(instancedChunks(pineGeo(), lowMat(), plan.pines));
+  grp.add(instancedChunks(benchGeo(), lowMat(), plan.benches));
   return grp;
 }
 
@@ -111,5 +135,6 @@ export const citySystem: GameSystem = {
     const on = G.night > 0;
     if (nightMeshes.length && nightMeshes[0].visible !== on) setCityNight(on);
     if (spinner) spinner.rotation.y += raw * 0.35;
+    if (wheel) wheel.rotation.z += raw * 0.12;
   },
 };

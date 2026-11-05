@@ -2,11 +2,12 @@
 // 보도 중심선은 data/city.ts 의 도로·광장 데이터에서 구하고, 걷는 도중 건물과의 충돌은 solidAt 으로 막는다.
 // 좌표: x 동, z 남 (사과 대로는 정북 = −z).
 import {CITY_PLAZAS, CITY_ROADS} from './city.js';
+import {ROADS_W3} from './city-w3.js';
 
 /** 구역 id (ZONE_SHARE 의 인덱스) */
-export const Zone = {Plaza: 0, Avenue: 1, Shops: 2, Market: 3, Harbor: 4, Garage: 5, Science: 6, Resi: 7} as const;
+export const Zone = {Plaza: 0, Avenue: 1, Shops: 2, Market: 3, Harbor: 4, Garage: 5, Science: 6, Resi: 7, NewTown: 8} as const;
 /** 구역별 군중 목표 비율 (WORLD 5.1: 광장 10 · 북문 6 · 상점가 12 · 암시장 20 · 우주항 4 · 정비소 3 · 과학관 5 · 주거 6 = 66) */
-export const ZONE_SHARE = [10, 6, 12, 20, 4, 3, 5, 6] as const;
+export const ZONE_SHARE = [10, 6, 12, 20, 4, 3, 5, 6, 44] as const;
 
 export interface CityGraph {
   x: Float32Array;
@@ -79,6 +80,7 @@ function build(): CityGraph {
   for (const x of [58, 95, 143]) link(Zone.Shops, [[x, -ST], [x, 0], [x, ST]]);
 
   buildW2(link);
+  buildW3(link);
 
   return {
     x: Float32Array.from(xs),
@@ -131,6 +133,48 @@ function buildW2(link: (z: number, pts: Pt[]) => void) {
   for (const z of [93.5, 106.5]) link(Z, [[-52, z], [-64, z, 1], [-82, z], [-100, z, 1], [-118, z], [-136, z]]);
   link(Z, [[-R, 93.5], [-R, 106.5], [-52, 106.5]]);
   link(Z, [[-136, 93.5], [-136, 106.5]]);
+}
+
+/** 신도심: 새 도로(ROADS_W3) 양쪽 보도를 따라 20u 간격 노드, 교차하는 도로의 보도끼리는 교차점에서 만나게 하고, 원도심 끝과 이어 붙인다 */
+function buildW3(link: (z: number, pts: Pt[]) => void) {
+  const Z = Zone.NewTown,
+    cars = ROADS_W3.filter(r => r.car),
+    lanes = cars.flatMap(r => {
+      const vert = r.x0 === r.x1,
+        o = r.w / 2 + r.sidewalk / 2,
+        a0 = Math.min(vert ? r.z0 : r.x0, vert ? r.z1 : r.x1),
+        a1 = Math.max(vert ? r.z0 : r.x0, vert ? r.z1 : r.x1);
+      return [-1, 1].map(s => ({vert, c: (vert ? r.x0 : r.z0) + s * o, a0, a1}));
+    });
+  for (const L of lanes) {
+    const at = new Set<number>();
+    for (let a = Math.ceil(L.a0 / 20) * 20; a <= L.a1; a += 20) at.add(a);
+    at.add(L.a0);
+    at.add(L.a1);
+    for (const M of lanes) if (M.vert !== L.vert && M.c >= L.a0 && M.c <= L.a1 && L.c >= M.a0 && L.c <= M.a1) at.add(M.c);
+    const pts = [...at].sort((p, q) => p - q).map((a, k): Pt => {
+      const idle = k % 3 === 1;
+      return L.vert ? (idle ? [L.c, a, 1] : [L.c, a]) : idle ? [a, L.c, 1] : [a, L.c];
+    });
+    link(Z, pts);
+  }
+  // 길 끝에서는 양쪽 보도를 이어 막다른 곳을 없앤다
+  for (const r of cars) {
+    const vert = r.x0 === r.x1,
+      o = r.w / 2 + r.sidewalk / 2,
+      c = vert ? r.x0 : r.z0;
+    for (const a of [Math.min(vert ? r.z0 : r.x0, vert ? r.z1 : r.x1), Math.max(vert ? r.z0 : r.x0, vert ? r.z1 : r.x1)])
+      link(Z, vert ? [[c - o, a], [c + o, a]] : [[a, c - o], [a, c + o]]);
+  }
+  // 원도심 끝과 연결
+  const LANE = 13.5;
+  for (const s of [-1, 1]) link(Zone.Avenue, [[s * LANE, -144], [s * LANE, -150]]);
+  link(Zone.Shops, [[143, -6.5], [150, -8.5]]);
+  link(Zone.Shops, [[143, 6.5], [150, 8.5]]);
+  link(Zone.Harbor, [[0, 146], [9.5, 148]]);
+  link(Zone.Harbor, [[0, 146], [-9.5, 148]]);
+  link(Zone.Market, [[-126, -4.5], [-138, -8.5]]);
+  link(Zone.Market, [[-126, 4.5], [-138, 8.5]]);
 }
 
 export const CITY_GRAPH = build();

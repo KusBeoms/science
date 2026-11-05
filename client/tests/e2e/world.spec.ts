@@ -37,11 +37,11 @@ test('groundH: city, passes and void; walkable network connects all 12 sectors o
   const r = await page.evaluate(async t => {
     const T = await import(t);
     const g = (window as any).__game;
-    const before = [T.groundH(0, 0), T.groundH(0, -165), T.groundH(0, -230), T.groundH(100, 200), T.groundH(120, 350), T.groundH(120, 300)];
+    const before = [T.groundH(0, 0), T.groundH(0, -350), T.groundH(0, -420), T.groundH(100, 390), T.groundH(200, 535), T.groundH(200, 480)];
     g.unlockAll();
     const reach = (x0: number, z0: number) => {
       const seen = new Set<number>([0]);
-      const W = 200, key = (i: number, j: number) => (i + 400) * 1000 + (j + 400);
+      const W = 330, key = (i: number, j: number) => (i + 400) * 1000 + (j + 400);
       const q = [[Math.round(x0 / 4), Math.round(z0 / 4)]];
       seen.clear();
       seen.add(key(q[0][0], q[0][1]));
@@ -57,11 +57,13 @@ test('groundH: city, passes and void; walkable network connects all 12 sectors o
       return (x: number, z: number) => seen.has(key(Math.round(x / 4), Math.round(z / 4)));
     };
     const has = reach(0, 0);
-    return {before, centers: g.SECTORS.map((s: any) => has(s.center.x, s.center.z)), void1: has(100, 200)};
+    return {before, centers: g.SECTORS.map((s: any) => has(s.center.x, s.center.z)), void1: has(100, 390), wild: has(0, 1000), jail: has(-200, 1060)};
   }, T);
   expect(r.before).toEqual([0, 0, -Infinity, -Infinity, 0, -Infinity]); // 잠긴 S1 은 허공 취급(막힘은 blockedAt), 해협 다리·허공 구분
   expect(r.centers).toEqual(Array(12).fill(true));
   expect(r.void1).toBe(false);
+  expect(r.wild).toBe(true); // 도시 남쪽 다리를 건너 야생지(산·호수·사막·교도소)에 닿는다
+  expect(r.jail).toBe(true);
 });
 
 test('walking north from the city reaches the unlocked S1 through the pass', async ({game}) => {

@@ -3,8 +3,9 @@
 // 면 색 = ramp(바이옴, 높이, 경사) + 면별 밝기 흔들림. 아직 잠긴 구역의 분지는 안개색으로 가려진다 (능선은 그대로 보임).
 import {G} from '../core/runtime.js';
 import {locked} from '../core/progress.js';
-import {GX0, GZ0, NX, NZ, REG_CITY, REG_PASS, STEP, bakeContinent, gridOf, CLIFF1} from '../core/heightmap.js';
+import {GX0, GZ0, NX, NZ, REG_CITY, REG_PASS, REG_WILD, STEP, bakeContinent, gridOf, CLIFF1} from '../core/heightmap.js';
 import {SECTORS} from '../data/sectors.js';
+import {COUNTRY, DESERT} from '../data/wild.js';
 import {CITY_HALF, SEA_Y, TERRAIN} from '../data/world-map.js';
 import {registerLandmarkSolids} from './landmarks.js';
 import {PAL, TINT, mix, ramp, rgb, type Biome} from './lowpoly/palette.js';
@@ -30,7 +31,7 @@ const tiles = new Map<number, {mesh: any; dirty: boolean}>();
 let hasLand: Uint8Array;
 
 /** 사과 대로가 통로를 따라 S1 문까지 이어진 아스팔트 띠 (도시 지면 자체는 render/city 가 깐다) */
-const APPLE_ROAD = [-12, -182, 12, -150];
+const APPLE_ROAD = [-12, -365, 12, -335];
 const GRASS = mix(PAL.green, PAL.ink, 0.5),
   CITY_GROUND = mix(PAL.slate, PAL.steel, 0.4),
   PASS_STONE = mix(PAL.paving, PAL.clay, 0.3);
@@ -49,6 +50,25 @@ function beltColor(cx: number, cz: number, y: number, slope: number): number {
   return mix(c, PAL.stone, smooth(0.45, 0.8, slope) * 0.7);
 }
 
+const SANDY = mix(PAL.bone, PAL.amber, 0.45),
+  DUNE = mix(SANDY, PAL.orange, 0.25),
+  WHEAT = mix(PAL.yellow, PAL.amber, 0.4),
+  TILLED = mix(PAL.clay, PAL.green, 0.2),
+  MEADOW = mix(PAL.green, PAL.lime, 0.45);
+/** 남부 야생지 색: 호수 바닥·물가 모래, 사막, 산(숲→바위→눈), 시골 농지 격자, 평야 */
+function wildColor(cx: number, cz: number, y: number, slope: number): number {
+  if (y < SEA_Y - 1.5) return mix(PAL.slate, PAL.teal, 0.4);
+  if (y < SEA_Y + 1) return SANDY;
+  const desert = smooth(DESERT.x0 - 30, DESERT.x0 + 30, cx) * smooth(DESERT.z0 - 30, DESERT.z0 + 30, cz);
+  const field = cx < COUNTRY[2] && cz > COUNTRY[1] && cz < COUNTRY[3] ? (Math.floor(cx / 36) + Math.floor(cz / 28) * 3 + 99) % 4 : -1;
+  let c = field >= 0 ? [WHEAT, MEADOW, TILLED, GRASS][field] : MEADOW;
+  if (hash2(Math.floor(cx / 7), Math.floor(cz / 7), 9) < 0.25) c = mix(c, PAL.green, 0.25);
+  c = mix(c, hash2(Math.floor(cx / 5), Math.floor(cz / 5), 3) < 0.5 ? SANDY : DUNE, desert);
+  if (y > 6) c = mix(c, GRASS, smooth(6, 26, y));
+  if (y > 36) c = mix(c, PAL.stone, smooth(36, 60, y));
+  if (y > 68) c = mix(c, PAL.white, smooth(68, 80, y));
+  return mix(c, PAL.stone, smooth(0.5, 0.85, slope) * 0.6);
+}
 /** 면(중심 cx,cz · 평균 높이 y · 경사 slope=sin각) 의 색 */
 function faceColor(reg: number, cx: number, cz: number, y: number, slope: number): number {
   let c: number;
@@ -57,9 +77,14 @@ function faceColor(reg: number, cx: number, cz: number, y: number, slope: number
     // 도시 안에서는 북서 언덕과 낭떠러지 경사면만 그려진다 (평지는 render/city 지면)
     c = y > 0.4 ? mix(CITY_GROUND, GRASS, Math.min(1, y / 4)) : CITY_GROUND;
     c = mix(c, PAL.stone, smooth(0.35, 0.75, slope) * 0.8);
+  } else if (reg === REG_WILD) {
+    c = wildColor(cx, cz, y, slope);
   } else if (reg === REG_PASS) {
+    if (cz > 330 && cx > 100) c = Math.abs(cx - 300) < 8 ? PAL.asphalt : PASS_STONE;
+    else {
     const road = cx >= APPLE_ROAD[0] && cx <= APPLE_ROAD[2] && cz >= APPLE_ROAD[1] && cz <= APPLE_ROAD[3];
     c = mix(road ? PAL.asphalt : PASS_STONE, PAL.stone, smooth(0.35, 0.75, slope) * 0.8);
+    }
   } else {
     const i = reg - 1,
       s = SECTORS[i],

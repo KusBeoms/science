@@ -2,6 +2,7 @@
 // 높이는 core/heightmap.ts 가 부팅 때 구운 격자에서 보간한다. 이동·수배·비행 시스템은 이 함수들만 부르면 된다.
 import {SECTORS} from '../data/sectors.js';
 import {CITY_HALF, CITY_OUT, PASSES, PASS_W, type Rect} from '../data/world-map.js';
+import {WILD_BRIDGE, WILD_RECT} from '../data/wild.js';
 import {inSector} from './geometry.js';
 import {heightAt} from './heightmap.js';
 import {locked} from './progress.js';
@@ -23,6 +24,8 @@ export function groundH(x: number, z: number): number {
   const land =
     (Math.abs(x) <= CITY_OUT && Math.abs(z) <= CITY_OUT) ||
     PASSES.some(r => inRect(x, z, r)) ||
+    inRect(x, z, WILD_RECT as unknown as Rect) ||
+    inRect(x, z, WILD_BRIDGE as unknown as Rect) ||
     SECTORS.some((_, i) => !locked(i) && inSector(x, z, i));
   return land ? heightAt(x, z) : -Infinity;
 }

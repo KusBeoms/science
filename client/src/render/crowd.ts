@@ -42,6 +42,8 @@ export interface CrowdSprite {
   bob: number;
   /** 셔츠색 */
   color: number;
+  /** 쓰러진 정도 0..1 (차에 치였을 때) */
+  lay?: number;
 }
 
 type Part = [Geo, number];
@@ -179,9 +181,16 @@ export function createCrowdView(cap: number): CrowdView {
         }
         const cy = Math.cos(p.yaw),
           sn = Math.sin(p.yaw);
-        put(bm, nb, p.x, y, p.z, p.yaw, 0, sx, sy);
+        const lay = p.lay || 0;
+        put(bm, nb, p.x, y + lay * 0.5 * sy, p.z, p.yaw, -lay * 1.45, sx, sy);
         tint(body.instanceColor.array, nb, p.color);
         for (let j = 0; j < 2; j++) {
+          if (lay > 0.2) {
+            put(lm, nb * 2 + j, p.x, y - 5, p.z, 0, 0, 0.01, 0.01);
+            put(am, nb * 2 + j, p.x, y - 5, p.z, 0, 0, 0.01, 0.01);
+            tint(arms.instanceColor.array, nb * 2 + j, p.color);
+            continue;
+          }
           const sd = j ? 1 : -1, // 한쪽 다리가 앞으로 가면 같은 쪽 팔은 뒤로
             i2 = nb * 2 + j,
             lx = sd * LEG_X * sx,

@@ -110,7 +110,7 @@ export function movePlayer(dt: number, t: number) {
     return;
   }
   const gnd = groundH(G.me.pos.x, G.me.pos.z);
-  if (!paused() && (G.keys.Space || G.jumpHeld) && G.me.pos.y <= gnd + 0.02 && gnd > -Infinity) {
+  if (!paused() && !G.match && (G.keys.Space || G.jumpHeld) && G.me.pos.y <= gnd + 0.02 && gnd > -Infinity) {
     G.me.vy = 14 * JUMP_MUL * SPR[S.eq][3];
   }
   const prevY = G.me.pos.y;

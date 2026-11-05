@@ -8,6 +8,7 @@ import {sitPose} from '../render/characters.js';
 import {openShop} from './shop-ui.js';
 import {openCarShop} from './car-shop.js';
 import {toast} from './hud.js';
+import {S} from '../core/state.js';
 import type {GameSystem, Interactable, Target} from '../core/types.js';
 
 let prevCam = 11;
@@ -82,13 +83,32 @@ export const enterIt: Interactable<EnterT> = {
   },
 };
 
+/** 방 안 가구 효과: 쉬기·간식(스태미나)·코인(소액)·관람/독서(도감 기록 없이 이모지)·노래·운동(잠시 빨라짐)·볼링·수영·치료 */
+let buffT = 0,
+  useCd: Record<string, number> = {};
+export const interiorBuff = () => (buffT > 0 ? 1.15 : 1);
+function useFx(fx: string, icon: string) {
+  const now = G.gameT;
+  if ((useCd[icon + fx] || 0) > now) return toast(icon + ' …');
+  useCd[icon + fx] = now + 20;
+  switch (fx) {
+    case 'snack': G.stam = Math.min(100, G.stam + 50); toast(`${icon} 맛있다 — 스태미나 +50`); break;
+    case 'heal': G.stam = 100; G.tired = false; toast(`${icon} 컨디션 회복`); break;
+    case 'coin': S.cr += 8; toast(`${icon} ✦ +8`); break;
+    case 'bowl': { const pins = 3 + Math.floor(Math.random() * 8); S.cr += pins; toast(`${icon} ${'🎳'.repeat(Math.min(5, pins - 2))} ✦ +${pins}`); break; }
+    case 'train': buffT = 60; toast(`${icon} 운동 완료 — 60초간 빨라진다`); break;
+    case 'sing': toast(`${icon} 🎵 🎶 ✨ 👏`); break;
+    case 'swim': G.stam = 100; toast(`${icon} 🌊 상쾌하다`); break;
+    default: toast(`${icon} ✨`);
+  }
+}
 interface RoomT extends Target {
   kind: 'room';
   s: number;
 }
 const PROMPT: Record<string, string> = {
   exit: 'E 🚪 퇴장', shop: 'E 🛒 둘러보기', dealer: 'E 🚗 차량 구매', tuning: 'E 🛠️ 튜닝·개조', garage: 'E 🅿️ 차고·등록',
-  bed: 'E 💤 휴식', seat: 'E 🪑 착석', tv: 'E 📺',
+  bed: 'E 💤 휴식', seat: 'E 🪑 착석', tv: 'E 📺', use: 'E ✨ 이용하기',
 };
 export const roomIt: Interactable<RoomT> = {
   kind: 'room',
@@ -104,8 +124,8 @@ export const roomIt: Interactable<RoomT> = {
     });
     return best < 0 ? null : {kind: 'room', d: bd, s: best};
   },
-  info: t => `<b>${PROMPT[G.inside!.spots[t.s].kind].slice(2)}</b>`,
-  prompt: t => PROMPT[G.inside!.spots[t.s].kind],
+  info: t => `<b>${G.inside!.spots[t.s].icon || PROMPT[G.inside!.spots[t.s].kind].slice(2)}</b>`,
+  prompt: t => (G.inside!.spots[t.s].kind === 'use' ? `E ${G.inside!.spots[t.s].icon} 이용하기` : PROMPT[G.inside!.spots[t.s].kind]),
   act(t, key) {
     if (key !== 'e' || !G.inside) return;
     const sp = G.inside.spots[t.s];
@@ -123,6 +143,7 @@ export const roomIt: Interactable<RoomT> = {
         G.sit = {x: sp.x, y: 0.9, z: sp.z, ry: sp.ry ?? 0};
         return;
       case 'tv': return toast('📺 📡 🪐 ✨');
+      case 'use': return useFx(sp.fx!, sp.icon!);
     }
   },
 };
@@ -131,7 +152,9 @@ void sitPose;
 /** 방 밖으로 순간이동(리스폰 등)하면 방을 정리한다 */
 export const interiorSystem: GameSystem = {
   id: 'interior',
-  update() {
+  speedMul: () => interiorBuff(),
+  update(dt) {
+    if (buffT > 0) buffT -= dt;
     const ins = G.inside;
     if (!ins) return;
     if (Math.abs(G.me.pos.x - 1500) > 40 || Math.abs(G.me.pos.z - 1500) > 40) {

@@ -30,11 +30,11 @@ test('weather follows the sector: snow, embers, mist, shards, spores; none in th
   expect((await at(0, 17, null)).kind).toBe(null); // 도시
   // 구역 남쪽 가장자리(수호자가 중앙에 있어 중앙에 순간이동하면 잡혀 스폰으로 돌아간다)
   const cases: [string, number, number, string][] = [
-    ['giants', 270, 210, 'snow'],
-    ['hotjup', -260, 210, 'ember'],
-    ['nebula', -270, 20, 'mist'],
-    ['supernova', -280, -190, 'shard'],
-    ['alpha', -10, -410, 'spore'],
+    ['giants', 455, 210, 'snow'],
+    ['hotjup', -445, 210, 'ember'],
+    ['nebula', -455, 20, 'mist'],
+    ['supernova', -465, -355, 'shard'],
+    ['alpha', -10, -575, 'spore'],
   ];
   for (const [name, x, z, kind] of cases) {
     const w = await at(x, z, kind);

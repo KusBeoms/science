@@ -2,6 +2,8 @@
 // 좌표계: x 동(+), z 남(+). 사과 대로는 x=0 에서 정북(−z)으로 뻗는다. 기지(0,0)·상점·포탈 패드 좌표는 core/geometry.ts 그대로.
 import type {PalName} from '../render/lowpoly/palette.js';
 import {BUILDINGS_W2} from './city-w2.js';
+import type {Purpose} from './interiors.js';
+import {BUILDINGS_W3, LANDMARKS_W3, ROADS_W3, PLAZAS_W3} from './city-w3.js';
 
 /** [x0, z0, x1, z1] */
 export type CityRect = readonly [number, number, number, number];
@@ -30,6 +32,7 @@ export const CITY_ROADS: readonly CityRoad[] = [
   {id: 'testrun', x0: 62, z0: -70, x1: 146, z1: -70, w: 10, sidewalk: 3, car: true}, // 시험로(격납고 앞)
   {id: 'sci-east', x0: 50, z0: 62, x1: 150, z1: 62, w: 10, sidewalk: 3, car: true}, // 과학관 구역 가로 도로
   {id: 'resi', x0: -50, z0: 100, x1: -138, z1: 100, w: 10, sidewalk: 3, car: true}, // 주거 지구 도로
+  ...ROADS_W3,
 ];
 
 /** 광장·마당(보행 전용 포장 사각형). 중앙 광장은 한가운데 기지 부지(±22)를 품는다 */
@@ -44,6 +47,7 @@ export const CITY_PLAZAS: readonly CityPlaza[] = [
   {id: 'dome-court', rect: [80, 84, 120, 128]}, // 천문대 돔 앞뜰
   {id: 'pad-w', rect: [72, -116, 84, -84]}, // 정비소 착륙대 2곳
   {id: 'pad-e', rect: [132, -116, 148, -84]},
+  ...PLAZAS_W3,
 ];
 /** 우주항 발착 패드 4개 (바닥에 원 무늬로 그린다, 반지름 5) */
 export const CITY_PADS: readonly {x: number; z: number}[] = [-30, -10, 10, 30].map(x => ({x, z: 128}));
@@ -68,7 +72,9 @@ export type BuildingStyle = 'shop' | 'house' | 'office' | 'neon';
 export type SignIcon = 'gem' | 'planet' | 'cube' | 'cone' | 'cross';
 export interface CityBuilding {
   id: string;
-  district: 'avenue' | 'shops' | 'alley' | 'market' | 'garage' | 'port' | 'science' | 'resi';
+  district: string;
+  /** 용도를 직접 정하는 건물 (없으면 구역·양식으로 정한다) */
+  purpose?: Purpose;
   face: Facing;
   /** 발자국 중심 */
   x: number;
@@ -164,12 +170,13 @@ export const CITY_BUILDINGS: readonly CityBuilding[] = [
     }))
   ),
   ...BUILDINGS_W2,
+  ...BUILDINGS_W3,
 ];
 
 /** 랜드마크 (WORLD 3.2). 높이 h, 충돌 반폭 r. w·d 가 있으면 충돌체는 그 크기의 직사각형, y 는 바닥 높이(언덕 위 성) */
 export interface CityLandmark {
-  id: 'L1' | 'L2' | 'L3' | 'L4' | 'L5' | 'L6' | 'L7';
-  kind: 'clock' | 'orrery' | 'arch' | 'tower' | 'hangar' | 'dome' | 'castle';
+  id: string;
+  kind: 'clock' | 'orrery' | 'arch' | 'tower' | 'hangar' | 'dome' | 'castle' | 'stadium' | 'ferris' | 'lighthouse' | 'tvtower' | 'aquarium';
   x: number;
   z: number;
   h: number;
@@ -186,4 +193,5 @@ export const CITY_LANDMARKS: readonly CityLandmark[] = [
   {id: 'L5', kind: 'hangar', x: 108, z: -110, h: 26, r: 22, w: 44, d: 32},
   {id: 'L6', kind: 'dome', x: 100, z: 106, h: 22, r: 14},
   {id: 'L7', kind: 'castle', x: -105, z: -105, h: 30, r: 15, w: 28, d: 28, y: 12},
+  ...LANDMARKS_W3,
 ];

@@ -155,17 +155,14 @@ export function exitVeh() {
   save();
 }
 
-/** 차 운전: 앞/뒤 = W/S, 핸들 = A/D, 스페이스 = 브레이크 */
-function drive(v: Veh, dt: number) {
+/** 차 물리 한 걸음: fw −1~1(가속/후진), st −1~1(왼쪽+), brake 제동. 운전과 경찰 AI 가 같이 쓴다. 부딪히면 true */
+export function stepVehicle(v: Veh, fw: number, st: number, brake: boolean, dt: number, vmul = 1): boolean {
   const t = carOf(v.t),
-    k = G.keys,
-    fw = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0) + G.joy.y,
-    st = (k.KeyA || k.ArrowLeft ? 1 : 0) - (k.KeyD || k.ArrowRight ? 1 : 0) - G.joy.x,
-    vmax = t.vmax * (1 + 0.08 * v.eng),
+    vmax = t.vmax * (1 + 0.08 * v.eng) * vmul,
     turn = t.turn * (1 + 0.1 * v.tire);
   if (fw !== 0) v.v += (Math.sign(fw) === Math.sign(v.v) || v.v === 0 ? t.acc : t.acc * 2.8) * fw * dt;
   else v.v -= Math.sign(v.v) * Math.min(Math.abs(v.v), 7 * dt);
-  if (k.Space) v.v -= Math.sign(v.v) * Math.min(Math.abs(v.v), 38 * dt);
+  if (brake) v.v -= Math.sign(v.v) * Math.min(Math.abs(v.v), 38 * dt);
   v.v = Math.max(-vmax * 0.35, Math.min(vmax, v.v));
   v.h += st * turn * dt * Math.max(-1, Math.min(1, v.v / 7));
   const nx = v.x + Math.sin(v.h) * v.v * dt,
@@ -175,25 +172,38 @@ function drive(v: Veh, dt: number) {
     fz = Math.cos(v.h) * t.len * 0.3;
   const hit = (x: number, z: number) =>
     solidAt(x, z, rad) || solidAt(x + fx, z + fz, rad) || solidAt(x - fx, z - fz, rad) || !walkable(v.x, v.z, v.y, x, z) || groundH(x + fx, z + fz) === -Infinity;
-  if (hit(nx, nz)) v.v *= -0.3;
-  else {
+  let bumped = false;
+  if (hit(nx, nz)) {
+    v.v *= -0.3;
+    bumped = true;
+  } else {
     v.x = nx;
     v.z = nz;
   }
   const gy = groundH(v.x, v.z);
   if (gy > -Infinity) v.y += (gy - v.y) * Math.min(1, dt * 12);
   placeMesh(v);
+  return bumped;
+}
+/** 플레이어 운전: 앞/뒤 = W/S, 핸들 = A/D, 스페이스 = 브레이크 */
+function drive(v: Veh, dt: number) {
+  const k = G.keys,
+    fw = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0) + G.joy.y,
+    st = (k.KeyA || k.ArrowLeft ? 1 : 0) - (k.KeyD || k.ArrowRight ? 1 : 0) - G.joy.x;
+  stepVehicle(v, fw, st, !!k.Space, dt);
   G.me.pos.set(v.x, v.y, v.z);
   G.me.vy = 0;
   // 카메라가 천천히 차 뒤로 따라온다
   if (Math.abs(v.v) > 4) {
     const want = v.h + Math.PI + (v.v < 0 ? Math.PI : 0);
-    let d = ((want - G.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    const d = ((want - G.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
     G.yaw += d * Math.min(1, dt * 1.4);
   }
+  vehicleHooks.forEach(f => f(v, dt));
 }
+/** 운전 중 매 프레임 불리는 훅 (시민 충돌 등) */
+export const vehicleHooks: ((v: Veh, dt: number) => void)[] = [];
 
-let wantedT = 0;
 export const vehicleSystem: GameSystem = {
   id: 'vehicle',
   onSave() {
@@ -205,15 +215,11 @@ export const vehicleSystem: GameSystem = {
       const paused = G.modal !== null || G.shopOpen || G.quizOpen || G.dexOpen || (G.cine && G.cine.lock);
       if (!paused) drive(G.drive, dt);
     }
-    // 수배는 천천히 식는다
-    if (S.wanted > 0 && (wantedT += dt) > 45) {
-      wantedT = 0;
-      S.wanted--;
-    }
     // 임시(자리 없음) 훔친 차는 두고 가면 사라진다, 길가 자리는 일정 시간 뒤 새 차로 채운다
     for (const v of VEH.slice()) {
       if (v === G.drive) continue;
       if (v.own === -2 && (v.age += dt) > 90) removeVeh(v);
+      if (v.own === -4 && (v.age += dt) > 12) removeVeh(v);
     }
     for (const r of respawn.slice())
       if ((r.t -= dt) <= 0) {
