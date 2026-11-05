@@ -74,7 +74,7 @@ export function movePlayer(dt: number, t: number) {
     if (G.tired && G.stam >= 30) G.tired = false;
   }
   setStam(Math.round(G.stam) + '%', G.tired);
-  if (G.drive) return; // 운전 중: 차 물리는 systems/vehicle.ts
+  if (G.drive || G.match) return; // 운전·축구 경기 중: 각자 시스템이 움직인다
   if (G.sit) {
     // 앉아 있는 동안: 이동·점프 입력이 들어오면 일어나고, 아니면 자리에 붙어 앉은 자세를 유지한다
     if (moving || G.keys.Space || G.jumpHeld) G.sit = null;

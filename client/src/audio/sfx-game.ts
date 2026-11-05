@@ -80,4 +80,43 @@ export const GAME = {
     tone(hz(52), t + 0.5, 1.6, {type: 'triangle', vol: 0.18, att: 0.3});
     tone(hz(88), t + 1, 1.2, {vol: 0.06});
   },
+  /** 심판 호루라기 */
+  whistle: t => {
+    for (let i = 0; i < 6; i++) tone(2900 + (i % 2) * 140, t + i * 0.05, 0.07, {type: 'sine', vol: 0.1});
+  },
+  /** 관중 함성 */
+  cheer: t => {
+    noise(t, 1.1, {vol: 0.16, lp: 1500});
+    noise(t + 0.1, 0.8, {vol: 0.1, lp: 3000});
+  },
+  /** 공 차기 / 그물 */
+  kick: t => {
+    tone(140, t, 0.08, {to: 60, vol: 0.3});
+    noise(t, 0.05, {vol: 0.12, lp: 900});
+  },
+  net: t => noise(t, 0.25, {vol: 0.12, lp: 2200}),
+  /** 경찰 사이렌 */
+  siren: t => {
+    tone(700, t, 0.3, {to: 980, type: 'sawtooth', vol: 0.05, lp: 1800});
+    tone(980, t + 0.3, 0.3, {to: 700, type: 'sawtooth', vol: 0.05, lp: 1800});
+  },
+  /** 헬기 날개 */
+  chopper: t => {
+    for (let i = 0; i < 4; i++) noise(t + i * 0.08, 0.05, {vol: 0.12, lp: 400});
+  },
+  splash: t => noise(t, 0.35, {vol: 0.16, lp: 1800}),
+  bite: t => {
+    tone(880, t, 0.08, {vol: 0.16});
+    tone(1320, t + 0.08, 0.12, {vol: 0.16});
+  },
+  /** 메신저 알림 삐릭 */
+  ping: t => {
+    tone(hz(88), t, 0.1, {type: 'triangle', vol: 0.18});
+    tone(hz(95), t + 0.09, 0.18, {type: 'triangle', vol: 0.18});
+  },
+  shutter: t => {
+    noise(t, 0.03, {vol: 0.2, lp: 3000});
+    noise(t + 0.07, 0.04, {vol: 0.2, lp: 2000});
+  },
+  moo: t => tone(120, t, 0.5, {to: 90, type: 'sawtooth', vol: 0.1, lp: 500}),
 } satisfies Record<string, Fn>;

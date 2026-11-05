@@ -1,311 +1,164 @@
-// 축구: 스타디움 잔디에서 공을 차 보거나(자유 연습), 킥오프 판에서 E 로 5대5 경기(3분)를 시작한다.
-// 조작: 방향키/WASD 이동, Shift 달리기, Space 슛(공 근처에서), 공 가까이 달리면 드리블. 파란 팀(나+AI 3+골키퍼) → 동쪽 골대, 빨간 팀(AI 4+골키퍼) → 서쪽 골대.
+// 축구 (FC 온라인풍): 스타디움 킥오프 판에서 E → 7대7, 전·후반 90초. 구현은 src/soccer/ — 여기서는 시작/종료/순서/HUD/자유 연습만 한다.
 import {S, save} from '../core/state.js';
 import {G, paused} from '../core/runtime.js';
 import {PLAYER_SCALE} from '../core/scale.js';
 import {dist2} from '../core/util.js';
-import {PITCH, KICKOFF, MATCH_SEC} from '../data/soccer.js';
-import {animateWalk, blocky} from '../render/characters.js';
-import {addHudLine, toast} from '../game/hud.js';
+import {KICKOFF, PITCH} from '../data/soccer.js';
+import {toast} from '../game/hud.js';
 import {sfx} from '../audio/index.js';
+import {ball, clamp, cx, cz, hw, setMatch, type Match} from '../soccer/state.js';
+import * as ST from '../soccer/state.js';
+import {ensureBall, placeBall, stepBall} from '../soccer/ball.js';
+import {disposeTeam, integrate, lineup, makeTeam, markerOf, placeMarker} from '../soccer/team.js';
+import {checkBall, checkTouches, hooks, makeRef, refUpdate, say, startKickoff, stepClock, stepRestart} from '../soccer/rules.js';
+import {aiUpdate} from '../soccer/ai.js';
+import {humanUpdate, shotGauge} from '../soccer/control.js';
+import {crowdCheer, ensureStandCrowd, updateStandCrowd} from '../soccer/crowd.js';
 import type {GameSystem, Interactable, Target} from '../core/types.js';
 
-const {cx, cz, hl, hw, goalHalf: GH} = PITCH,
-  BR = 0.9;
-type Role = 'GK' | 'DF' | 'MF' | 'FW';
-interface Pl {
-  m: any;
-  team: 0 | 1;
-  role: Role;
-  human: boolean;
-  /** 홈 위치(자기 골대 기준 정규화): u = 0(자기 골)~1(상대 골), v = −1~1(좌우) */
-  u: number;
-  v: number;
-  x: number;
-  z: number;
-  px: number;
-  pz: number;
-  cd: number;
-}
-interface Match {
-  t: number;
-  score: [number, number];
-  phase: 'kickoff' | 'play' | 'goal' | 'end';
-  pause: number;
-  pls: Pl[];
-  prevCam: number;
-  prevPitch: number;
-}
-let ball: {m: any; x: number; z: number; vx: number; vz: number; y: number; vy: number; spin: number} | null = null,
-  match: Match | null = null,
+let hud: HTMLElement | null = null,
   spaceWas = false;
+const M = () => ST.M;
 
-function ballMesh() {
-  const g = new THREE.IcosahedronGeometry(BR, 1).toNonIndexed(),
-    n = g.attributes.position.count,
-    col = new Float32Array(n * 3);
-  for (let f = 0; f < n / 3; f++) {
-    const c = f % 5 === 0 ? 0.08 : 0.96;
-    for (let k = 0; k < 9; k++) col[f * 9 + k] = c;
-  }
-  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  g.computeVertexNormals();
-  const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({vertexColors: true}));
-  G.scene.add(m);
-  return m;
+function buildHud() {
+  hud = document.createElement('div');
+  hud.style.cssText = 'position:fixed;inset:0;z-index:7;pointer-events:none;font-family:inherit;color:#fff';
+  hud.innerHTML =
+    '<div id="fc-sb" style="position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#0b0e18e0;border:1px solid #fff3;border-radius:12px;padding:6px 16px;text-align:center;min-width:220px"><div style="font-size:22px;font-weight:800;letter-spacing:1px" id="fc-score"></div><div style="font-size:11px;color:#9fb0d0" id="fc-sub"></div></div>' +
+    '<div id="fc-hint" style="position:absolute;top:78px;left:50%;transform:translateX(-50%);font-size:30px;font-weight:800;text-shadow:0 2px 8px #000;opacity:0"></div>' +
+    '<div style="position:absolute;bottom:64px;left:50%;transform:translateX(-50%);width:240px;height:12px;border:2px solid #fff8;border-radius:8px;background:#0007;overflow:hidden"><i id="fc-g" style="display:block;height:100%;width:0;background:linear-gradient(90deg,#4cb860,#f3e04a 60%,#e5483f)"></i></div>' +
+    '<div id="fc-keys" style="position:absolute;left:12px;bottom:12px;font-size:12px;line-height:1.7;background:#0b0e18c0;border-radius:10px;padding:8px 12px"></div>';
+  document.body.append(hud);
 }
-function ensureBall() {
-  if (!ball) ball = {m: ballMesh(), x: cx, z: cz, vx: 0, vz: 0, y: BR, vy: 0, spin: 0};
-  return ball;
+const KEYS_ATK = '⌨️ <b>← ↑ ↓ →</b> 이동 · <b>Shift</b> 달리기<br><b>A</b> 패스 · <b>S</b> 스루 · <b>W</b> 크로스 · <b>D</b> 슛(꾹) · <b>Space</b> 보호',
+  KEYS_DEF = '⌨️ <b>← ↑ ↓ →</b> 이동 · <b>Shift</b> 달리기<br><b>A</b> 선수교체 · <b>S</b> 압박(꾹) · <b>D</b> 태클 · <b>Space</b> 슬라이딩';
+function updateHud() {
+  const m = M();
+  if (!hud || !m) return;
+  const t = Math.max(0, Math.ceil(m.t)),
+    q = (id: string) => hud!.querySelector('#' + id) as HTMLElement;
+  q('fc-score').textContent = `🔵 ${m.score[0]}  ${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}  ${m.score[1]} 🔴`;
+  q('fc-sub').textContent = `${m.half}H · 🟨${m.cards[0][0]} 🟥${m.cards[0][1]} | 🟨${m.cards[1][0]} 🟥${m.cards[1][1]} · 점유 ${Math.round((m.poss[0] / Math.max(1, m.poss[0] + m.poss[1])) * 100)}%`;
+  const hint = q('fc-hint');
+  hint.textContent = m.hint;
+  hint.style.opacity = m.hintT > 0 ? '1' : '0';
+  q('fc-g').style.width = shotGauge() * 100 + '%';
+  const keys = q('fc-keys'),
+    html = ball.owner?.team === 0 || (m.restart && m.restart.team === 0) ? KEYS_ATK : KEYS_DEF;
+  if (keys.dataset.m !== html) [keys.innerHTML, keys.dataset.m] = [html, html];
 }
-const goalX = (team: 0 | 1) => (team === 0 ? cx + hl : cx - hl); // team 이 공격하는 골대
-const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
-function kick(p: Pl, dx: number, dz: number, power: number) {
-  const b = ball!,
-    l = Math.hypot(dx, dz) || 1;
-  b.vx = (dx / l) * power;
-  b.vz = (dz / l) * power;
-  b.vy = power > 14 ? power * 0.1 : 0;
-  p.cd = 0.4;
-  sfx('jump');
-}
-const homeOf = (p: Pl) => {
-  const dir = p.team === 0 ? 1 : -1,
-    own = cx - dir * hl;
-  return {x: own + dir * p.u * 2 * hl, z: cz + p.v * (hw - 6)};
-};
-function resetKickoff() {
-  const m = match!,
-    b = ensureBall();
-  b.x = cx;
-  b.z = cz;
-  b.vx = b.vz = b.vy = 0;
-  b.y = BR;
-  for (const p of m.pls) {
-    const h = homeOf(p);
-    p.x = p.human ? cx - 5 : p.team === 1 && p.role === 'FW' ? cx + 3 : h.x;
-    p.z = p.human ? cz : p.team === 1 && p.role === 'FW' ? cz : h.z;
-    if (p.team === 0 && !p.human && p.u > 0.45) p.x = Math.min(p.x, cx - 2);
-    if (p.team === 1 && p.u > 0.45 && p.role !== 'FW') p.x = Math.max(p.x, cx + 2);
-    p.px = p.x;
-    p.pz = p.z;
-    p.m.position.set(p.x, 0, p.z);
-  }
-  G.me.pos.set(cx - 5, 0, cz);
-  m.phase = 'kickoff';
-  m.pause = 1.2;
-}
-function startMatch() {
-  if (match || G.inside || G.drive) return;
-  const mk = (team: 0 | 1, role: Role, u: number, v: number, human = false): Pl => {
-    const shirt = role === 'GK' ? 0x2fb5a0 : team === 0 ? 0x3b82f6 : 0xd23a4a,
-      m = human ? G.me : blocky(shirt, team === 0 ? 0xeeeeee : 0x222233, ['#f4c8a0', '#c98e6b', '#8d5a3c'][Math.floor(Math.random() * 3)], PLAYER_SCALE);
-    if (!human) G.scene.add(m);
-    return {m, team, role, human, u, v, x: 0, z: 0, px: 0, pz: 0, cd: 0};
+export function startMatch() {
+  if (M() || G.inside || G.drive || G.jail) return;
+  ensureBall();
+  const t0 = makeTeam(0),
+    t1 = makeTeam(1),
+    pls = [...t0, ...t1],
+    ref = makeRef(),
+    marker = markerOf();
+  const m: Match = {
+    t: 90, half: 1, score: [0, 0], phase: 'restart', pause: 0, pls, ctl: t0[6], restart: null, ref: {m: ref, x: cx, z: cz + 10},
+    cards: [[0, 0], [0, 0]], fouls: [0, 0], shots: [0, 0], poss: [0, 0], marker, prevCam: G.camDist, prevPitch: G.pitch, hint: '', hintT: 0,
   };
-  const pls = [
-    mk(0, 'GK', 0.03, 0), mk(0, 'DF', 0.25, 0.5), mk(0, 'MF', 0.45, -0.5), mk(0, 'FW', 0.6, 0, true),
-    mk(1, 'GK', 0.03, 0), mk(1, 'DF', 0.24, -0.55), mk(1, 'DF', 0.24, 0.55), mk(1, 'MF', 0.48, 0), mk(1, 'FW', 0.62, 0.3),
-  ];
-  match = {t: MATCH_SEC, score: [0, 0], phase: 'kickoff', pause: 1.2, pls, prevCam: G.camDist, prevPitch: G.pitch};
+  setMatch(m);
   G.match = true;
-  G.camDist = 26;
-  G.pitch = 0.95;
-  resetKickoff();
-  toast('⚽ 킥오프! 🔵 나의 팀 → 동쪽 골대 · Space 슛');
+  G.me.visible = false;
+  G.camDist = 36;
+  G.pitch = 0.85;
+  lineup(pls, 0);
+  hooks.cheer = () => crowdCheer(0);
+  hooks.end = () => endMatch(true);
+  startKickoff(0);
+  buildHud();
+  say('⚽', 2);
+  toast('⚽ 킥오프! 🔵 → 동쪽 골대', 3);
 }
-function endMatch(natural: boolean) {
-  const m = match;
+export function endMatch(natural: boolean) {
+  const m = M();
   if (!m) return;
   const [a, b] = m.score;
-  m.pls.forEach(p => !p.human && (G.scene.remove(p.m), p.m.traverse((o: any) => o.geometry && o.geometry.dispose())));
+  disposeTeam(m.pls);
+  G.scene.remove(m.ref.m, m.marker);
   G.camDist = m.prevCam;
   G.pitch = m.prevPitch;
   G.match = false;
-  match = null;
+  G.me.visible = true;
+  G.me.pos.set(cx, 0, cz + hw - 3);
+  setMatch(null);
+  ball.owner = null;
+  placeBall(cx, cz);
+  hud?.remove();
+  hud = null;
   if (natural) {
     const win = a > b,
       draw = a === b,
-      prize = win ? 800 : draw ? 300 : 100;
+      prize = (win ? 800 : draw ? 300 : 100) + 50 * a;
     S.cr += prize;
-    toast(`${win ? '🏆' : draw ? '🤝' : '😅'} ${a} : ${b} — ✦ +${prize}`, 4);
+    toast(`${win ? '🏆' : draw ? '🤝' : '😅'} ${a} : ${b} — ✦ +${prize}`, 4.5);
     sfx('buy');
     save();
   } else toast('⏹ 경기를 마쳤습니다');
 }
 
-function updateAI(m: Match, dt: number) {
-  const b = ball!;
-  const nearest = [0, 1].map(t => {
-    let best: Pl | null = null,
-      bd = 1e9;
-    for (const p of m.pls) if (p.team === t && p.role !== 'GK' && !p.human) {
-      const d = Math.hypot(p.x - b.x, p.z - b.z);
-      if (d < bd) [best, bd] = [p, d];
-    }
-    return best;
-  });
-  for (const p of m.pls) {
-    if (p.human) continue;
-    p.px = p.x;
-    p.pz = p.z;
-    p.cd -= dt;
-    const dir = p.team === 0 ? 1 : -1,
-      home = homeOf(p);
-    let tx = home.x,
-      tz = home.z,
-      spd = p.team === 1 ? 8.6 : 8;
-    if (p.role === 'GK') {
-      tx = cx - dir * (hl - 2.2);
-      tz = cz + clamp(b.z - cz, -GH * 1.1, GH * 1.1);
-      spd = 10;
-      if (Math.hypot(p.x - b.x, p.z - b.z) < 2.4 && p.cd <= 0) kick(p, dir, (Math.random() - 0.5) * 0.9, 21);
-    } else if (nearest[p.team] === p) {
-      tx = b.x - dir * 0.5;
-      tz = b.z;
-      spd *= 1.1;
-    } else {
-      tx = home.x + (b.x - home.x) * 0.35;
-      tz = home.z + (b.z - home.z) * 0.3;
-    }
-    const dx = tx - p.x,
-      dz = tz - p.z,
-      d = Math.hypot(dx, dz);
-    if (d > 0.4) {
-      p.x += (dx / d) * Math.min(d, spd * dt);
-      p.z += (dz / d) * Math.min(d, spd * dt);
-      p.m.rotation.y = Math.atan2(dx, dz);
-    }
-    // 공을 찬다: 골대 가까우면 슛, 아니면 앞 동료에게 패스/전진
-    if (p.role !== 'GK' && p.cd <= 0 && Math.hypot(p.x - b.x, p.z - b.z) < 1.6) {
-      const gx = goalX(p.team),
-        toGoal = Math.abs(gx - p.x);
-      if (toGoal < 36 && Math.random() < 0.85) kick(p, gx - b.x, cz + (Math.random() - 0.5) * GH * 1.5 - b.z, 24);
-      else {
-        const mate = m.pls.find(q => q.team === p.team && q !== p && q.role !== 'GK' && (q.x - p.x) * dir > 6 && Math.hypot(q.x - p.x, q.z - p.z) < 30);
-        if (mate && Math.random() < 0.5) kick(p, mate.x - b.x, mate.z - b.z, 17);
-        else kick(p, dir * 6, (cz - p.z) * 0.15 + (Math.random() - 0.5) * 3, 10);
-      }
-    }
-  }
-  // 겹침 밀어내기
-  for (let i = 0; i < m.pls.length; i++)
-    for (let j = i + 1; j < m.pls.length; j++) {
-      const a = m.pls[i],
-        c = m.pls[j],
-        dx = c.x - a.x,
-        dz = c.z - a.z,
-        d = Math.hypot(dx, dz);
-      if (d > 0 && d < 1.3) {
-        const push = (1.3 - d) / 2;
-        if (!a.human) [a.x, a.z] = [a.x - (dx / d) * push, a.z - (dz / d) * push];
-        if (!c.human) [c.x, c.z] = [c.x + (dx / d) * push, c.z + (dz / d) * push];
-      }
-    }
-  for (const p of m.pls) {
-    if (p.human) continue;
-    p.m.position.set(p.x, 0, p.z);
-    animateWalk(p.m, performance.now() / 1000 * 8 + p.u * 10, false);
-  }
-}
-
-function updateBall(dt: number, m: Match | null) {
-  const b = ball!;
-  // 사람(나): 접촉 드리블 / Space 슛
+/** 경기 밖 자유 연습: 달려서 드리블, Space 슛 (예전 방식) */
+function freePlay(dt: number) {
   const me = G.me,
-    mv = dt > 0 ? [(me.pos.x - (me as any)._px || 0) / dt, (me.pos.z - (me as any)._pz || 0) / dt] : [0, 0];
+    mv = dt > 0 ? [(me.pos.x - ((me as any)._px ?? me.pos.x)) / dt, (me.pos.z - ((me as any)._pz ?? me.pos.z)) / dt] : [0, 0];
   (me as any)._px = me.pos.x;
   (me as any)._pz = me.pos.z;
-  const sp = G.keys.Space && !spaceWas;
+  const sp = !!G.keys.Space && !spaceWas;
   spaceWas = !!G.keys.Space;
-  const d = Math.hypot(me.pos.x - b.x, me.pos.z - b.z);
-  const pl = m?.pls.find(p => p.human);
-  if (pl) pl.cd -= dt;
+  const d = Math.hypot(me.pos.x - ball.x, me.pos.z - ball.z);
   if (d < 2.6 && sp && !G.drive) {
-    const ry = me.rotation.y;
-    b.vx = Math.sin(ry) * 28;
-    b.vz = Math.cos(ry) * 28;
-    b.vy = 3;
-    sfx('jump');
-  } else if (d < 1.5 && !G.drive) {
-    const sp2 = Math.hypot(mv[0], mv[1]);
-    if (sp2 > 1) {
-      const nx = (b.x - me.pos.x) / (d || 1),
-        nz = (b.z - me.pos.z) / (d || 1);
-      b.vx += (mv[0] * 1.15 + nx * 3 - b.vx) * 0.6;
-      b.vz += (mv[1] * 1.15 + nz * 3 - b.vz) * 0.6;
-    }
+    ball.vx = Math.sin(me.rotation.y) * 28;
+    ball.vz = Math.cos(me.rotation.y) * 28;
+    ball.vy = 3;
+    sfx('kick');
+  } else if (d < 1.5 && !G.drive && Math.hypot(mv[0], mv[1]) > 1) {
+    const nx = (ball.x - me.pos.x) / (d || 1),
+      nz = (ball.z - me.pos.z) / (d || 1);
+    ball.vx += (mv[0] * 1.15 + nx * 3 - ball.vx) * 0.6;
+    ball.vz += (mv[1] * 1.15 + nz * 3 - ball.vz) * 0.6;
   }
-  b.x += b.vx * dt;
-  b.z += b.vz * dt;
-  const f = Math.exp(-1.15 * dt);
-  b.vx *= f;
-  b.vz *= f;
-  b.vy -= 22 * dt;
-  b.y += b.vy * dt;
-  if (b.y < BR) {
-    b.y = BR;
-    b.vy = Math.abs(b.vy) > 2 ? -b.vy * 0.45 : 0;
-  }
-  // 경계: 옆줄은 튕김, 끝줄은 골대 입구만 열림
-  if (b.z < cz - hw + BR) [b.z, b.vz] = [cz - hw + BR, Math.abs(b.vz) * 0.7];
-  if (b.z > cz + hw - BR) [b.z, b.vz] = [cz + hw - BR, -Math.abs(b.vz) * 0.7];
-  const inMouth = Math.abs(b.z - cz) < GH - 0.3;
-  for (const s of [-1, 1]) {
-    const lim = cx + s * hl;
-    if (s * (b.x - lim) > 0) {
-      if (inMouth && s * (b.x - lim) < PITCH.goalDepth) {
-        if (m && m.phase === 'play' && s * (b.x - lim) > BR * 0.5) goal(m, s > 0 ? 0 : 1);
-        else if (!m && s * (b.x - lim) > PITCH.goalDepth - 0.5) [b.x, b.vx] = [lim + s * (PITCH.goalDepth - 0.5), -b.vx * 0.3];
-      } else if (!inMouth || s * (b.x - lim) >= PITCH.goalDepth) [b.x, b.vx] = [lim - s * BR * 0.2 + s * (inMouth ? PITCH.goalDepth - 0.5 : 0), -b.vx * 0.6];
-    }
-  }
-  b.m.position.set(b.x, b.y, b.z);
-  b.m.rotation.x += b.vz * dt * 0.5;
-  b.m.rotation.z -= b.vx * dt * 0.5;
-}
-function goal(m: Match, scorer: 0 | 1) {
-  m.score[scorer]++;
-  m.phase = 'goal';
-  m.pause = 2.2;
-  toast(`⚽ GOAL! ${scorer === 0 ? '🔵' : '🔴'}  ${m.score[0]} : ${m.score[1]}`, 2);
-  sfx('buy');
+  stepBall(dt);
+  // 골대 뒤 그물에 갇히게 (연습 중에도 필드 밖으로 안 나간다)
+  ball.z = clamp(ball.z, cz - hw + 0.9, cz + hw - 0.9);
+  ball.x = clamp(ball.x, cx - PITCH.hl - 2.5, cx + PITCH.hl + 2.5);
 }
 
 export const soccerSystem: GameSystem = {
   id: 'soccer',
   update(dt) {
-    if (paused() && !match) return;
-    const near = dist2(G.me.pos, KICKOFF) < 80 || !!match;
+    const m = M();
+    if (paused() && !m) return;
+    const near = dist2(G.me.pos, KICKOFF) < 110 || !!m;
     if (!near) return;
     ensureBall();
+    ensureStandCrowd();
+    updateStandCrowd(dt);
     if (paused()) return;
-    if (match) {
-      const m = match;
-      // 사람은 경기장 둘레 안에 가둔다
-      G.me.pos.x = clamp(G.me.pos.x, cx - hl - 3, cx + hl + 3);
-      G.me.pos.z = clamp(G.me.pos.z, cz - hw - 3, cz + hw + 3);
-      const hp = m.pls.find(p => p.human)!;
-      hp.x = G.me.pos.x;
-      hp.z = G.me.pos.z;
-      if (m.phase === 'kickoff') {
-        if ((m.pause -= dt) <= 0) m.phase = 'play';
-        updateBall(dt, m);
-        return;
-      }
-      if (m.phase === 'goal') {
-        if ((m.pause -= dt) <= 0) resetKickoff();
-        updateBall(dt, m);
-        return;
-      }
-      if ((m.t -= dt) <= 0) {
-        endMatch(true);
-        return;
-      }
-      updateAI(m, dt);
-      updateBall(dt, m);
-    } else updateBall(dt, null);
+    if (!m) return freePlay(dt);
+    if (m.hintT > 0) m.hintT -= dt;
+    stepClock(dt);
+    if (!M()) return; // 시간이 끝나 경기가 정리됐다
+    if (m.phase === 'restart') stepRestart(dt);
+    humanUpdate(dt);
+    aiUpdate(dt);
+    integrate(m.pls, dt);
+    if (m.phase === 'play' || m.phase === 'restart' || m.phase === 'goal') stepBall(dt);
+    else stepBall(dt);
+    checkTouches(dt);
+    checkBall();
+    refUpdate(dt);
+    placeMarker();
+    // 카메라: 중계석 고정(남쪽에서 북쪽을 봄), 공과 조작 선수 사이를 부드럽게 따라간다
+    G.yaw = 0;
+    const fx = clamp(ball.x * 0.65 + m.ctl.x * 0.35, cx - 30, cx + 30),
+      fz = cz + (ball.z - cz) * 0.25;
+    G.me.pos.x += (fx - G.me.pos.x) * Math.min(1, dt * 4);
+    G.me.pos.z += (fz - G.me.pos.z) * Math.min(1, dt * 4);
+    G.me.pos.y = 0;
+    updateHud();
   },
 };
 
@@ -317,20 +170,16 @@ export const soccerIt: Interactable<SoccerT> = {
   tier: 0,
   find(me) {
     if (G.inside || G.drive) return null;
-    if (match) return {kind: 'soccer', d: 0.4};
+    if (M()) return {kind: 'soccer', d: 0.4};
     const d = dist2(me.pos, KICKOFF);
     return d < 4.5 ? {kind: 'soccer', d} : null;
   },
-  info: () => (match ? '<b>⚽ 경기 중</b>' : '<b>⚽ 축구</b><br>🔵 → 동쪽 골대 · 방향키 이동 · Space 슛'),
-  prompt: () => (match ? 'E ⏹ 경기 종료' : 'E ⚽ 경기 시작'),
+  info: () => (M() ? '<b>⚽ 경기 중</b>' : '<b>⚽ 축구</b><br>7대7 · 전후반 90초 · 방향키 + A S W D'),
+  prompt: () => (M() ? 'E ⏹ 경기 종료' : 'E ⚽ 경기 시작'),
   act(_t, key) {
     if (key !== 'e') return;
-    if (match) endMatch(false);
+    if (M()) endMatch(false);
     else startMatch();
   },
 };
-addHudLine(() => {
-  if (!match) return null;
-  const t = Math.max(0, Math.ceil(match.t));
-  return `⚽ 🔵 ${match.score[0]} : ${match.score[1]} 🔴  ⏱ ${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
-});
+void PLAYER_SCALE;
