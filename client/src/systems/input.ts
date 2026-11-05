@@ -1,4 +1,5 @@
 // 입력: 키보드·마우스·터치·포인터락·조이스틱·화면 클릭 선택
+import {openPhone} from '../game/phone.js';
 import {G, paused} from '../core/runtime.js';
 import {clamp, $} from '../core/util.js';
 import {answer, closeQuiz, nextQ} from '../game/quiz.js';
@@ -278,6 +279,7 @@ export function setupKeys() {
     if (e.code === 'KeyE') act('e');
     if (e.code === 'KeyF') act('f');
     if (e.code === 'KeyB') toggleDex(true);
+    if (e.code === 'KeyP') openPhone();
     if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
   });
   addEventListener('keyup', e => (G.keys[e.code] = false));

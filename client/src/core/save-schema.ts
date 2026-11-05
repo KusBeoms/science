@@ -52,6 +52,7 @@ export function defaults(): SaveState {
     // v6
     story: defaultStory(),
     cars: {garage: 0, list: []},
+    props: {},
   };
 }
 /** 앞에서부터 연속으로 해금된 섹터 수 (= 구버전의 S.zone, 미션 "N단계 시험 통과" 기준) */

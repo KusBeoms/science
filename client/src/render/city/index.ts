@@ -116,8 +116,10 @@ export function buildCity(): any {
     lamp = lampGeo();
   grp.add(instancedChunks(keep(lamp.pole), lowMat(), plan.lamps));
   const bulbs = instancedChunks(keep(lamp.bulb), glowMat(), plan.lamps);
-  bulbs.visible = false;
-  nightMeshes.push(bulbs);
+  bulbs.children.forEach((m: any) => {
+    m.visible = false;
+    nightMeshes.push(m);
+  });
   grp.add(bulbs);
   grp.add(instancedChunks(roundTreeGeo(), lowMat(), plan.trees));
   grp.add(instancedChunks(pineGeo(), lowMat(), plan.pines));

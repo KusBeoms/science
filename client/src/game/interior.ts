@@ -43,6 +43,7 @@ export function enterBuilding(i: number) {
   prevCam = G.camDist;
   G.camDist = 8;
   flash();
+  if (S.props[e.id]) toast('🏠 내 건물');
 }
 export function leaveBuilding() {
   const ins = G.inside;
@@ -87,6 +88,7 @@ export const enterIt: Interactable<EnterT> = {
 let buffT = 0,
   useCd: Record<string, number> = {};
 export const interiorBuff = () => (buffT > 0 ? 1.15 : 1);
+export const giveBuff = (sec: number) => (buffT = Math.max(buffT, sec));
 function useFx(fx: string, icon: string) {
   const now = G.gameT;
   if ((useCd[icon + fx] || 0) > now) return toast(icon + ' …');

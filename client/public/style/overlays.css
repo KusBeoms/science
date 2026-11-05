@@ -274,3 +274,177 @@
     padding: 14px;
   }
 }
+/* 휴대폰: 아이폰 17 느낌 — 금속 테두리(주황) · 검은 베젤 · 둥근 화면 · 다이내믹 아일랜드 */
+#phone .phone {
+  position: relative;
+  width: min(300px, 92vw);
+  height: min(620px, 92vh);
+  padding: 5px;
+  border-radius: 50px;
+  background: linear-gradient(145deg, #ff9a5c, #c8531d 45%, #ff8a4a 70%, #a8441a);
+  box-shadow: 0 0 0 1px #3a1a0c, 0 20px 50px #000a, inset 0 0 0 1px #ffd0b0aa;
+  display: block;
+}
+#phone .phscreen {
+  position: relative;
+  height: 100%;
+  border-radius: 45px;
+  background: #0b0c10;
+  border: 6px solid #000;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+#phone .phisl {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 88px;
+  height: 26px;
+  border-radius: 16px;
+  background: #000;
+  z-index: 3;
+}
+#phone .phisl u {
+  position: absolute;
+  right: 11px;
+  top: 7px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #2b3560, #05060d 70%);
+}
+#phone .phsb {
+  position: absolute;
+  width: 3px;
+  background: linear-gradient(#ffa066, #b4501c);
+  border-radius: 2px;
+}
+#phone .s1 { left: -3px; top: 92px; height: 18px; }
+#phone .s2 { left: -3px; top: 128px; height: 40px; }
+#phone .s3 { left: -3px; top: 176px; height: 40px; }
+#phone .s4 { right: -3px; top: 150px; height: 64px; }
+#phone .phbar2 {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 4px;
+  border-radius: 3px;
+  background: #fff8;
+}
+#phone .phbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 22px 6px;
+  font-size: 12px;
+  min-height: 42px;
+}
+#phbody {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 6px 10px;
+}
+#phone .phnav {
+  display: flex;
+  justify-content: center;
+  gap: 26px;
+  padding: 6px 0 18px;
+}
+#phone .phgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+#phone .phapp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 2px;
+}
+#phone .phapp span {
+  font-size: 28px;
+}
+#phone .phapp em {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--dim);
+}
+#phone .phrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px;
+  border-bottom: 1px solid #fff1;
+  font-size: 12px;
+}
+#phone .phb {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+#phone .phb.big {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  font-size: 16px;
+}
+#phone .phb.dim {
+  opacity: 0.5;
+}
+#phone .phhero {
+  font-size: 54px;
+  text-align: center;
+  padding: 14px 0 2px;
+}
+#phone .phtitle {
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+#phmap {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: #111;
+}
+#phone small {
+  color: var(--dim);
+}
+#phplaces {
+  position: relative;
+  z-index: 1;
+  background: #151822;
+}
+/* 휴대폰은 화면 오른쪽 아래에서 "삐릭" 튀어나온다 (배경은 거의 투명, 게임이 보인다) */
+#phone {
+  background: #0003;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0 24px 16px 0;
+  pointer-events: auto;
+}
+#phone.on .phone {
+  animation: ph-pop 0.46s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  transform-origin: 90% 100%;
+}
+@keyframes ph-pop {
+  0% { transform: translate(40px, 130%) scale(0.7) rotate(8deg); opacity: 0; }
+  55% { transform: translate(0, -18px) scale(1.03) rotate(-2deg); opacity: 1; }
+  78% { transform: translate(0, 6px) scale(0.99) rotate(0.5deg); }
+  100% { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #phone.on .phone { animation: none; }
+}
+@media (max-width: 700px) {
+  #phone { padding: 0 8px 8px 0; justify-content: center; }
+}

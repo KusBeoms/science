@@ -13,8 +13,9 @@ import {sfx} from '../audio/index.js';
 let shopTab = 'spr',
   shopSub = 'floor',
   lookSub = 'hat';
-export function openShop() {
-  if (paused()) return;
+export function openShop(tab?: string) {
+  if (tab) shopTab = tab;
+  if (paused() && G.modal !== 'phone') return;
   G.shopOpen = true;
   releaseLock();
   $('#shop').classList.add('on');

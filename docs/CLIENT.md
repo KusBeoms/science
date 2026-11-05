@@ -237,3 +237,13 @@ registerInteractable<T extends Target>({
 | data/cars.ts · render/vehicle.ts | 차 15종 데이터·모델 |
 | systems/vehicle.ts | 길가 차·운전 물리·내리기 |
 | game/cars.ts · game/car-shop.ts | 구매·튜닝·등록·차고·판매 규칙과 UI |
+
+### W3 확장 (추가)
+| 파일 | 역할 |
+|---|---|
+| data/city-w3.ts | 신도심 도로·건물 생성기·랜드마크 |
+| data/soccer.ts · systems/soccer.ts · render/city/landmarks3.ts | 축구 경기장·경기 |
+| data/wild.ts · render/wild.ts · systems/wild.ts | 야생지(산·호수·사막·시골)·교도소 장식 |
+| systems/police.ts · systems/jail.ts | 수배 ★6·경찰 추격·교도소(탈출 허점) |
+| game/phone.ts · game/phone-apps.ts · game/estate.ts · data/places.ts | 휴대폰·지도·택시·부동산 |
+| render/interior-furn2.ts | 신도심 용도 방 가구·사용 지점 |

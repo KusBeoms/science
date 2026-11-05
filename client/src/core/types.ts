@@ -102,6 +102,8 @@ export interface SaveState {
   story: StoryState;
   /** 자동차 (data/cars.ts): 차고 레벨 + 보유 목록 */
   cars: CarSave;
+  /** 내가 산 건물 id → 1 (game/estate.ts) */
+  props: Record<string, 1>;
 }
 export interface OwnedCar {
   t: string;
