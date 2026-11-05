@@ -9,3 +9,10 @@ CLAUDE.md
 docs/work-logs/
 docs/assets/
 docs/MODELING_HANDOFF.md
+
+# Original high-resolution material library stays local; keep its per-folder catalog.
+client/texture/**/*
+!client/texture/**/
+!client/texture/**/*.md
+!client/texture/**/LICENSE*
+!client/texture/**/license*

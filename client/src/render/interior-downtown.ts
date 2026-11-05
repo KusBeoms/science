@@ -10,8 +10,8 @@ export function furnishDowntown(p: Purpose, w: number, d: number, spots: Spot[],
     use = (x: number, z: number, fx: string, icon: string) => spots.push({kind: 'use', x, z, fx, icon}),
     glow = (x: number, z: number, ww: number, hh: number, y: number, c: number) => add({w: ww, h: hh, d: 0.15, c, x, z, y, solid: false, glow: true}),
     seat = (x: number, z: number, c: number) => {
-      add({w: 2.2, h: 0.9, d: 1.3, c, x, z});
-      add({w: 2.2, h: 1.0, d: 0.4, c, x, z: z - 0.7, y: 0.9});
+      add({w: 2.2, h: 0.9, d: 1.3, c, x, z,surface:c===PAL.steel?12:15});
+      add({w: 2.2, h: 1.0, d: 0.4, c, x, z: z - 0.7, y: 0.9,surface:c===PAL.steel?12:15});
       spots.push({kind: 'seat', x, z: z + 0.9, ry: 0});
     };
   switch (p) {

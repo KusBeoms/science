@@ -11,7 +11,8 @@ science/
 ├─ docker-compose.yml     # web(공개) + api — DB/Redis는 플랫폼이 DATABASE_URL, REDIS_URL로 주입
 ├─ client/                # TypeScript 클라이언트  → docs/tech/CLIENT.md
 │  ├─ src/                #   모듈 소스 (파일당 ≤500줄)
-│  └─ public/             #   index.html, style.css, js/(tsc 출력, git 제외)
+│  ├─ texture/            # 사용자 재질 원본·폴더별 README (원본은 로컬 보관)
+│  └─ public/             #   index.html, style/, assets/surfaces/, js/(tsc 출력, git 제외)
 ├─ server/                # C++17 API 서버         → docs/tech/SERVER.md
 ├─ web/                   # nginx 설정 + 정적 클라이언트 이미지
 ├─ docs/                  # 이 문서들
@@ -50,6 +51,7 @@ docs/
 | [CLIENT.md](tech/CLIENT.md) | 클라이언트 모듈 구조, 공유 상태, 빌드, 레지스트리, 세이브 스키마, **새 기능 추가 레시피** |
 | [SERVER.md](tech/SERVER.md) | API 엔드포인트, 환경변수, 로컬/도커 실행 |
 | [TESTING.md](tech/TESTING.md) | 헤드리스 E2E 하네스 사용법, 마일스톤 QA 체크리스트 |
+| [TEXTURES.md](tech/TEXTURES.md) | 사용자 텍스처25종 카탈로그·경량16종 팩·성능/실패 대응 |
 | [AUDIO.md](tech/AUDIO.md) | 사운드 시스템 구조, `sfx` 이름표, BGM, 접근성 |
 | [WEB_ROOT_README.md](tech/WEB_ROOT_README.md) | 상위 `../README.md` 초안 — 프로젝트 소개·서비스 구성·환경변수·공개 경로 |
 

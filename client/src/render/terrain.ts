@@ -4,7 +4,7 @@ import {locked} from '../core/progress.js';
 import {GX0, GZ0, NX, NZ, STEP, CLIFF1, bakeContinent} from '../core/heightmap.js';
 import {SECTORS} from '../data/sectors.js';
 import {registerLandmarkSolids} from './landmarks.js';
-import {lowMat} from './lowpoly/merge.js';
+import {surfaceMaterial} from './surface-detail.js';
 import {clearTerrainColors} from './terrain-color.js';
 import {terrainGeometry, type TerrainPatch} from './terrain-mesh.js';
 interface Patch extends TerrainPatch {key: string; owner: number}
@@ -29,7 +29,7 @@ function children(p: Patch, step: number) {
   return out;
 }
 function mesh(p: Patch, spacing: (x: number, z: number) => number, skirtDepth = 12) {
-  const g = terrainGeometry(p, spacing, skirtDepth), m = new THREE.Mesh(g, lowMat());
+  const g = terrainGeometry(p, spacing, skirtDepth), m = new THREE.Mesh(g, surfaceMaterial());
   m.name = `terrain-${p.key}`; m.userData.terrainStep = p.step;
   m.visible = false; group.add(m); return m;
 }

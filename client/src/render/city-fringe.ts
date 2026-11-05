@@ -1,6 +1,8 @@
 // 도시→교외→산림 전이 생활권. 위치/진입로는 data/city-fringe.ts, 실제 지면은 terrainY를 공유한다.
 // 부지 경사에 맞춘 기초·진입 데크·회전 건물 충돌을 등록하고 120u 블록마다 두 단계 LOD로 병합한다.
 import {G} from '../core/runtime.js';
+import {surfaceMaterial} from './surface-detail.js';
+import {tagStructure} from './surface-tags.js';
 import {addSolid,groundH,solidAt} from '../core/terrain.js';
 import {addDeck} from '../core/deck.js';
 import {CITY_POLY,BRIDGE_ENDS} from '../data/outline.js';
@@ -60,11 +62,11 @@ function nearParts(s:Site,b:CityBuilding) {
   if(p.kind==='cabins')parts.push(box(3.5,0.2,2,PAL.wood,0,3.5,p.d/2+0.8),box(0.15,3.5,0.15,PAL.wood,-1.6,0,p.d/2+1.4),box(0.15,3.5,0.15,PAL.wood,1.6,0,p.d/2+1.4));
   if(p.kind==='coast')parts.push(box(p.w+0.4,0.2,1.8,PAL.tileBlue,0,3.8,p.d/2+0.6));
   for(const sign of[-1,1])parts.push(box(1.5,0.3,0.5,PAL.clay,sign*p.w*0.28,1.1,p.d/2+0.3),ico(0.35,0,PAL.green,sign*p.w*0.28,1.6,p.d/2+0.35));
-  return mergeGeometries(parts);
+  return tagStructure(mergeGeometries(parts),b);
 }
 function farParts(s:Site,b:CityBuilding) {
   const p=s.plot,H=buildingHeight(b);
-  return mergeGeometries([box(p.w,H,p.d,PAL[p.wall]),gable(p.w+0.8,3,p.d+0.8,PAL[p.roof],0,H),box(p.w+0.4,s.y-s.low+0.1,p.d+0.4,PAL.stone,0,s.low-s.y),panel(p.w-2,1.3,PAL.glass,0,2.3,p.d/2+0.05)]);
+  return tagStructure(mergeGeometries([box(p.w,H,p.d,PAL[p.wall]),gable(p.w+0.8,3,p.d+0.8,PAL[p.roof],0,H),box(p.w+0.4,s.y-s.low+0.1,p.d+0.4,PAL.stone,0,s.low-s.y),panel(p.w-2,1.3,PAL.glass,0,2.3,p.d/2+0.05)]),b);
 }
 function livingParts(s:Site,parts:Placed[]) {
   const p=s.plot,front=p.entry,road=p.road,ry=groundH(...road)+0.12;
@@ -110,7 +112,7 @@ export function buildCityFringe() {
       close.push({g:nearParts(s,b),x:p.x-cx,y:s.y,z:p.z-cz,ry:p.ry});far.push({g:farParts(s,b),x:p.x-cx,y:s.y,z:p.z-cz,ry:p.ry});livingParts(s,landscape);
     }
     const lod=new THREE.LOD();lod.name='fringe-neighborhood';lod.autoUpdate=false;lod.position.set(cx,0,cz);
-    lod.addLevel(new THREE.Mesh(mergePlaced(close),lowMat()),0);lod.addLevel(new THREE.Mesh(mergePlaced(far),lowMat()),175);
+    lod.addLevel(new THREE.Mesh(mergePlaced(close),surfaceMaterial()),0);lod.addLevel(new THREE.Mesh(mergePlaced(far),surfaceMaterial()),175);
     lod.levels[0].object.visible=false;lod.levels[1].object.visible=true;lods.push({lod,x:cx,z:cz});root.add(lod);
   });
   for(const lane of FRINGE_LANES) {

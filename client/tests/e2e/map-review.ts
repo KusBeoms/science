@@ -8,6 +8,7 @@ export async function mapReview(page:Page,bounds:[number,number,number,number],w
     const sec=await import('/js/render/sectors.js');
     const fringe=await import('/js/render/city-fringe.js');
     const visibility=await import('/js/render/world-visibility.js');
+    await (await import('/js/render/surface-detail.js')).surfaceTexturesReady();
     const camera=new T.OrthographicCamera(-(x1-x0)/2,(x1-x0)/2,(z1-z0)/2,-(z1-z0)/2,1,5000);
     camera.up.set(0,0,-1);camera.position.set((x0+x1)/2,2400,(z0+z1)/2);camera.lookAt((x0+x1)/2,0,(z0+z1)/2);camera.updateMatrixWorld(true);
     const old=G.camera,fog=G.scene.fog,sz=G.renderer.getSize(new T.Vector2());

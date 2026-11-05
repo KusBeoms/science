@@ -1,6 +1,8 @@
 // 경관 메시를 공간별로 병합한다. 숲은 근거리 100u / 원거리 300u 청크를 따로 둔다.
 import {G} from '../core/runtime.js';
 import {instanced, lowMat, mergePlaced, type Placed, type Inst} from './lowpoly/merge.js';
+import {surfaceMaterial} from './surface-detail.js';
+import {tagStructure} from './surface-tags.js';
 
 interface ForestNear {
   mesh: any;
@@ -28,9 +30,9 @@ export function landscapeBatch(parts: Placed[], name: string, cell = 100) {
     (cells.get(key) || cells.set(key, []).get(key)!).push(p);
   }
   cells.forEach(list => {
-    const geometry = mergePlaced(list);
+    const geometry = tagStructure(mergePlaced(list));
     geometry.computeBoundingSphere();
-    group.add(new THREE.Mesh(geometry, lowMat()));
+    group.add(new THREE.Mesh(geometry, geometry.attributes.surfaceDetail ? surfaceMaterial() : lowMat()));
   });
   return group;
 }

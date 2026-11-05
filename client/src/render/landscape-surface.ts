@@ -1,6 +1,7 @@
 // 높이를 바꾸지 않고 지면을 따라가는 보도·밭·초지 면을 만든다.
 import {groundH} from '../core/terrain.js';
 import {rgb} from './lowpoly/palette.js';
+import {tagGround} from './surface-tags.js';
 
 export type PathPoint = readonly [number, number];
 
@@ -65,5 +66,5 @@ function geometry(pos: number[], col: number[]) {
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   geo.computeVertexNormals();
-  return geo;
+  return tagGround(geo);
 }

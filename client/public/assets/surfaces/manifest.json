@@ -1,0 +1,285 @@
+{
+  "schema": 1,
+  "size": 512,
+  "encoding": "linear neutral detail, 128/255 midpoint",
+  "channelOrder": "RGBA, alpha is data, not opacity",
+  "packs": [
+    {
+      "file": "natural-a.png",
+      "width": 512,
+      "height": 512,
+      "bytes": 884459,
+      "sha256": "3e8c26bcee68101724ff560dc2ac2b1bce07816255ed70df888dc20a05510a05"
+    },
+    {
+      "file": "natural-b.png",
+      "width": 512,
+      "height": 512,
+      "bytes": 791443,
+      "sha256": "130b2c94cb4eaf7f0e55a4d0e3562667904a9e5f7e283d60588787280f81bb28"
+    },
+    {
+      "file": "built-a.png",
+      "width": 512,
+      "height": 512,
+      "bytes": 728998,
+      "sha256": "464639144de38a9abd2fb8b0ac54e8a33f304b925395dd4416a56dc2b4a505a6"
+    },
+    {
+      "file": "built-b.png",
+      "width": 512,
+      "height": 512,
+      "bytes": 758113,
+      "sha256": "8591ce2efacbd83b5e3cc2fb2f1e315c8d02bdd24ca21abe70812bd613a660a4"
+    }
+  ],
+  "materials": [
+    {
+      "id": 0,
+      "kind": "lawn",
+      "pack": "natural-a.png",
+      "channel": "R",
+      "source": "texture/Uncompressed/Grass005_4K-JPG/Grass005_4K-JPG_Color.jpg",
+      "sourceSha256": "b32aa4f878b5cbae18fa4cd70de988e225a9b6e3c729502e7ff4c9ea6967f7bb",
+      "resolution": [
+        4096,
+        4096
+      ],
+      "cropPixels": null,
+      "grayMean": 112.69,
+      "grayStddev": 13.437
+    },
+    {
+      "id": 1,
+      "kind": "forest-grass",
+      "pack": "natural-a.png",
+      "channel": "G",
+      "source": "texture/Uncompressed/Grass003_4K-JPG/Grass003_4K-JPG_Color.jpg",
+      "sourceSha256": "6b7abe8c339a4ecf35c39077222212af148b96fd1eefbf7826d210c673de40a3",
+      "resolution": [
+        4096,
+        4096
+      ],
+      "cropPixels": null,
+      "grayMean": 65.88,
+      "grayStddev": 12.037
+    },
+    {
+      "id": 2,
+      "kind": "rough-lawn",
+      "pack": "natural-a.png",
+      "channel": "B",
+      "source": "texture/Uncompressed/PX_Grass_Lawn_04_4K/PX_Grass_Lawn_04_albedo.jpg",
+      "sourceSha256": "6b1a43c3a6d0df9628240aa3d3aad4c955dde5db46b3069fae410af178a69ebb",
+      "resolution": [
+        4096,
+        4096
+      ],
+      "cropPixels": null,
+      "grayMean": 107.558,
+      "grayStddev": 15.307
+    },
+    {
+      "id": 3,
+      "kind": "pasture",
+      "pack": "natural-a.png",
+      "channel": "A",
+      "source": "texture/Uncompressed/Poliigon_GrassPatchyGround_4585 (1)/8K/Poliigon_GrassPatchyGround_4585_BaseColor.jpg",
+      "sourceSha256": "152e8d5ed8d210877c1d00cccdb65b408876285cba68ee4acb15c935427d26ab",
+      "resolution": [
+        8192,
+        8192
+      ],
+      "cropPixels": null,
+      "grayMean": 85.066,
+      "grayStddev": 11.471
+    },
+    {
+      "id": 4,
+      "kind": "soil",
+      "pack": "natural-b.png",
+      "channel": "R",
+      "source": "texture/Uncompressed/Ground103_8K-JPG/Ground103_8K-JPG_Color.jpg",
+      "sourceSha256": "b0a4539fe23e44ad389baf8338584dc652399d2ab4dbd0ccb58022ccc26fd89c",
+      "resolution": [
+        8192,
+        8192
+      ],
+      "cropPixels": null,
+      "grayMean": 107.394,
+      "grayStddev": 14.333
+    },
+    {
+      "id": 5,
+      "kind": "dry-earth",
+      "pack": "natural-b.png",
+      "channel": "G",
+      "source": "texture/Uncompressed/Ground104_8K-JPG/Ground104_8K-JPG_Color.jpg",
+      "sourceSha256": "1a707f5b77bbfafbcf0dd73252ae40be850f6afb41e60d1ad48533cc792303db",
+      "resolution": [
+        8192,
+        8192
+      ],
+      "cropPixels": null,
+      "grayMean": 110.056,
+      "grayStddev": 17.937
+    },
+    {
+      "id": 6,
+      "kind": "pebbles",
+      "pack": "natural-b.png",
+      "channel": "B",
+      "source": "texture/Uncompressed/dry_river_pebbles_4k.blend/textures/dry_river_pebbles_diff_4k.jpg",
+      "sourceSha256": "7b338f289eefae50d653b7726c8c740ecf542bdbe00a435b6c7f2afdbb71d4a1",
+      "resolution": [
+        4096,
+        4096
+      ],
+      "cropPixels": null,
+      "grayMean": 107.455,
+      "grayStddev": 37.291
+    },
+    {
+      "id": 7,
+      "kind": "cliff",
+      "pack": "natural-b.png",
+      "channel": "A",
+      "source": "texture/Uncompressed/marble_cliff_03_4k.blend/textures/marble_cliff_03_diff_4k.jpg",
+      "sourceSha256": "d9c09a8d1ebc3fb9442c2c43eb02132ef545af3d8b1bf7f42282a89c6d00be18",
+      "resolution": [
+        4096,
+        4096
+      ],
+      "cropPixels": null,
+      "grayMean": 130.105,
+      "grayStddev": 27.346
+    },
+    {
+      "id": 8,
+      "kind": "paving",
+      "pack": "built-a.png",
+      "channel": "R",
+      "source": "texture/Uncompressed/PavingStones150_4K-JPG/PavingStones150_4K-JPG_Color.jpg",
+      "sourceSha256": "c998e8a1634bcda2d847efe002b2525ef55584651dc01f45c8e217575d2e3f18",
+      "resolution": [
+        4096,
+        2048
+      ],
+      "cropPixels": null,
+      "grayMean": 114.39,
+      "grayStddev": 14.493
+    },
+    {
+      "id": 9,
+      "kind": "asphalt",
+      "pack": "built-a.png",
+      "channel": "G",
+      "source": "texture/Uncompressed/Road011A_4K-JPG/Road011A_4K-JPG_Color.jpg",
+      "sourceSha256": "a7e2ad84316dd61f99c9d57ced30ac0110c2e34c685a19fb1dfb99f31649a2c9",
+      "resolution": [
+        4096,
+        4096
+      ],
+      "cropPixels": [
+        614,
+        737,
+        1434,
+        1556
+      ],
+      "grayMean": 70.314,
+      "grayStddev": 7.138
+    },
+    {
+      "id": 10,
+      "kind": "wood",
+      "pack": "built-a.png",
+      "channel": "B",
+      "source": "texture/Uncompressed/Wood095_8K-JPG/Wood095_8K-JPG_Color.jpg",
+      "sourceSha256": "2a931cc50d2b4ca7b382ddcb6adbd2f04d72e0b5c5f618a40f4f73f3ddabfdf1",
+      "resolution": [
+        8192,
+        4096
+      ],
+      "cropPixels": null,
+      "grayMean": 165.605,
+      "grayStddev": 6.39
+    },
+    {
+      "id": 11,
+      "kind": "corrugated",
+      "pack": "built-a.png",
+      "channel": "A",
+      "source": "texture/Uncompressed/CorrugatedSteel009_4K-JPG/CorrugatedSteel009_4K-JPG_Color.jpg",
+      "sourceSha256": "393dc4c637e5b1eea0ef2a74ba14083b9d615ecdcc71bec38c82fc56068cc193",
+      "resolution": [
+        4096,
+        2048
+      ],
+      "cropPixels": null,
+      "grayMean": 129.502,
+      "grayStddev": 19.363
+    },
+    {
+      "id": 12,
+      "kind": "steel",
+      "pack": "built-b.png",
+      "channel": "R",
+      "source": "texture/Uncompressed/Poliigon_MetalSteelBrushed_7174/8K/Poliigon_MetalSteelBrushed_7174_BaseColor.jpg",
+      "sourceSha256": "1a593cf9b20c0c88903f8aecf4799d19e5436e63092cc94225a8c3fedf043dc2",
+      "resolution": [
+        8192,
+        8192
+      ],
+      "cropPixels": null,
+      "grayMean": 177.879,
+      "grayStddev": 2.258
+    },
+    {
+      "id": 13,
+      "kind": "rust",
+      "pack": "built-b.png",
+      "channel": "G",
+      "source": "texture/Uncompressed/Metal055C_4K-JPG/Metal055C_4K-JPG_Color.jpg",
+      "sourceSha256": "26617605319287284264f9fe34be3bc1425bd0fa65b9a6ae729b0273253137b9",
+      "resolution": [
+        4096,
+        4096
+      ],
+      "cropPixels": null,
+      "grayMean": 119.762,
+      "grayStddev": 29.526
+    },
+    {
+      "id": 14,
+      "kind": "tile",
+      "pack": "built-b.png",
+      "channel": "B",
+      "source": "texture/Uncompressed/Tiles138_4K-JPG/Tiles138_4K-JPG_Color.jpg",
+      "sourceSha256": "61345526f1acca2a24900232e3f8ee0bb39984d856286728ce8c467e9ad6987b",
+      "resolution": [
+        4096,
+        4096
+      ],
+      "cropPixels": null,
+      "grayMean": 53.695,
+      "grayStddev": 9.188
+    },
+    {
+      "id": 15,
+      "kind": "fabric",
+      "pack": "built-b.png",
+      "channel": "A",
+      "source": "texture/Uncompressed/Poliigon_BoucleFabricBubbly_7827/8K/Poliigon_BoucleFabricBubbly_7827_BaseColor.jpg",
+      "sourceSha256": "c428d1ca20189ec8e93f69b0e48ce57e4d2071804a50ed449dfbb2b6857bb77f",
+      "resolution": [
+        8192,
+        8192
+      ],
+      "cropPixels": null,
+      "grayMean": 167.819,
+      "grayStddev": 9.639
+    }
+  ],
+  "downloadBytes": 3163013,
+  "gpuBytesWithMipmaps": 5592400
+}

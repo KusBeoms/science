@@ -2,6 +2,7 @@
 import {PAL, NEUTRAL, ACCENT, mix} from './lowpoly/palette.js';
 import {box, cone, cyl, gable, ico, type Geo} from './lowpoly/prim.js';
 import {mergeGeometries, mergePlaced, type Placed} from './lowpoly/merge.js';
+import {markSurface} from './surface-detail.js';
 
 const parts = (l: Geo[]): Placed[] => l.map(g => ({g}));
 const m = (l: Geo[]): Geo => mergePlaced(parts(l));
@@ -21,7 +22,7 @@ export function smallHouse(roof: number): Geo {
 /** 헛간 14×10 */
 export function barn(): Geo {
   return m([
-    box(14, 7, 10, PAL.brick), box(15, 0.5, 11, PAL.cloud, 0, 7), gable(15, 4, 11, PAL.slate, 0, 7.4), box(4, 5, 0.4, PAL.cloud, 0, 0, 5.1),
+    box(14, 7, 10, PAL.brick), box(15, 0.5, 11, PAL.cloud, 0, 7), markSurface(gable(15, 4, 11, PAL.slate, 0, 7.4),11,3,.65), box(4, 5, 0.4, PAL.cloud, 0, 0, 5.1),
     box(0.5, 5.2, 0.4, PAL.cloud, -2.1, 0, 5.2), box(0.5, 5.2, 0.4, PAL.cloud, 2.1, 0, 5.2),
   ]);
 }
@@ -30,7 +31,7 @@ export function warehouse(): Geo {
   return m([box(20, 4.4, 10, mix(PAL.ash, PAL.bone, 0.4)), gable(21, 2.4, 11, PAL.steel, 0, 4.4), box(5, 3.6, 0.3, PAL.slate, -5, 0, 5.1), box(5, 3.6, 0.3, PAL.slate, 5, 0, 5.1)]);
 }
 export function silo(): Geo {
-  return m([cyl(2.6, 11, NEUTRAL.ash, 0, 0, 0, 0, 10), cone(2.9, 3, PAL.tileRed, 0, 11, 0, 0, 10)]);
+  return m([markSurface(cyl(2.6, 11, NEUTRAL.ash, 0, 0, 0, 0, 10),13,3,.55), cone(2.9, 3, PAL.tileRed, 0, 11, 0, 0, 10)]);
 }
 export function hut(): Geo {
   return m([box(9, 4.4, 7, PAL.wood), gable(10, 3, 8, PAL.slate, 0, 4.4), box(1.4, 3, 0.3, PAL.coal, 0, 0, 3.6), box(1.8, 1.4, 0.3, PAL.glass, -3, 1.6, 3.6)]);

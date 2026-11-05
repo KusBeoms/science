@@ -8,6 +8,8 @@ import {hash2} from './lowpoly/rng.js';
 import {mergeGeometries, type Placed, type Inst} from './lowpoly/merge.js';
 import {terrainRibbon, type PathPoint} from './landscape-surface.js';
 import {greenhouse, scarecrow} from './rural-art.js';
+import {markSurface} from './surface-detail.js';
+import {SURFACE} from './surface-tags.js';
 
 const CROP: Record<CropKind, number> = {
   rice: mix(PAL.amber, PAL.clay, 0.1),
@@ -47,7 +49,7 @@ function fieldGeo(p: Parcel) {
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   geo.computeVertexNormals();
-  return geo;
+  return markSurface(geo, p.kind === 'soil' ? SURFACE.soil : SURFACE.pasture, 6, p.kind === 'soil' ? .55 : .35);
 }
 /** 패치 둘레를 감싸는 둑 점들(닫힌 사각형, 7u 간격) */
 function bundPts(p: Parcel, grow: number): PathPoint[] {

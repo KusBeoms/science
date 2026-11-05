@@ -14,6 +14,8 @@ import {PAL, NEUTRAL, ACCENT, mix, rgb} from './lowpoly/palette.js';
 import {box, cone, cyl, ico, type Geo} from './lowpoly/prim.js';
 import {hash2} from './lowpoly/rng.js';
 import {lowMat, mergePlaced, type Inst, type Placed} from './lowpoly/merge.js';
+import {surfaceMaterial} from './surface-detail.js';
+import {tagGround,tagStructure} from './surface-tags.js';
 
 /** 길 한 줄의 띠들을 pos/col 배열에 쌓는다. off = 중심선에서 옆으로, hw = 반폭 */
 function ribbon(P: RoadPt[], closed: boolean, off: number, hw: number, dy: number, color: number, pos: number[], col: number[], dash = 0) {
@@ -52,7 +54,7 @@ function roadMesh(): any {
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
   g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  const m = new THREE.Mesh(g, lowMat());
+  const m = new THREE.Mesh(tagGround(g), surfaceMaterial());
   m.name = 'lakeRoad';
   return m;
 }
@@ -111,7 +113,7 @@ export function buildLakeside(): any {
     if (i % 17 === 0) S.push({g: benchGeo(), x: x + Math.cos(a) * -3, y: groundH(x, z), z: z - Math.sin(a) * 3, ry: -a - Math.PI / 2, s: 1.3});
   }
   const cherryGeo = mergePlaced([{g: cyl(0.25, 2.6, PAL.wood, 0, 0, 0, 0, 5)}, {g: ico(2, 0, mix(PAL.pink, PAL.white, 0.4), 0, 3.6, 0)}, {g: ico(1.2, 0, PAL.pink, 1, 3.6, 0.4)}]);
-  grp.add(new THREE.Mesh(mergePlaced(S), lowMat()), landscapeBatch(pk, 'lake-promenade', 400), landscapeForest(cherryGeo, cone(2.3, 4.5, PAL.pink, 0, 0, 0, 0, 5), cherry, 'lake-cherries'));
+  grp.add(new THREE.Mesh(tagStructure(mergePlaced(S)), surfaceMaterial()), landscapeBatch(pk, 'lake-promenade', 400), landscapeForest(cherryGeo, cone(2.3, 4.5, PAL.pink, 0, 0, 0, 0, 5), cherry, 'lake-cherries'));
   void roundTreeGeo;
   return grp;
 }

@@ -9,6 +9,8 @@ import type {Rect} from '../core/terrain.js';
 import {furnish2} from './interior-furn2.js';
 import {furnishShops} from './interior-shops.js';
 import {furnishDowntown} from './interior-downtown.js';
+import {markSurface,surfaceMaterial} from './surface-detail.js';
+import {SURFACE,tagStructure} from './surface-tags.js';
 
 export const RX = 1500,
   RZ = 1500;
@@ -39,6 +41,7 @@ export interface Item {
   y?: number;
   solid?: boolean;
   glow?: boolean;
+  surface?: number;
 }
 const rnd = (seed: number, k: number) => ((Math.sin(seed * 12.9898 + k * 78.233) * 43758.5453) % 1 + 1) % 1;
 
@@ -51,8 +54,9 @@ function furnish(p: Purpose, w: number, d: number, seed: number, spots: Spot[]):
   const shelf = (x: number, z: number, len: number, along: 'x' | 'z', c: number = PAL.wood) =>
     add({w: along === 'x' ? len : 0.9, h: 3.2, d: along === 'x' ? 0.9 : len, c, x, z});
   const seat = (x: number, z: number, c: number = PAL.tileBlue, ry = 0) => {
-    add({w: 2.4, h: 0.9, d: 1.4, c, x, z});
-    add({w: 2.4, h: 1.0, d: 0.4, c, x, z: z - 0.8, y: 0.9});
+    const surface=c===PAL.wood?SURFACE.wood:c===PAL.steel?SURFACE.steel:SURFACE.fabric;
+    add({w: 2.4, h: 0.9, d: 1.4, c, x, z, surface});
+    add({w: 2.4, h: 1.0, d: 0.4, c, x, z: z - 0.8, y: 0.9, surface});
     spots.push({kind: 'seat', x, z: z + 0.9, ry});
   };
   const counter = (x: number, z: number, len: number, kind?: SpotKind) => {
@@ -201,11 +205,11 @@ export function buildRoom(e: Enterable): Room {
   wallMesh.material.side = THREE.BackSide;
   wallMesh.position.set(RX, 0, RZ);
   grp.add(wallMesh);
-  solid.push({g: box(w, 0.1, d, info.floor, 0, 0, 0), x: RX, y: 0.02, z: RZ});
+  solid.push({g: markSurface(box(w, 0.1, d, info.floor),e.purpose==='house'?SURFACE.wood:SURFACE.tile,3,.55), x: RX, y: 0.02, z: RZ});
   // 바닥 격자 무늬
   for (let i = 0; i < Math.floor(w / 2); i++)
     for (let j = 0; j < Math.floor(d / 2); j++)
-      if ((i + j) % 2) solid.push({g: box(2, 0.04, 2, info.floor + 0x0a0a0a, 0, 0, 0), x: RX - w / 2 + 1 + i * 2, y: 0.12, z: RZ - d / 2 + 1 + j * 2});
+      if ((i + j) % 2) solid.push({g: markSurface(box(2, 0.04, 2, info.floor + 0x0a0a0a),e.purpose==='house'?SURFACE.wood:SURFACE.tile,3,.55), x: RX - w / 2 + 1 + i * 2, y: 0.12, z: RZ - d / 2 + 1 + j * 2});
   // 문(남쪽 벽 안쪽)
   solid.push({g: box(2.8, 3.8, 0.2, PAL.wood, 0, 0, 0), x: RX, y: 0.1, z: RZ + d / 2 - 0.15});
   lit.push({g: box(0.9, 0.2, 0.15, PAL.green, 0, 0, 0), x: RX, y: 4.0, z: RZ + d / 2 - 0.3});
@@ -214,12 +218,13 @@ export function buildRoom(e: Enterable): Room {
   for (const i of items) {
     const g = box(i.w, i.h, i.d, i.c, 0, 0, 0),
       p = {g, x: RX + i.x, y: (i.y ?? 0) + 0.1, z: RZ + i.z};
+    if(!i.glow&&i.surface!==undefined)markSurface(g,i.surface,i.surface===SURFACE.fabric?1.2:3,.65);
     (i.glow ? lit : solid).push(p);
     if (i.solid) solids.push([RX + i.x - i.w / 2, RZ + i.z - i.d / 2, RX + i.x + i.w / 2, RZ + i.z + i.d / 2]);
   }
   solid.push(...interiorDetails(e.purpose, w, d, items).map(g => ({g, x: RX, y: 0.1, z: RZ})));
   void tint;
-  const s = new THREE.Mesh(mergePlaced(solid), lowMat()),
+  const s = new THREE.Mesh(tagStructure(mergePlaced(solid)), surfaceMaterial()),
     l = new THREE.Mesh(mergePlaced(lit), glowMat());
   grp.add(s, l);
   const spotsW = spots.map(sp => ({...sp, x: RX + sp.x, z: RZ + sp.z}));

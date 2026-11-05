@@ -1,7 +1,8 @@
 // Indexed terrain grid with shared world normals/colors and stitched LOD boundaries.
 import {GX0, GZ0, CLIFF1, heightAt, terrainNormal} from '../core/heightmap.js';
-import {CITY_HALF} from '../data/world-map.js';
+import {CITY_HALF, SEA_Y} from '../data/world-map.js';
 import {terrainColor} from './terrain-color.js';
+import {terrainDetail} from './terrain-detail.js';
 export interface TerrainPatch {x0: number; z0: number; x1: number; z1: number; step: number}
 export type EdgeSpacing = (x: number, z: number) => number;
 const axis = (a: number, b: number, step: number) => {
@@ -11,12 +12,13 @@ const axis = (a: number, b: number, step: number) => {
   return out;
 };
 function sample(x: number, z: number) {
-  return {h: heightAt(x, z), n: terrainNormal(x, z), c: terrainColor(x, z)};
+  const h = heightAt(x, z);
+  return {h, n: terrainNormal(x, z), c: terrainColor(x, z), d: h < SEA_Y + 0.12 ? [16, 6, 0] as [number, number, number] : terrainDetail(x, z)};
 }
 export function terrainGeometry(p: TerrainPatch, adjacent: EdgeSpacing, skirtDepth = 12): any {
   const xs = axis(p.x0, p.x1, p.step), zs = axis(p.z0, p.z1, p.step),
     w = xs.length, h = zs.length,
-    pos: number[] = [], normals: number[] = [], colors: number[] = [], indices: number[] = [];
+    pos: number[] = [], normals: number[] = [], colors: number[] = [], details: number[] = [], indices: number[] = [];
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
     const x = xs[i], z = zs[j];
     let value = sample(x, z), edge = p.step, vertical = false;
@@ -36,9 +38,10 @@ export function terrainGeometry(p: TerrainPatch, adjacent: EdgeSpacing, skirtDep
         v1 = sample(vertical ? x : lo + edge, vertical ? lo + edge : z);
       value = {h: v0.h * (1 - t) + v1.h * t,
         n: v0.n.map((v, k) => v * (1 - t) + v1.n[k] * t) as [number, number, number],
-        c: v0.c.map((v, k) => v * (1 - t) + v1.c[k] * t) as [number, number, number]};
+        c: v0.c.map((v, k) => v * (1 - t) + v1.c[k] * t) as [number, number, number],
+        d: v0.d.map((v, k) => v * (1 - t) + v1.d[k] * t) as [number, number, number]};
     }
-    pos.push(x, value.h - 0.08, z); normals.push(...value.n); colors.push(...value.c);
+    pos.push(x, value.h - 0.08, z); normals.push(...value.n); colors.push(...value.c); details.push(...value.d);
   }
   for (let j = 0; j < h - 1; j++) for (let i = 0; i < w - 1; i++) {
     const a = j * w + i, b = a + 1, c = a + w, d = c + 1,
@@ -58,6 +61,7 @@ export function terrainGeometry(p: TerrainPatch, adjacent: EdgeSpacing, skirtDep
       pos.push(pos[id * 3], pos[id * 3 + 1] - skirtDepth, pos[id * 3 + 2]);
       normals.push(...normals.slice(id * 3, id * 3 + 3));
       colors.push(...colors.slice(id * 3, id * 3 + 3));
+      details.push(...details.slice(id * 3, id * 3 + 3));
     }
     indices.push(a, start, b, b, start, start + 1);
   };
@@ -67,6 +71,7 @@ export function terrainGeometry(p: TerrainPatch, adjacent: EdgeSpacing, skirtDep
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
   g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  g.setAttribute('surfaceDetail', new THREE.Float32BufferAttribute(details, 3));
   g.setIndex(indices); g.computeBoundingSphere();
   return g;
 }

@@ -12,6 +12,8 @@ import {buildNaturalCity, updateNaturalCity} from '../city-natural.js';
 import {updateLandscapeLOD} from '../landscape-batch.js';
 import {updateCityFringe} from '../city-fringe.js';
 import {updateWorldVisibility} from '../world-visibility.js';
+import {surfaceMaterial} from '../surface-detail.js';
+import {tagGround,tagStructure} from '../surface-tags.js';
 import {facadeDetails} from './facade-art.js';
 import {makeBuilding} from './building.js';
 import {makeHighrise} from './highrise.js';
@@ -44,8 +46,9 @@ function addBuildings(grp: any, list: readonly CityBuilding[]) {
   for (const b of list) {
     const built = facadeDetails(b, b.hr ? makeHighrise(b) : b.district === 'w7-house' ? makeHouse(b) : b.district === 'w7-arena' ? makeArena(b) : b.district.startsWith('w7-') ? makeLite(b) : makeBuilding(b)),
       at = {x: b.x, z: b.z, ry: FACE_RY[b.face]};
+    tagStructure(built.solid,b);
     if (b.hr || b.district === 'w7-arena') persistent.push({g: built.solid, ...at});
-    else { solid.push({g: built.solid, ...at}); far.push({g: distantBuilding(b), ...at}); }
+    else { solid.push({g: built.solid, ...at}); far.push({g: tagStructure(distantBuilding(b),b), ...at}); }
     lit.push({g: built.lit, ...at});
     const [x0, z0, x1, z1] = footprint(b);
     addSolid(x0, z0, x1, z1);
@@ -58,7 +61,7 @@ function addBuildings(grp: any, list: readonly CityBuilding[]) {
   addMesh(grp, mergePlaced(lit), true);
 }
 function addMesh(grp: any, geo: any, night: boolean, x = 0, z = 0) {
-  const m = new THREE.Mesh(geo, night ? glowMat() : lowMat());
+  const m = new THREE.Mesh(geo, night ? glowMat() : geo.attributes.surfaceDetail ? surfaceMaterial() : lowMat());
   m.position.set(x, 0, z);
   grp.add(m);
   if (night) {
@@ -76,7 +79,7 @@ export function buildCity(): any {
   nightMeshes.length = 0;
 
   // 지면: 기지 타일(윗면 y=0)보다 0.05 낮고 통로 판(윗면 -0.08)보다 0.03 높다
-  const ground = new THREE.Mesh(groundGeometry(), new THREE.MeshLambertMaterial({vertexColors: true}));
+  const ground = new THREE.Mesh(tagGround(groundGeometry()), surfaceMaterial());
   ground.position.y = -0.05;
   grp.add(ground);
 

@@ -1,0 +1,6 @@
+.git/
+.omc/
+**/node_modules/
+client/texture/
+client/tests/out/
+**/.DS_Store

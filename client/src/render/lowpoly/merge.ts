@@ -23,13 +23,15 @@ export function mergePlaced(list: Placed[]): Geo {
   parts.forEach(it => (total += it.g.attributes.position.count));
   const pos = new Float32Array(total * 3),
     nor = new Float32Array(total * 3),
-    col = new Float32Array(total * 3).fill(1);
+    col = new Float32Array(total * 3).fill(1),
+    surface = parts.some(it => it.g.attributes.surfaceDetail) ? new Float32Array(total * 3) : null;
   let o = 0;
   for (const {g, x = 0, y = 0, z = 0, ry = 0, s = 1} of parts) {
     const n = g.attributes.position.count,
       p = g.attributes.position.array,
       nm = g.attributes.normal.array,
       cl = g.attributes.color ? g.attributes.color.array : null,
+      sd = g.attributes.surfaceDetail ? g.attributes.surfaceDetail.array : null,
       c = Math.cos(ry),
       sn = Math.sin(ry);
     for (let i = 0; i < n * 3; i += 3, o += 3) {
@@ -39,6 +41,11 @@ export function mergePlaced(list: Placed[]): Geo {
       nor[o] = nm[i] * c + nm[i + 2] * sn;
       nor[o + 1] = nm[i + 1];
       nor[o + 2] = -nm[i] * sn + nm[i + 2] * c;
+      if (surface) {
+        surface[o] = sd ? sd[i] : 0;
+        surface[o + 1] = sd ? sd[i + 1] : 4;
+        surface[o + 2] = sd ? sd[i + 2] : 0;
+      }
       if (cl) {
         col[o] = cl[i];
         col[o + 1] = cl[i + 1];
@@ -50,6 +57,7 @@ export function mergePlaced(list: Placed[]): Geo {
   out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
   out.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  if (surface) out.setAttribute('surfaceDetail', new THREE.BufferAttribute(surface, 3));
   return out;
 }
 

@@ -10,8 +10,8 @@ export function furnish2(p: Purpose, w: number, d: number, spots: Spot[], add: (
     hz = d / 2,
     use = (x: number, z: number, fx: string, icon: string) => spots.push({kind: 'use', x, z, fx, icon}),
     seat = (x: number, z: number, c: number = PAL.tileBlue, ry = 0) => {
-      add({w: 2.2, h: 0.9, d: 1.3, c, x, z});
-      add({w: 2.2, h: 1.0, d: 0.4, c, x, z: z - 0.7, y: 0.9});
+      add({w: 2.2, h: 0.9, d: 1.3, c, x, z,surface:c===PAL.wood?10:c===PAL.steel?12:15});
+      add({w: 2.2, h: 1.0, d: 0.4, c, x, z: z - 0.7, y: 0.9,surface:c===PAL.wood?10:c===PAL.steel?12:15});
       spots.push({kind: 'seat', x, z: z + 0.9, ry});
     },
     table = (x: number, z: number, c: number = PAL.wood) => add({w: 2, h: 1.1, d: 2, c, x, z}),
