@@ -1,12 +1,12 @@
 // 낮밤의 시각 틴트: 게임 규칙(G.cycT 300초 주기, G.night 12초 밤, 성장 ×30)은 loop.ts 가 그대로 갖고, 여기서는 그 값을 읽어 색만 정한다.
-// cycT 0~225 낮 → 270 황혼 → 300 해질녘(어두워지는 중), night>0 밤(첫 1.5초에 서서히), 밤이 끝나면 4초 새벽 → 낮
+// cycT 0~75% 낮 → 270 황혼 → 300 해질녘(어두워지는 중), night>0 밤(첫 1.5초에 서서히), 밤이 끝나면 4초 새벽 → 낮
 import {G} from '../core/runtime.js';
 import {TINT, mixTint, type Tint} from '../render/lowpoly/palette.js';
 
 /** G.cycT 한 주기(초) / 밤 길이(초) — loop.ts 의 규칙값과 같아야 한다 */
-export const CYCLE_S = 300;
-const NIGHT_S = 12,
-  NIGHT_FADE_S = 1.5,
+import {DAY_S, NIGHT_S} from '../core/clock.js';
+export const CYCLE_S = DAY_S;
+const NIGHT_FADE_S = 1.5,
   DAWN_S = 4;
 /** 해질녘 끝에서 한밤까지 가는 비율(밤이 시작되기 직전 색) */
 const DUSK_END = mixTint(TINT.dusk, TINT.night, 0.5);
@@ -23,9 +23,10 @@ export function tintAt(cycT: number, night: number, dawnT: number): Tint {
     const u = 1 - dawnT / DAWN_S;
     return u < 0.4 ? mixTint(TINT.night, TINT.dawn, u / 0.4) : mixTint(TINT.dawn, TINT.day, (u - 0.4) / 0.6);
   }
-  if (cycT < 225) return TINT.day;
-  if (cycT < 270) return mixTint(TINT.day, TINT.dusk, (cycT - 225) / 45);
-  return mixTint(TINT.dusk, TINT.night, clamp01((cycT - 270) / 30) * 0.5);
+  const u = cycT / DAY_S; // 0.75 까지 낮 → 0.9 황혼 → 1.0 해질녘
+  if (u < 0.75) return TINT.day;
+  if (u < 0.9) return mixTint(TINT.day, TINT.dusk, (u - 0.75) / 0.15);
+  return mixTint(TINT.dusk, TINT.night, clamp01((u - 0.9) / 0.1) * 0.5);
 }
 
 /** 매 프레임: 새벽 타이머를 진행하고 현재 틴트를 돌려준다 (dt 는 일시정지 반영된 게임 시간) */

@@ -4,6 +4,7 @@ import type {PalName} from '../render/lowpoly/palette.js';
 import {mulberry32} from '../render/lowpoly/rng.js';
 import type {CityBuilding, CityLandmark, CityPlaza, CityRoad, Facing, SignIcon} from './city.js';
 import type {Purpose} from './interiors.js';
+import {ROADS_W4_RESERVED} from './roads-w4.js';
 
 const road = (id: string, x0: number, z0: number, x1: number, z1: number, w: number, car = true): CityRoad => ({id, x0, z0, x1, z1, w, sidewalk: 3, car});
 export const ROADS_W3: readonly CityRoad[] = [
@@ -24,19 +25,35 @@ export const ROADS_W3: readonly CityRoad[] = [
   road('r2-s', -335, 275, 335, 275, 12),
 ];
 export const PLAZAS_W3: readonly CityPlaza[] = [
-  {id: 'stadium-court', rect: [232, -214, 308, -194]},
+  {id: 'stadium-court', rect: [232, -206, 308, -194]},
   {id: 'museum-sq', rect: [208, -118, 252, -76]},
   {id: 'park-walk', rect: [-326, -326, -218, -214]},
 ];
 
 /** 예약 구역: 생성기가 건물을 놓지 않는 곳 (스타디움·공원·테마파크·수족관·광장) */
 export const RESERVED: readonly (readonly [number, number, number, number])[] = [
-  [212, -332, 334, -208], // 스타디움
+  [206, -334, 334, -206], // 스타디움
   [-332, -332, -214, -208], // 중앙 공원
   [-332, -108, -214, 78], // 테마파크
   [244, 284, 300, 334], // 수족관
   [-30, -300, 30, -150], // (사과 대로 둘레는 길)
   [208, -118, 252, -76],
+  [-334, 202, -207, 272], // W5 SHOPS: 상점 거리 (data/city-w4.ts)
+  ...ROADS_W4_RESERVED, // W5 ROADS: 입체교차로·고가 (data/roads-w4.ts)
+  // W5 FUN 구획 (data/city-w5.ts PARCELS)
+  [-190, 306, -24, 334], // 해변
+  [24, 306, 190, 334], // 항구
+  [210, 108, 266, 186], // 문화 광장
+  [210, 210, 266, 266], // 레저
+  [-268, 286, -210, 334], // 주거 놀이터·텃밭
+  // W6 DOWNTOWN 구획 (data/city-w6.ts W6_PARCELS)
+  [88, -264, 190, -210], // 금융 지구
+  [88, -190, 190, -160], // 본사 구역
+  [-190, -264, -104, -216], // 북서 업무 지구
+  [-190, -190, -56, -152], // 아파트 단지 A
+  [-190, 126, -48, 190], // 아파트 단지 B
+  [-190, 80, -144, 114], // 빌라촌 서
+  [38, 152, 190, 190], // 주상복합·빌라촌 동
 ];
 
 const wc: PalName[] = ['plaster', 'bone', 'brick', 'ash', 'cloud', 'clay', 'stone', 'steel'],
@@ -107,7 +124,7 @@ const roadRect = (r: CityRoad): Rect4 => {
 const manual: CityBuilding[] = [
   {id: 'cu-museum', district: 'culture', purpose: 'museum', face: 'w', x: 232, z: -97, w: 38, d: 26, floors: 3, style: 'office', wall: 'bone', roof: 'tileBlue', sign: 'planet'},
   {id: 'cu-cinema', district: 'culture', purpose: 'cinema', face: 'w', x: 230, z: -40, w: 30, d: 24, floors: 3, style: 'neon', wall: 'stone', roof: 'slate'},
-  {id: 'cu-hall', district: 'culture', purpose: 'concert', face: 'w', x: 232, z: 28, w: 36, d: 28, floors: 3, style: 'office', wall: 'plaster', roof: 'tileRed', sign: 'gem'},
+  /* W5 ROADS: 동쪽 입체교차로 고가를 비우려 z 28→50 */ {id: 'cu-hall', district: 'culture', purpose: 'concert', face: 'w', x: 232, z: 50, w: 36, d: 28, floors: 3, style: 'office', wall: 'plaster', roof: 'tileRed', sign: 'gem'},
   {id: 'cu-lib', district: 'culture', purpose: 'library', face: 'w', x: 230, z: 90, w: 26, d: 22, floors: 3, style: 'office', wall: 'clay', roof: 'slate'},
   {id: 'no-hall', district: 'north', purpose: 'cityhall', face: 's', x: 60, z: -236, w: 40, d: 26, floors: 4, style: 'office', wall: 'cloud', roof: 'tileBlue', sign: 'cube'},
   {id: 'no-mall', district: 'north', purpose: 'mall', face: 's', x: -80, z: -236, w: 40, d: 26, floors: 3, style: 'shop', wall: 'plaster', roof: 'slate', sign: 'gem'},
@@ -170,7 +187,7 @@ function generate(): CityBuilding[] {
 export const BUILDINGS_W3: readonly CityBuilding[] = generate();
 
 export const LANDMARKS_W3: readonly CityLandmark[] = [
-  {id: 'L8', kind: 'stadium', x: 272, z: -270, h: 24, r: 65, w: 120, d: 110},
+  {id: 'L8', kind: 'stadium', x: 270, z: -270, h: 24, r: 65, w: 128, d: 128},
   {id: 'L9', kind: 'ferris', x: -274, z: -16, h: 52, r: 24, w: 50, d: 12},
   {id: 'L10', kind: 'aquarium', x: 272, z: 308, h: 26, r: 24, w: 48, d: 40},
   {id: 'L11', kind: 'tvtower', x: -150, z: -255, h: 90, r: 6, w: 12, d: 12},

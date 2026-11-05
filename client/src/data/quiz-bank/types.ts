@@ -1,4 +1,4 @@
-// 문제 은행 공통 타입·작성 도우미 (docs/QUIZ_BANK.md 1장 스키마)
+// 문제 은행 공통 타입·작성 도우미 (docs/curriculum/QUIZ_BANK.md 1장 스키마)
 // 구역 파일(zoneNN-MM.ts)은 defineUnit() 으로 단원 단위 문항 묶음을 만든다.
 
 export type UnitId =

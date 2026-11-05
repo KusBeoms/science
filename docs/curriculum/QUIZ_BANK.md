@@ -1,7 +1,7 @@
 # 문제 은행 기획서 — 210문항 설계
 
 > 상태: 설계 초안(문항 본문은 아직 없음, 샘플 25개만 수록). 교육 범위는 [CURRICULUM.md](CURRICULUM.md)가 기준이고 단원 id는 [curriculum-units.json](curriculum-units.json)의 `unitId`를 쓴다.
-> 구역 구성은 [CONTENT_PLAN.md](CONTENT_PLAN.md) 2·9장, 글 최소 원칙은 [STORY.md](STORY.md) 2·10장을 따른다.
+> 구역 구성은 [CONTENT_PLAN.md](../design/CONTENT_PLAN.md) 2·9장, 글 최소 원칙은 [STORY.md](../design/STORY.md) 2·10장을 따른다.
 > 표기: ⚠ = 사실 확인 필요 / ✅ = 확정(10장 결정표, 추천값 적용).
 
 ---

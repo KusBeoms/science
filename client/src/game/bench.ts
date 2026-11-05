@@ -24,7 +24,7 @@ export const benchIt: Interactable<BenchT> = {
     return best < 0 ? null : {kind: 'bench', d: bd, i: best};
   },
   info: () => '벤치',
-  prompt: () => 'E 🪑 착석',
+  prompt: () => 'E 앉기',
   act(t, key) {
     if (key !== 'e') return;
     const b = BENCH_SPOTS[t.i];

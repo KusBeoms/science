@@ -1,5 +1,5 @@
 # 게임플레이 시스템 상세 기획 — M2(이동 수단) · M3(수배 + 하이스트)
-> 상위 문서: [CONTENT_PLAN.md](CONTENT_PLAN.md) 3·4·5장(표의 골격), [STORY.md](STORY.md) v2.1 2·5·7.5·9장(무문자·시선 수호신·H6 추격·엔딩 전 S12는 H6 중심), [UX_CUTSCENE.md](UX_CUTSCENE.md) 10장(HUD 슬롯·A 버튼), [ROADMAP.md](ROADMAP.md) M2/M3, [CLIENT.md](CLIENT.md) 레지스트리·세이브 v5.
+> 상위 문서: [CONTENT_PLAN.md](CONTENT_PLAN.md) 3·4·5장(표의 골격), [STORY.md](STORY.md) v2.1 2·5·7.5·9장(무문자·시선 수호신·H6 추격·엔딩 전 S12는 H6 중심), [UX_CUTSCENE.md](UX_CUTSCENE.md) 10장(HUD 슬롯·A 버튼), [ROADMAP.md](ROADMAP.md) M2/M3, [CLIENT.md](../tech/CLIENT.md) 레지스트리·세이브 v5.
 > 이 문서는 위 표를 **구현 가능한 규칙·수치·타입**으로 풀어 쓴다. 수치는 초안이며 최종값은 `data/pacing.ts` 한 곳에서 조정한다(ROADMAP "실측 먼저" 원칙).
 > 표기: **S1~S12** = CONTENT_PLAN의 구역 번호. CLIENT.md의 현재 섹터 id(solar, exo, …)와 순서가 다르므로 **id 매핑은 CONTENT_PLAN 2장 매핑표로 확정(✅ 결정 1)**.
 

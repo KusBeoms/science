@@ -4,7 +4,7 @@ import {P} from './planets.js';
 
 export const MS: [string, () => number, number, number][] = [
   ['행성 1개 훔치기', () => S.stolen, 1, 50],
-  ['상점에서 아이템 사기 (🛒)', () => S.bought, 1, 100],
+  ['상점에서 아이템 사기', () => S.bought, 1, 100],
   ['1단계 시험 통과', () => S.zone, 1, 200],
   ['행성 3개 훔치기', () => S.stolen, 3, 300],
   ['도감 8종', () => dexN(), 8, 250],

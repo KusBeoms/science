@@ -5,6 +5,7 @@ import {dist2} from '../core/util.js';
 import {CARS, GARAGE_LV, GARAGE_NEAR, GARAGE_OUT, OWN_COST, PAINTS, REG_COST, SELL_BACK, TUNE, carOf, tuneCost, type TuneKey} from '../data/cars.js';
 import {VEH, enterVeh, exitVeh, refreshOwned, removeVeh, spawnOwned, vacateSpot, vehOfOwn, type Veh} from '../systems/vehicle.js';
 import {sfx} from '../audio/index.js';
+import {canStart, repairCost, repairOwned, repairSaved} from '../systems/vehicle-damage.js';
 import {crowdApi} from '../systems/crowd.js';
 import {addStars} from '../systems/police.js';
 import {toast} from './hud.js';
@@ -19,7 +20,7 @@ const mkPlate = () =>
   `${PLATE_A[Math.floor(Math.random() * 5)]} ${10 + Math.floor(Math.random() * 89)}${PLATE_B[Math.floor(Math.random() * 7)]} ${1000 + Math.floor(Math.random() * 8999)}`;
 function pay(cost: number): boolean {
   if (S.cr < cost) {
-    toast('✦ 잔액이 부족합니다');
+    toast('코인이 부족합니다');
     sfx('deny');
     return false;
   }
@@ -36,15 +37,16 @@ function outSpot() {
   return {...GARAGE_OUT};
 }
 
-export function buyCar(id: string): boolean {
+/** price/color 를 주면 특가·중고가·고른 색으로 산다 (W5 상점 거리) */
+export function buyCar(id: string, price?: number, color?: number): boolean {
   const t = carOf(id);
-  if (!hasRoom()) return toast('🅿️ 보관 공간이 부족합니다 — 차고를 확장하거나 차량을 정리해 주세요'), false;
-  if (!pay(t.price)) return false;
+  if (!hasRoom()) return toast('보관 공간이 부족합니다. 차고를 확장하거나 차를 정리하세요'), false;
+  if (!pay(price ?? t.price)) return false;
   const at = outSpot();
-  S.cars.list.push({t: t.id, c: t.color, plate: '', stolen: 0, eng: 0, tire: 0, neon: 0, stored: 0, ...at});
+  S.cars.list.push({t: t.id, c: color ?? t.color, plate: '', stolen: 0, eng: 0, tire: 0, neon: 0, stored: 0, ...at});
   spawnOwned(S.cars.list.length - 1, at);
-  setTimeout(() => pushMsg('mech', '🛠️ 🔧 💡'), 4000);
-  toast(`${t.icon} 구매 완료 — 차고 앞에 인도되었습니다. 등록소에서 번호판을 발급받으세요`);
+  setTimeout(() => pushMsg('mech', '새 차 구매를 축하합니다. 튜닝은 튜닝샵에서 하세요'), 4000);
+  toast(`${t.name} 구매 완료. 차고 앞에 있습니다. 번호판을 등록하세요`);
   save();
   return true;
 }
@@ -52,7 +54,7 @@ export function buyGarage(): boolean {
   const nx = GARAGE_LV[S.cars.garage + 1];
   if (!nx || !pay(nx.price)) return false;
   S.cars.garage++;
-  toast(`🅿️ ${nx.name} 개장 — 최대 ${nx.slots}대 보관`);
+  toast(`${nx.name} 개장. 최대 ${nx.slots}대까지 보관합니다`);
   save();
   return true;
 }
@@ -61,7 +63,7 @@ export function registerCar(i: number): boolean {
   if (!o || o.plate || o.stolen) return false;
   if (!pay(REG_COST(carOf(o.t).price))) return false;
   o.plate = mkPlate();
-  toast('📋 등록 완료 · ' + o.plate);
+  toast('등록 완료. 번호판 ' + o.plate);
   save();
   return true;
 }
@@ -73,7 +75,7 @@ export function makeMine(i: number): boolean {
   o.plate = '';
   o.c = PAINTS.filter(p => p !== o.c)[Math.floor(Math.random() * (PAINTS.length - 1))];
   refreshOwned(i);
-  toast('🛠️ 개조 완료 — 이제 내 차량입니다. 등록소에서 번호판을 발급받으세요');
+  toast('개조 완료. 이제 내 차입니다. 등록소에서 번호판을 받으세요');
   save();
   return true;
 }
@@ -95,14 +97,24 @@ export function paintCar(i: number, color: number): boolean {
   save();
   return true;
 }
+/** 수리 (튜닝샵): 어디 있든 그 차를 정비소로 견인해 고친 것으로 친다 */
+export function repairCar(i: number): boolean {
+  const c = repairCost(i);
+  if (!S.cars.list[i] || c <= 0 || !pay(c)) return false;
+  repairOwned(i);
+  toast('수리를 마쳤습니다');
+  save();
+  return true;
+}
 export function storeCar(i: number): boolean {
   const o = S.cars.list[i],
     v = vehOfOwn(i);
   if (!o || !v || G.drive === v) return false;
-  if (S.cars.garage < 1) return toast('차고를 먼저 개장해 주세요'), false;
-  if (o.stolen || !o.plate) return toast('등록을 마친 내 차량만 보관할 수 있습니다'), false;
-  if (Math.hypot(v.x - GARAGE_OUT.x, v.z - GARAGE_OUT.z) > GARAGE_NEAR) return toast('차량을 차고 가까이로 이동해 주세요'), false;
+  if (S.cars.garage < 1) return toast('차고를 먼저 개장하세요'), false;
+  if (o.stolen || !o.plate) return toast('등록을 마친 내 차만 보관할 수 있습니다'), false;
+  if (Math.hypot(v.x - GARAGE_OUT.x, v.z - GARAGE_OUT.z) > GARAGE_NEAR) return toast('차를 차고 가까이로 옮기세요'), false;
   o.stored = 1;
+  repairSaved(o); // 입고 시 무료 정비
   removeVeh(v);
   save();
   return true;
@@ -118,7 +130,7 @@ export function sellCar(i: number): boolean {
   const o = S.cars.list[i];
   if (!o) return false;
   const v = vehOfOwn(i);
-  if (v && G.drive === v) return toast('차에서 내린 뒤 이용해 주세요'), false;
+  if (v && G.drive === v) return toast('차에서 내린 뒤 이용하세요'), false;
   if (v) removeVeh(v);
   S.cr += Math.round(carOf(o.t).price * SELL_BACK * (o.stolen ? 0.5 : 1) * (1 + 0.2 * (o.eng + o.tire)));
   S.cars.list.splice(i, 1);
@@ -135,6 +147,7 @@ interface CarT extends Target {
   v: Veh;
 }
 export function takeCar(v: Veh) {
+  if (!canStart(v)) return;
   if (v.own >= 0) {
     if (v.v === 0) enterVeh(v);
     return;
@@ -144,16 +157,16 @@ export function takeCar(v: Veh) {
   const witness = crowdApi.nearest(v.x, v.z, 26);
   if (witness >= 0) {
     crowdApi.react(witness, '😱', 3);
-    addStars(1, '👀');
+    addStars(1, '시민에게 들켰습니다.');
   }
   if (hasRoom()) {
     const o: OwnedCar = {t: v.t, c: v.c, plate: '', stolen: 1, eng: 0, tire: 0, neon: 0, stored: 0, x: v.x, z: v.z, h: v.h};
     S.cars.list.push(o);
     v.own = S.cars.list.length - 1;
-    toast('🔑 시승 중인 차량 — 튜닝샵에서 개조할 수 있습니다');
+    toast('시승 중입니다. 튜닝샵에서 내 차로 개조할 수 있습니다');
   } else {
     v.own = -2;
-    toast('🔑 시승 전용 — 보관 공간이 없어 이용 후 반납됩니다');
+    toast('보관 공간이 없어 시승만 가능합니다. 내리면 반납됩니다');
   }
   save();
   enterVeh(v);
@@ -173,8 +186,8 @@ export const carIt: Interactable<CarT> = {
     }
     return best ? {kind: 'car', d: Math.max(0.1, bd), v: best} : null;
   },
-  info: t => `<b>${carOf(t.v.t).icon} ${carOf(t.v.t).name}</b>` + (t.v.own >= 0 ? (S.cars.list[t.v.own]?.stolen ? '<br>🔧 개조 가능 차량' : '<br>내 차량') : '<br>🔧 튜닝샵에서 개조 가능'),
-  prompt: t => (t.v.own >= 0 ? 'E 🚗 탑승' : 'E 🔑 시승하기'),
+  info: t => `<b>${carOf(t.v.t).icon} ${carOf(t.v.t).name}</b>` + (t.v.own >= 0 ? (S.cars.list[t.v.own]?.stolen ? '<br>개조할 수 있는 차량' : '<br>내 차량') : '<br>튜닝샵에서 내 차로 개조할 수 있습니다'),
+  prompt: t => (t.v.own >= 0 ? 'E 탑승' : 'E 시승하기'),
   act(t, key) {
     if (key === 'e') takeCar(t.v);
   },

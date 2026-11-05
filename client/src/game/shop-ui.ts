@@ -135,7 +135,7 @@ export function renderShop() {
           if (!full)
             spend(spdCost(S.spd), () => {
               S.spd++;
-              toast(`👟 Lv${S.spd}`);
+              toast(`운동화 Lv${S.spd}. 더 빨라졌습니다`);
             });
         }
       )

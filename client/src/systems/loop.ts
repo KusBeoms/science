@@ -12,6 +12,7 @@ import {updateSky} from '../render/sky.js';
 import {syncBase} from '../render/sync.js';
 import {deposit} from '../game/actions.js';
 import {cineCamera} from '../game/cutscene.js';
+import {DAY_S, NIGHT_GROW, NIGHT_S} from '../core/clock.js';
 import {flash, renderHudLines, toast} from '../game/hud.js';
 import {missionTick} from '../game/missions.js';
 import {timeNow} from './hazards.js';
@@ -26,12 +27,12 @@ function dayNight(dt: number) {
     G.night -= dt;
     if (G.night <= 0) {
       G.night = 0;
-      toast('☀️ 아침 — 둥지가 새로 채워졌다');
+      toast('아침이 밝았습니다. 둥지가 새로 채워졌습니다');
     }
-  } else if (G.cycT >= 300) {
+  } else if (G.cycT >= DAY_S) {
     G.cycT = 0;
-    G.night = 12;
-    toast('🌙 밤! 성장 ×30 · 둥지 리셋', 3);
+    G.night = NIGHT_S;
+    toast(`밤이 되었습니다. 성장 ×${NIGHT_GROW}, 둥지가 초기화됩니다`, 3);
     flash('#112', 0.55);
     forEachNest((n, zi) =>
       n.s.forEach((_, k) => {
@@ -58,7 +59,7 @@ export function frame() {
   S.cr += inc * dt * tdil;
   dayNight(dt);
   S.base.forEach(o => {
-    if (o && o.left > 0) o.left -= dt * tdil * (G.night > 0 ? 30 : 1);
+    if (o && o.left > 0) o.left -= dt * tdil * (G.night > 0 ? NIGHT_GROW : 1);
   });
   movePlayer(dt, t);
   // 스프링 장식 애니메이션

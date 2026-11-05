@@ -7,7 +7,7 @@ import {markPass} from './rules.js';
 export function groundPass(p: Pl, tx: number, tz: number) {
   const d = Math.hypot(tx - ball.x, tz - ball.z);
   markPass(p);
-  kickBall(p, tx - ball.x, tz - ball.z, clamp(d * 1.05 + 4, 9, 32), 0);
+  kickBall(p, tx - ball.x, tz - ball.z, clamp(d * 1.35 + 4, 9, 40), 0);
 }
 /** 띄운 패스/크로스: 체공 시간으로 도착 속도를 맞춘다 */
 export function lobPass(p: Pl, tx: number, tz: number, spin = 0) {
@@ -18,14 +18,24 @@ export function lobPass(p: Pl, tx: number, tz: number, spin = 0) {
   kickBall(p, tx - ball.x, tz - ball.z, clamp((d / T) * 1.03, 10, 44), vy, spin);
 }
 /** 슛: aimZ = 골문 안 목표 z, gauge 0~1 (0.5~0.85 가 정확) */
-export function shoot(p: Pl, aimZ: number, gauge: number, jitter = 1) {
-  const err = Math.abs(gauge - 0.68) * jitter,
+export function shoot(p: Pl, aimZ: number, gauge: number, jitter = 1, curl: -1 | 0 | 1 = 0) {
+  const err = Math.abs(gauge - 0.68) * jitter * (curl ? 0.6 : 1),
     z = aimZ + (Math.random() - 0.5) * err * GH * 2.6,
-    power = 17 + 27 * gauge,
-    over = gauge > 0.95 && Math.random() < 0.65;
-  const lift = over ? 11 : gauge > 0.8 ? 4 + Math.random() * 3 : gauge > 0.5 ? 1.5 : 0.2;
+    power = curl ? Math.max(30, 17 + 27 * gauge) : 17 + 27 * gauge,
+    over = !curl && gauge > 0.95 && Math.random() < 0.65;
+  const D = Math.abs(atkX(p.team) - ball.x),
+    lift = curl ? clamp(13 * (D / power) * 0.97, 4, 10.5) : over ? 11 : gauge > 0.8 ? 4 + Math.random() * 3 : gauge > 0.5 ? 1.5 : 0.2;
   const gx = atkX(p.team);
   ball.passTeam = -1;
+  if (curl) {
+    // 감아차기: 반대편 바깥을 보고 차서 공중에서 curl 쪽 골대 안쪽으로 휘어 들어간다 (공중에서만 회전 — ball.ts)
+    const T = (2 * lift) / 26,
+      delta = GH * 2.4,
+      w = (2 * delta) / (power * T * T);
+    if (M) M.shots[p.team]++;
+    kickBall(p, gx - ball.x, z - curl * delta - ball.z, power, lift, curl * dir(p.team) * w);
+    return;
+  }
   kickBall(p, gx - ball.x, z - ball.z, power, lift, (Math.random() - 0.5) * 2.2 * gauge);
   if (M) M.shots[p.team]++;
 }

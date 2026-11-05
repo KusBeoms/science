@@ -74,15 +74,16 @@ test('day/night tint follows the cycle and the sky stays inside its triangle bud
   await game.page.goto(`${game.base}/?cine=0`);
   const r = await game.page.evaluate(async () => {
     const D = await import('./js/systems/daynight.js');
+    const C = await import('./js/core/clock.js'); // 낮 12분 + 밤 4분
     const P = await import('./js/render/lowpoly/palette.js');
     const A = await import('./js/render/apple.js');
     const M = await import('./js/render/lowpoly/merge.js');
     return {
       day: D.tintAt(100, 0, 0).sky === P.TINT.day.sky,
       night: D.tintAt(5, 6, 0).sky === P.TINT.night.sky,
-      duskBetween: D.tintAt(270, 0, 0).sky === P.TINT.dusk.sky,
+      duskBetween: D.tintAt(0.9 * C.DAY_S, 0, 0).sky === P.TINT.dusk.sky,
       dawnStart: D.tintAt(20, 0, 4).sky === P.TINT.night.sky,
-      nightStart: D.tintAt(0, 12, 0).sky !== P.TINT.night.sky,
+      nightStart: D.tintAt(0, C.NIGHT_S, 0).sky !== P.TINT.night.sky,
       appleTris: M.countTris(A.buildApple().group),
     };
   });

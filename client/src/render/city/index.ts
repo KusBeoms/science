@@ -12,6 +12,7 @@ import {buildNaturalCity, updateNaturalCity} from '../city-natural.js';
 import {updateLandscapeLOD} from '../landscape-batch.js';
 import {facadeDetails} from './facade-art.js';
 import {makeBuilding} from './building.js';
+import {makeHighrise} from './highrise.js';
 import {barrierGeo, benchGeo, lampGeo, pineGeo, roundTreeGeo} from './props.js';
 import {clockTower, marketArch, orrery} from './landmarks.js';
 import {castle, controlTower, hangar, observatory} from './landmarks2.js';
@@ -19,6 +20,10 @@ import {aquarium, ferris, lighthouse, stadium, tvTower} from './landmarks3.js';
 import {STADIUM} from '../../data/soccer.js';
 import {tradeLine} from './tradeline.js';
 import {groundGeometry, planProps} from './layout.js';
+import {buildFun} from './fun.js';
+import {buildDowntown} from './downtown.js';
+import {buildOverpasses} from '../overpass.js';
+import {buildCrosswalks} from '../crosswalks.js';
 
 const FACE_RY: Record<Facing, number> = {s: 0, n: Math.PI, e: Math.PI / 2, w: -Math.PI / 2};
 
@@ -32,7 +37,7 @@ function addBuildings(grp: any, list: readonly CityBuilding[]) {
   const solid: Placed[] = [],
     lit: Placed[] = [];
   for (const b of list) {
-    const built = facadeDetails(b, makeBuilding(b)),
+    const built = facadeDetails(b, b.hr ? makeHighrise(b) : makeBuilding(b)),
       at = {x: b.x, z: b.z, ry: FACE_RY[b.face]};
     solid.push({g: built.solid, ...at});
     lit.push({g: built.lit, ...at});
@@ -53,6 +58,8 @@ function addMesh(grp: any, geo: any, night: boolean, x = 0, z = 0) {
   return m;
 }
 
+/** 대관람차 바퀴 각도(탑승 연출용) */
+export const ferrisAngle = () => (wheel ? wheel.rotation.z : 0);
 export function buildCity(): any {
   const grp = new THREE.Group();
   grp.name = 'city';
@@ -115,8 +122,12 @@ export function buildCity(): any {
     addSolid(l.x - l.w! / 2, l.z - l.d! / 2, l.x + l.w! / 2, l.z + l.d! / 2);
   }
   grp.add(buildIslandLandscape(), buildNaturalCity(), buildWaterfront(), buildCityGardens());
+  grp.add(buildDowntown()); // W6 DOWNTOWN: 단지 정문·놀이터·주차장·금융 지구 화단
+  grp.add(buildFun()); // W5 FUN: 구역별 즐길 거리(공원·테마파크·해변·항구·문화·레저·놀이터)
   // 거래의 선: 도시 둘레 금빛 기둥 띠 (바닥 인레이는 layout.ts)
   addMesh(grp, tradeLine(), false);
+
+  grp.add(buildOverpasses(), buildCrosswalks()); // 입체교차로·고가·횡단보도·신호등 (W5 ROADS)
 
   // 소품(인스턴싱)
   const plan = planProps(),

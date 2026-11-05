@@ -24,7 +24,6 @@ function clickAt(cx: number, cy: number) {
   G.chunks.forEach(c => {
     if (!c) return;
     c.nest.forEach(m => m.grp && groups.push(m.grp));
-    groups.push(c.gate.grp);
   });
   G.baseMesh.forEach(m => m.grp && groups.push(m.grp));
   Object.keys(G.pads).forEach(id => groups.push(G.pads[id].grp));

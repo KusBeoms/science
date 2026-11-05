@@ -1,4 +1,4 @@
-// 대륙 지형 데이터 (docs/WORLD.md 2장·7.2): 통로 사각형, 구역별 능선·기복·랜드마크, 도시 북서 언덕. 순수 데이터라 굽기(core/heightmap.ts)와 렌더가 같이 쓴다.
+// 대륙 지형 데이터 (docs/design/WORLD.md 2장·7.2): 구역별 능선·기복·랜드마크, 도시 북서 언덕. 순수 데이터라 굽기(core/heightmap.ts)와 렌더가 같이 쓴다.
 // 구역 id 는 data/sectors.ts 의 id 와 같다 (= 바이옴 id).
 
 /** 도시 허브 반변 (한 변 300, 중심 (0,0)) */
@@ -7,41 +7,16 @@ export const CITY_HALF = 335;
 export const OLD_HALF = 150;
 /** 도시를 넓히며 구역들을 바깥으로 민 거리 */
 export const PUSH = 185;
-/** 도시 둘레 산악 띠 폭 (북·동·서는 산, 남쪽은 해변). 띠 바깥 끝 = CITY_OUT */
-export const BELT_W = 28;
-export const CITY_OUT = CITY_HALF + BELT_W;
-/** 해수면 높이. 남쪽 해변은 이 아래로 완만하게 가라앉는다 */
+/** 도시 땅은 사각형이 아니라 data/outline.ts 의 CITY_POLY(도심 사진 윤곽). 사각형 ±CITY_HALF 안은 건물·도로, 그 바깥 윤곽까지는 산·숲·해변이다 */
+/** 해수면 높이. 도시 남쪽 해변은 이 아래로 완만하게 가라앉는다 */
 export const SEA_Y = -4.6;
-/** 구역 사이 통로 폭 = 문 개구 폭 */
+/** 문 개구 폭 (게이트 아치 크기 — render/gates.ts) */
 export const PASS_W = 40;
-/** 통로가 양 끝 땅에 겹쳐 들어가는 길이 (이음매 틈 방지) */
-const LAP = 1;
 /** [x0, z0, x1, z1] 사각형 */
 export type Rect = [number, number, number, number];
 
-/** 가운데선 (ax,az)→(bx,bz) (축에 평행) 을 폭 PASS_W 로 두껍게 한 사각형 */
-const strip = (ax: number, az: number, bx: number, bz: number): Rect => {
-  const h = PASS_W / 2;
-  return ax === bx
-    ? [ax - h, Math.min(az, bz) - LAP, ax + h, Math.max(az, bz) + LAP]
-    : [Math.min(ax, bx) - LAP, az - h, Math.max(ax, bx) + LAP, az + h];
-};
-/** 통로: 도시→S1, S1→S2, … S11→S12 순서 (WORLD 2.2 표의 "이전 구역 → 통로"). 문은 다음 구역의 입구 변에 닿는다 */
-export const PASSES: Rect[] = [
-  strip(0, -335, 0, -365),
-  strip(80, -445, 335, -445),
-  strip(455, -365, 455, -150),
-  strip(455, 30, 455, 60),
-  strip(455, 240, 455, 455),
-  // 해협 V1 (S5 서안 ↔ S6 동안, 폭 325): 우주선이 구현되면 이 다리를 없애고 hovering() 일 때만 건너게 한다. 그 전엔 S6 문에 닿을 길이 없다
-  strip(375, 535, 50, 535),
-  strip(-110, 535, -325, 535),
-  strip(-440, 455, -440, 240),
-  strip(-455, 80, -455, 50),
-  strip(-455, -130, -455, -345),
-  strip(-455, -545, -455, -575),
-  strip(-345, -685, -130, -685),
-];
+/** 구역 사이 통로는 W6 에서 없어졌다 — 모든 행성 바이옴은 바다 위 독립된 섬이고 이동은 포탈뿐. 호환용 빈 배열 */
+export const PASSES: Rect[] = [];
 
 /** 랜드마크 종류 (render/landmarks.ts 가 12가지를 만든다) */
 export type LandmarkKind =

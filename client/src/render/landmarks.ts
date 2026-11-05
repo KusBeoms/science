@@ -1,4 +1,4 @@
-// 구역 랜드마크 12종 (docs/WORLD.md 2.5): 구역마다 멀리서도 "저기!" 가 되는 큰 물체 1개. 전부 로우폴리 프리미티브를 병합한 메시 (드로우콜 1~2회).
+// 구역 랜드마크 12종 (docs/design/WORLD.md 2.5): 구역마다 멀리서도 "저기!" 가 되는 큰 물체 1개. 전부 로우폴리 프리미티브를 병합한 메시 (드로우콜 1~2회).
 import {sectorDetails} from './sector-art.js';
 import {heightAt} from '../core/heightmap.js';
 import {addSolid} from '../core/terrain.js';

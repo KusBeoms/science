@@ -26,3 +26,11 @@ export const setTxt = (sel: string, v: string) => {
     e.textContent = v;
   }
 };
+
+/** 한글 조사 선택: 마지막 글자 받침 유무로 "을/를" 등을 붙인다 (예: eul('초코바') → '초코바를', eul('책') → '책을') */
+const hasJong = (s: string) => {
+  const c = s.trim().charCodeAt(s.trim().length - 1);
+  return c >= 0xac00 && c <= 0xd7a3 ? (c - 0xac00) % 28 !== 0 : false;
+};
+export const eul = (s: string) => s + (hasJong(s) ? '을' : '를');
+export const iga = (s: string) => s + (hasJong(s) ? '이' : '가');

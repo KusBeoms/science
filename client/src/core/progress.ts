@@ -30,3 +30,18 @@ export const isNext = (i: number) => {
   const p = SECTORS[i].requires.prev;
   return locked(i) && (!p || !!S.unlocked[p]);
 };
+/** 해금 조건 상세 (포탈 지도의 검토 UI 용): 아이콘·현재/필요·충족 여부 */
+export interface ReqRow {
+  icon: string;
+  have: number;
+  need: number;
+  ok: boolean;
+}
+export function reqStatus(i: number): ReqRow[] {
+  const r = SECTORS[i].requires,
+    out: ReqRow[] = [];
+  if (r.prev) out.push({icon: SECTORS[sectorIndex(r.prev)].icon, have: S.unlocked[r.prev] ? 1 : 0, need: 1, ok: !!S.unlocked[r.prev]});
+  if (r.dex) out.push({icon: '📖', have: Math.min(dexN(), r.dex), need: r.dex, ok: dexN() >= r.dex});
+  if (r.spd) out.push({icon: '👟', have: Math.min(S.spd, r.spd), need: r.spd, ok: S.spd >= r.spd});
+  return out;
+}

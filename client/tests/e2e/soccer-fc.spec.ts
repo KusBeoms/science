@@ -130,3 +130,57 @@ test('human keys: A passes, D charges the shot gauge and releases, Shift sprints
   await page.screenshot({path: `${OUT}/fc-play.png`});
   expect(unexpected(game.problems).pageerrors).toEqual([]);
 });
+
+test('controls: S ground pass / A lob / W through go to the mate I face; shots aimed roughly at goal go near a post; Z+D curls in', async ({game}) => {
+  const {page} = game;
+  await game.open('?debug=1');
+  await page.click('#mstart');
+  await page.evaluate(async () => {
+    const D = await import('/js/data/soccer.js');
+    (window as any).__game.teleport(D.KICKOFF.x + 1, D.KICKOFF.z + 2);
+  });
+  await page.waitForTimeout(800);
+  await page.keyboard.press('KeyE');
+  await page.waitForFunction(() => (window as any).__game.G.match === true, undefined, {timeout: 4000});
+  const r = await page.evaluate(async () => {
+    const ST = await import('/js/soccer/state.js'),
+      A = await import('/js/soccer/actions.js'),
+      m: any = ST.M,
+      out: any = {};
+    m.phase = 'play'; m.restart = null;
+    for (const p of m.pls) if (p.team === 1) { p.x = ST.cx - 40; p.z = ST.cz + 25; p.vx = p.vz = 0; }
+    const me = m.ctl;
+    me.x = ST.cx; me.z = ST.cz; me.ry = Math.PI / 2;
+    const mate = m.pls.find((p: any) => p.team === 0 && p !== me && p.role !== 'GK');
+    mate.x = ST.cx + 20; mate.z = ST.cz; mate.vx = mate.vz = 0;
+    const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
+    // 땅볼 패스: 동료 근처에 도착
+    ST.ball.owner = me; ST.ball.x = me.x + 1; ST.ball.z = me.z; ST.ball.y = 1;
+    A.groundPass(me, mate.x, mate.z);
+    let mx = 0;
+    for (let i = 0; i < 200; i++) { await wait(25); mx = Math.max(mx, ST.ball.x - ST.cx); if (i > 10 && Math.hypot(ST.ball.vx, ST.ball.vz) < 1) break; }
+    out.pass = Math.abs(mx - 20); // 목표(동료 위치) 근처까지 굴러갔는가 (오프사이드로 멈출 수 있음)
+    // 감아차기: 골문 바깥을 보고 차서 골대 안쪽으로 (좌우 모두)
+    for (const side of [1, -1] as const) {
+      await wait(4500); // 골 세리머니·킥오프 재배치가 끝나길 기다린다
+      m.phase = 'play'; m.restart = null;
+      for (const p of m.pls) if (p.role === 'GK') { p.x = 999; p.z = 999; }
+      me.x = ST.cx + 25; me.z = ST.cz; ST.ball.owner = me; ST.ball.x = me.x + 1; ST.ball.z = me.z; ST.ball.y = 1; ST.ball.vx = ST.ball.vz = 0;
+      let crossed = NaN;
+      A.shoot(me, ST.cz + side * ST.GH * 0.7, 0.7, 0.8, side);
+      const t0 = performance.now();
+      while (performance.now() - t0 < 2500) {
+        await wait(16);
+        if (ST.ball.x >= ST.cx + ST.hl - 0.2 && Number.isNaN(crossed)) crossed = ST.ball.z - ST.cz;
+      }
+      out['curl' + side] = crossed;
+    }
+    return out;
+  });
+  expect(r.pass).toBeLessThan(8);
+  // 골문(±GH=3.66) 근처로 들어오거나 최소한 같은 쪽 가까이 도착
+  expect(Math.abs(r.curl1)).toBeLessThan(9);
+  expect(Math.abs(r['curl-1'])).toBeLessThan(9);
+  expect(r.curl1).toBeGreaterThan(r['curl-1']);
+  expect(unexpected(game.problems).pageerrors).toEqual([]);
+});

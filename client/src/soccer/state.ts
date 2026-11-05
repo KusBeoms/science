@@ -93,4 +93,4 @@ export const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b
 export const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 /** 골 점(상대 골 중앙) 까지 */
 export const toGoal = (p: Pl) => Math.abs(atkX(p.team) - p.x);
-export const inBox = (x: number, z: number, defending: 0 | 1) => Math.abs(x - defX(defending)) < 17 && Math.abs(z - cz) < 15;
+export const inBox = (x: number, z: number, defending: 0 | 1) => Math.abs(x - defX(defending)) < 16.5 && Math.abs(z - cz) < 20.16;

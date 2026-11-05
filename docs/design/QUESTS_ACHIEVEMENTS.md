@@ -1,6 +1,6 @@
 # 퀘스트·NPC·수집·업적 기획서
 
-[CONTENT_PLAN.md](CONTENT_PLAN.md) 6·7·10(작업 H)장을 구체화한 **초안**이다. 스토리는 [STORY.md](STORY.md), 교육 범위는 [CURRICULUM.md](CURRICULUM.md), 일정은 [ROADMAP.md](ROADMAP.md), 검증 방법은 [TESTING.md](TESTING.md)를 따른다.
+[CONTENT_PLAN.md](CONTENT_PLAN.md) 6·7·10(작업 H)장을 구체화한 **초안**이다. 스토리는 [STORY.md](STORY.md), 교육 범위는 [CURRICULUM.md](../curriculum/CURRICULUM.md), 일정은 [ROADMAP.md](ROADMAP.md), 검증 방법은 [TESTING.md](../tech/TESTING.md)를 따른다.
 
 > **⚠ 승인 상태**: 사용자가 직접 정한 것은 `docs/HANDOFF.md` 2.1장 원문뿐이며, 이 문서의 '🟡 추천값 적용(사용자 미승인)'은 AI가 추천값을 채택한 것이다(HANDOFF 3.3장).
 > 표기: ⚠ = 사실 확인 필요. 결정 사항 12건은 7장에서 모두 **추천값을 적용**했다(사용자 미승인). (본문의 ❓는 퀴즈·진행 중 아이콘이며 결정 표기가 아니다.) 구역 번호 S1~S12는 CONTENT_PLAN 2장과 같다.

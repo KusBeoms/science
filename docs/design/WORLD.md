@@ -1,6 +1,6 @@
 # 월드 설계 — 도시 허브 + 이어진 대륙 + 로우폴리
 > **상태: 제안 초안(2026-11-04) + 사용자 승인 일부.** 사용자가 확정한 것은 **① GTA 같은 오픈월드 감성의 도시 허브 + 이어진 대륙(구역이 지형으로 걸어서 이어짐, 이동수단은 속도·허공 횡단 보조), ② 로우폴리 그래픽(현재는 블록형), ③ W1 범위 승인됨(사용자), ④ 대륙 규모(약 740×1050u) 승인됨(사용자)** 이다. 아래의 좌표·수치·이름·시스템 구성 중 나머지는 **AI 제안**이며 사용자 승인 전에는 "확정"이 아니다(10장 열린 질문). 행성 모양(플랫 이코스피어 여부)은 "나중에 정하자"로 **보류**(10장 #10).
-> 근거: [HANDOFF.md](HANDOFF.md) 2.1(사용자 원문 비전: 오픈월드·집 구매·시작 애니메이션·외부 캐릭터·10시간+), 4.3 갭 A1~A7. 코드 기준: `client/src/render/{world,sectors,characters,gear,deco,textures}.ts`, `core/{geometry,layout,progress}.ts`, `data/sectors.ts`, `systems/move.ts` (직접 읽음).
+> 근거: [HANDOFF.md](../HANDOFF.md) 2.1(사용자 원문 비전: 오픈월드·집 구매·시작 애니메이션·외부 캐릭터·10시간+), 4.3 갭 A1~A7. 코드 기준: `client/src/render/{world,sectors,characters,gear,deco,textures}.ts`, `core/{geometry,layout,progress}.ts`, `data/sectors.ts`, `systems/move.ts` (직접 읽음).
 > 좌표계는 기존 그대로: x = 동(+), z = 남(+), y = 위. 길이 단위 u(유닛). 캐릭터 키 ≈ 3.6u.
 
 ---

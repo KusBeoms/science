@@ -10,10 +10,10 @@ export const ownedListings = () => LISTINGS.filter(l => S.props[l.id]);
 export const incomePerMin = () => ownedListings().reduce((a, l) => a + l.income, 0);
 export function buyProp(l: Listing): boolean {
   if (S.props[l.id]) return false;
-  if (S.cr < l.price) return toast('✦ 잔액이 부족합니다'), sfx('deny'), false;
+  if (S.cr < l.price) return toast('코인이 부족합니다'), sfx('deny'), false;
   S.cr -= l.price;
   S.props[l.id] = 1;
-  toast(`🏢 계약 완료 — 분당 ✦ +${fmt(l.income)}`);
+  toast(`계약 완료. 이제 분당 ✦ +${fmt(l.income)}를 받습니다`);
   sfx('buy');
   save();
   return true;
@@ -22,7 +22,7 @@ export function sellProp(l: Listing): boolean {
   if (!S.props[l.id]) return false;
   delete S.props[l.id];
   S.cr += Math.round(l.price * 0.7);
-  toast(`💰 매각 ✦ +${fmt(Math.round(l.price * 0.7))}`);
+  toast(`매각 완료. ✦ +${fmt(Math.round(l.price * 0.7))}`);
   sfx('buy');
   save();
   return true;

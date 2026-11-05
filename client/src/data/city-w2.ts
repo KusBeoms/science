@@ -1,4 +1,4 @@
-// 도시 허브 2차(W2) 건물: 암시장 골목 노점 · 정비소 창고 · 우주항 창고 · 과학관 연구동 · 주거 지구 가짜 주택 (docs/WORLD.md 3.1).
+// 도시 허브 2차(W2) 건물: 암시장 골목 노점 · 정비소 창고 · 우주항 창고 · 과학관 연구동 · 주거 지구 가짜 주택 (docs/design/WORLD.md 3.1).
 // 데이터 형식은 data/city.ts 의 CityBuilding 그대로라 렌더(render/city)·군중·충돌이 W1 건물과 같은 길을 탄다.
 import type {PalName} from '../render/lowpoly/palette.js';
 import type {CityBuilding, SignIcon} from './city.js';

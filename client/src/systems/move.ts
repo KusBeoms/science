@@ -5,7 +5,6 @@ const BODY_R = 0.42,
 import {S} from '../core/state.js';
 import {G, paused} from '../core/runtime.js';
 import {$} from '../core/util.js';
-import {blockedAt} from '../core/geometry.js';
 import {groundH, solidAt, walkable} from '../core/terrain.js';
 import {P} from '../data/planets.js';
 import {SPR} from '../data/shop.js';
@@ -87,7 +86,7 @@ export function movePlayer(dt: number, t: number) {
     }
   }
   const hold = G.carry.length > 0,
-    wasOn = G.me.pos.y <= groundH(G.me.pos.x, G.me.pos.z) + 0.02; // 이번 프레임 시작에 땅에 서 있었나
+    wasOn = G.me.pos.y <= groundH(G.me.pos.x, G.me.pos.z, G.me.pos.y) + 0.02; // 이번 프레임 시작에 땅에 서 있었나
   if (moving) {
     mx /= ml;
     mz /= ml;
@@ -96,7 +95,7 @@ export function movePlayer(dt: number, t: number) {
       nx = ox + mx * spd * dt,
       nz = oz + mz * spd * dt;
     const blocked = (x: number, z: number) =>
-      blockedAt(x, z) || solidAt(x, z, BODY_R) || !walkable(ox, oz, G.me.pos.y, x, z);
+      solidAt(x, z, BODY_R, G.me.pos.y) || !walkable(ox, oz, G.me.pos.y, x, z);
     if (!blocked(nx, nz)) {
       G.me.pos.x = nx;
       G.me.pos.z = nz;
@@ -109,7 +108,7 @@ export function movePlayer(dt: number, t: number) {
     G.me.vy = 0; // 비행 중: 높이는 그 시스템이 정한다
     return;
   }
-  const gnd = groundH(G.me.pos.x, G.me.pos.z);
+  const gnd = groundH(G.me.pos.x, G.me.pos.z, G.me.pos.y);
   if (!paused() && !G.match && (G.keys.Space || G.jumpHeld) && G.me.pos.y <= gnd + 0.02 && gnd > -Infinity) {
     G.me.vy = 14 * JUMP_MUL * SPR[S.eq][3];
   }

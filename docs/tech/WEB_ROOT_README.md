@@ -35,6 +35,6 @@
 
 ## 문서 위치
 모든 문서는 저장소의 `docs/` 에 있고 `docs/README.md` 가 색인이다. 처음에는 `docs/HANDOFF.md`(현재 상태·안 만들어진 것·합의 사항)를 읽는다.
-- 스토리: `docs/STORY.md` · 컷신/UI: `docs/UX_CUTSCENE.md` · 월드: `docs/WORLD.md`
-- 경제: `docs/ECONOMY.md` · 이동수단/하이스트: `docs/GAMEPLAY_SYSTEMS.md` · 퀘스트/업적: `docs/QUESTS_ACHIEVEMENTS.md`
-- 서버: `docs/SERVER.md` · 클라이언트: `docs/CLIENT.md` · 테스트: `docs/TESTING.md`
+- 스토리: `docs/design/STORY.md` · 컷신/UI: `docs/design/UX_CUTSCENE.md` · 월드: `docs/design/WORLD.md`
+- 경제: `docs/design/ECONOMY.md` · 이동수단/하이스트: `docs/design/GAMEPLAY_SYSTEMS.md` · 퀘스트/업적: `docs/design/QUESTS_ACHIEVEMENTS.md`
+- 서버: `docs/tech/SERVER.md` · 클라이언트: `docs/tech/CLIENT.md` · 테스트: `docs/tech/TESTING.md`

@@ -1,5 +1,5 @@
 // 거래의 선 (WORLD 3.5): 도시 외곽 경계를 따라 서는 금빛 낮은 기둥 띠. 도시 안은 안전지대라는 뜻이다. 바닥의 금빛 인레이는 layout.ts 의 surfaceAt.
-// 북쪽 사과 대로(S1 로 가는 통로) 앞은 끊어 길을 연다.
+// 북쪽 사과 대로(S1 로 가는 통로)와 남쪽 항구 대로(다리 진입로) 앞은 끊어 길을 연다.
 import {cityApproach} from '../../data/bridge.js';
 import {CITY_HALF} from '../../core/terrain.js';
 import {ACCENT, NEUTRAL, mix, PAL} from '../lowpoly/palette.js';
@@ -31,11 +31,11 @@ export function tradeLine(): Geo {
   for (let t = -E; t <= E + 0.01; t += POST_GAP) {
     const gap = Math.abs(t) < GATE_HALF;
     if (!gap) post(t, -E); // 북
-    if (t < south0 || t > south1) post(t, E); // 남
+    if (t < south0 || t > south1) post(t, E); // 남 (harbor-s → 다리 진입로 개구: 길을 막지 않는다)
     post(-E, t); // 서
     post(E, t); // 동
   }
-  // 레일: 남·서·동은 통짜, 북은 사과 대로 개구에서 두 동강
+  // 레일: 서·동은 통짜, 북(사과 대로)·남(항구 대로 → 다리)은 개구에서 두 동강
   rail(-E, E, south0, E);
   rail(south1, E, E, E);
   rail(-E, -E, -GATE_HALF, -E);

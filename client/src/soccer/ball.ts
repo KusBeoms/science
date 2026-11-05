@@ -51,9 +51,9 @@ export function stepBall(dt: number) {
   const o = ball.owner;
   if (o) {
     // 드리블: 공이 발 앞(달리면 조금 더 앞)에 붙어 있다
-    const off = 1.05 + (o.sprint ? 0.5 : 0) + Math.min(0.4, Math.hypot(o.vx, o.vz) * 0.03);
-    ball.x += (o.x + Math.sin(o.ry) * off - ball.x) * Math.min(1, dt * 18);
-    ball.z += (o.z + Math.cos(o.ry) * off - ball.z) * Math.min(1, dt * 18);
+    const off = 0.85 + (o.sprint ? 0.3 : 0) + Math.min(0.25, Math.hypot(o.vx, o.vz) * 0.02);
+    ball.x += (o.x + Math.sin(o.ry) * off - ball.x) * Math.min(1, dt * 26);
+    ball.z += (o.z + Math.cos(o.ry) * off - ball.z) * Math.min(1, dt * 26);
     ball.y = BR + Math.abs(Math.sin(performance.now() / 90)) * 0.12 * Math.min(1, Math.hypot(o.vx, o.vz) / 8);
     ball.vx = o.vx;
     ball.vz = o.vz;

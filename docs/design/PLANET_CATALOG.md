@@ -1,6 +1,6 @@
 # 행성 도감 카탈로그 — 80종 상세 명세
 
-[CONTENT_PLAN.md](CONTENT_PLAN.md) 2장의 구역별 행성 목록을 **구현 가능한 행(row) 단위**로 풀어 쓴 문서다. 스토리는 [STORY.md](STORY.md), 교육 범위·출제 금지선은 [CURRICULUM.md](CURRICULUM.md)가 기준이다.
+[CONTENT_PLAN.md](CONTENT_PLAN.md) 2장의 구역별 행성 목록을 **구현 가능한 행(row) 단위**로 풀어 쓴 문서다. 스토리는 [STORY.md](STORY.md), 교육 범위·출제 금지선은 [CURRICULUM.md](../curriculum/CURRICULUM.md)가 기준이다.
 초안이며, 확정된 행만 `client/src/data/planets-more.ts`로 옮긴다.
 
 > 표기: **⚠** = 사실 확인 필요(천체 수치·발견 연도·분류·"추정" 서술). 이 문서는 확인되지 않은 수치를 **적지 않았다**. 질량 M·반지름 R·가격은 데이터 투입 때 NASA Planetary Fact Sheet / Exoplanet Archive로 채운다(6장). ⚠ 행의 설명도 투입 전에 한 번 더 검수한다.

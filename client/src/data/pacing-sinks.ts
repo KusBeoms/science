@@ -1,5 +1,5 @@
 // 구매 sink(이동 수단·장비·건물·집), 해금 게이트, 시뮬레이터 목표값 — 아직 게임 코드가 쓰지 않는 값은
-// client/tools/econ-sim.mjs 와 이후 작업(C3 해금 조건, 이동 수단·장비·건물 상점)이 읽는다. 기준 문서: docs/ECONOMY.md
+// client/tools/econ-sim.mjs 와 이후 작업(C3 해금 조건, 이동 수단·장비·건물 상점)이 읽는다. 기준 문서: docs/design/ECONOMY.md
 
 /** 이동 수단 가격: 점프팩, 호버보드, 소형 우주선, 워프 드라이브, 중력 글라이더 */
 export const VEHICLE_PRICE = [1500, 12000, 70000, 250000, 400000];

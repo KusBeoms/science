@@ -6,7 +6,12 @@ export type Purpose =
   | 'shop' | 'house' | 'office' | 'arcade' | 'stall' | 'terminal' | 'lab'
   | 'dealer' | 'tuning' | 'garage' | 'clock' | 'hangar' | 'observatory' | 'castle' | 'tower'
   | 'restaurant' | 'cafe' | 'bank' | 'mall' | 'hotel' | 'apartment' | 'school' | 'hospital' | 'cinema' | 'karaoke' | 'bowling'
-  | 'gym' | 'library' | 'museum' | 'pool' | 'concert' | 'cityhall' | 'aquarium' | 'lighthouse' | 'tvtower';
+  | 'gym' | 'library' | 'museum' | 'pool' | 'concert' | 'cityhall' | 'aquarium' | 'lighthouse' | 'tvtower'
+  // W5 상점 거리 (data/shops2.ts, data/city-w4.ts)
+  | 'clothes' | 'autoshop' | 'bikeshop' | 'mart24' | 'florist' | 'petshop' | 'electro' | 'bookshop' | 'bakery' | 'pharmacy'
+  | 'gasstation' | 'carwash' | 'usedcar'
+  // W6 DOWNTOWN 도심
+  | 'hq' | 'exchange';
 export const PURPOSE_INFO: Record<Purpose, {icon: string; name: string; floor: number; wall: number}> = {
   shop: {icon: '🏪', name: '가게', floor: PAL.bone, wall: PAL.plaster},
   house: {icon: '🏠', name: '집', floor: PAL.wood, wall: PAL.plaster},
@@ -43,6 +48,21 @@ export const PURPOSE_INFO: Record<Purpose, {icon: string; name: string; floor: n
   aquarium: {icon: '🐠', name: '수족관', floor: PAL.slate, wall: PAL.teal},
   lighthouse: {icon: '🔦', name: '등대', floor: PAL.stone, wall: PAL.white},
   tvtower: {icon: '📡', name: '전망 타워', floor: PAL.steel, wall: PAL.cloud},
+  clothes: {icon: '👕', name: '옷가게', floor: PAL.wood, wall: PAL.pink},
+  autoshop: {icon: '🚘', name: '자동차 대리점', floor: PAL.cloud, wall: PAL.white},
+  bikeshop: {icon: '🚲', name: '자전거 샵', floor: PAL.stone, wall: PAL.lime},
+  mart24: {icon: '🏪', name: '편의점 24', floor: PAL.cloud, wall: PAL.cyan},
+  florist: {icon: '💐', name: '꽃집', floor: PAL.clay, wall: PAL.pink},
+  petshop: {icon: '🐶', name: '펫샵', floor: PAL.bone, wall: PAL.amber},
+  electro: {icon: '🎧', name: '전자제품점', floor: PAL.coal, wall: PAL.slate},
+  bookshop: {icon: '📖', name: '서점', floor: PAL.wood, wall: PAL.bone},
+  bakery: {icon: '🥐', name: '빵집', floor: PAL.clay, wall: PAL.amber},
+  pharmacy: {icon: '💊', name: '약국', floor: PAL.cloud, wall: PAL.green},
+  gasstation: {icon: '⛽', name: '주유소', floor: PAL.stone, wall: PAL.red},
+  carwash: {icon: '🫧', name: '세차장', floor: PAL.steel, wall: PAL.cyan},
+  usedcar: {icon: '🏍️', name: '중고차·오토바이', floor: PAL.ash, wall: PAL.orange},
+  hq: {icon: '🏙️', name: '본사 로비', floor: PAL.stone, wall: PAL.cloud},
+  exchange: {icon: '📈', name: '거래소', floor: PAL.slate, wall: PAL.fog},
 };
 export interface Enterable {
   id: string;
@@ -85,7 +105,7 @@ const LM: Record<string, {purpose: Purpose; w: number; d: number; dz: number}> =
 export const ENTERABLES: readonly Enterable[] = [
   ...CITY_BUILDINGS.map((b): Enterable => ({
     id: b.id, purpose: purposeOf(b), door: doorOf(b), w: Math.max(9, Math.min(b.w, 30)), d: Math.max(9, Math.min(b.d, 26)),
-    wallH: 5 + 2 * (b.floors - 1), seed: hashId(b.id),
+    wallH: b.hr ? 11 : 5 + 2 * (b.floors - 1), seed: hashId(b.id),
   })),
   ...CITY_LANDMARKS.filter(l => LM[l.kind]).map((l): Enterable => {
     const c = LM[l.kind],

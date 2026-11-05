@@ -98,7 +98,7 @@ export const policeAirSystem: GameSystem = {
     // 헬기
     if (w >= 4 && !heli && !G.inside) {
       heli = makeHeli();
-      toast('🚁 헬기가 떴다 — 건물 안으로 숨어!', 3);
+      toast('경찰 헬기가 떴습니다. 건물 안으로 숨으세요', 3);
     }
     if (heli && (w < 4 || G.inside === null && false)) removeHeli();
     if (heli) {

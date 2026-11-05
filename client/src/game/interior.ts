@@ -7,7 +7,10 @@ import {buildRoom, type Room} from '../render/interior.js';
 import {sitPose} from '../render/characters.js';
 import {openShop} from './shop-ui.js';
 import {openCarShop} from './car-shop.js';
+import {openShop2} from './shops2.js';
+import type {ShopPurpose} from '../data/shops2.js';
 import {toast} from './hud.js';
+import {rideLift} from './lift.js';
 import {S} from '../core/state.js';
 import type {GameSystem, Interactable, Target} from '../core/types.js';
 
@@ -43,7 +46,7 @@ export function enterBuilding(i: number) {
   prevCam = G.camDist;
   G.camDist = 8;
   flash();
-  if (S.props[e.id]) toast('🏠 내 건물');
+  if (S.props[e.id]) toast('내 건물입니다');
 }
 export function leaveBuilding() {
   const ins = G.inside;
@@ -78,7 +81,7 @@ export const enterIt: Interactable<EnterT> = {
     return best < 0 ? null : {kind: 'enter', d: bd, i: best};
   },
   info: t => `<b>${PURPOSE_INFO[ENTERABLES[t.i].purpose].icon} ${PURPOSE_INFO[ENTERABLES[t.i].purpose].name}</b>`,
-  prompt: t => `E 입장 ${PURPOSE_INFO[ENTERABLES[t.i].purpose].icon}`,
+  prompt: t => `E 들어가기 (${PURPOSE_INFO[ENTERABLES[t.i].purpose].name})`,
   act(t, key) {
     if (key === 'e') enterBuilding(t.i);
   },
@@ -90,18 +93,19 @@ let buffT = 0,
 export const interiorBuff = () => (buffT > 0 ? 1.15 : 1);
 export const giveBuff = (sec: number) => (buffT = Math.max(buffT, sec));
 function useFx(fx: string, icon: string) {
+  if (fx === 'lift') return rideLift(icon, 30 + (Math.floor(G.gameT) % 25)); // W6 DOWNTOWN: 엘리베이터 연출(쿨다운 없음)
   const now = G.gameT;
-  if ((useCd[icon + fx] || 0) > now) return toast(icon + ' …');
+  if ((useCd[icon + fx] || 0) > now) return toast('잠시 뒤에 다시 이용하세요');
   useCd[icon + fx] = now + 20;
   switch (fx) {
-    case 'snack': G.stam = Math.min(100, G.stam + 50); toast(`${icon} 맛있다 — 스태미나 +50`); break;
-    case 'heal': G.stam = 100; G.tired = false; toast(`${icon} 컨디션 회복`); break;
-    case 'coin': S.cr += 8; toast(`${icon} ✦ +8`); break;
-    case 'bowl': { const pins = 3 + Math.floor(Math.random() * 8); S.cr += pins; toast(`${icon} ${'🎳'.repeat(Math.min(5, pins - 2))} ✦ +${pins}`); break; }
+    case 'snack': G.stam = Math.min(100, G.stam + 50); toast('맛있게 먹었습니다. 스태미나 +50'); break;
+    case 'heal': G.stam = 100; G.tired = false; toast('컨디션이 회복되었습니다'); break;
+    case 'coin': S.cr += 8; toast('코인 ✦ +8을 얻었습니다'); break;
+    case 'bowl': { const pins = 3 + Math.floor(Math.random() * 8); S.cr += pins; toast(`핀 ${pins}개를 쓰러뜨렸습니다. ✦ +${pins}`); break; }
     case 'train': buffT = 60; toast(`${icon} 운동 완료 — 60초간 빨라진다`); break;
-    case 'sing': toast(`${icon} 🎵 🎶 ✨ 👏`); break;
-    case 'swim': G.stam = 100; toast(`${icon} 🌊 상쾌하다`); break;
-    default: toast(`${icon} ✨`);
+    case 'sing': toast('신나게 노래했습니다'); break;
+    case 'swim': G.stam = 100; toast('수영으로 상쾌해졌습니다. 스태미나 회복'); break;
+    default: toast('잠시 즐겼습니다');
   }
 }
 interface RoomT extends Target {
@@ -109,8 +113,8 @@ interface RoomT extends Target {
   s: number;
 }
 const PROMPT: Record<string, string> = {
-  exit: 'E 🚪 퇴장', shop: 'E 🛒 둘러보기', dealer: 'E 🚗 차량 구매', tuning: 'E 🛠️ 튜닝·개조', garage: 'E 🅿️ 차고·등록',
-  bed: 'E 💤 휴식', seat: 'E 🪑 착석', tv: 'E 📺', use: 'E ✨ 이용하기',
+  exit: 'E 나가기', shop: 'E 둘러보기', dealer: 'E 차량 구매', tuning: 'E 튜닝·개조', garage: 'E 차고·등록',
+  shop2: 'E 쇼핑하기', bed: 'E 쉬기', seat: 'E 앉기', tv: 'E TV 보기', use: 'E 이용하기',
 };
 export const roomIt: Interactable<RoomT> = {
   kind: 'room',
@@ -127,24 +131,25 @@ export const roomIt: Interactable<RoomT> = {
     return best < 0 ? null : {kind: 'room', d: bd, s: best};
   },
   info: t => `<b>${G.inside!.spots[t.s].icon || PROMPT[G.inside!.spots[t.s].kind].slice(2)}</b>`,
-  prompt: t => (G.inside!.spots[t.s].kind === 'use' ? `E ${G.inside!.spots[t.s].icon} 이용하기` : PROMPT[G.inside!.spots[t.s].kind]),
+  prompt: t => (G.inside!.spots[t.s].kind === 'use' ? `E 이용하기 ${G.inside!.spots[t.s].icon}` : PROMPT[G.inside!.spots[t.s].kind]),
   act(t, key) {
     if (key !== 'e' || !G.inside) return;
     const sp = G.inside.spots[t.s];
     switch (sp.kind) {
       case 'exit': return leaveBuilding();
       case 'shop': return openShop();
+      case 'shop2': return openShop2(sp.fx as ShopPurpose);
       case 'dealer': return openCarShop('buy');
       case 'tuning': return openCarShop('tune');
       case 'garage': return openCarShop('garage');
       case 'bed':
         G.stam = 100;
         G.tired = false;
-        return toast('💤 충분히 휴식했습니다 — 스태미나 회복');
+        return toast('충분히 쉬었습니다. 스태미나 회복');
       case 'seat':
         G.sit = {x: sp.x, y: 0.9, z: sp.z, ry: sp.ry ?? 0};
         return;
-      case 'tv': return toast('📺 📡 🪐 ✨');
+      case 'tv': return toast('우주 방송이 나옵니다');
       case 'use': return useFx(sp.fx!, sp.icon!);
     }
   },

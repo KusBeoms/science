@@ -123,6 +123,11 @@ export interface OwnedCar {
   x: number;
   z: number;
   h: number;
+  /** 파손 (없으면 새 차): 차체·엔진 0~100, 앞/뒤/좌/우 찌그러짐 0~1, 고장 */
+  hp?: number;
+  engine?: number;
+  zn?: number[];
+  brk?: 0 | 1;
 }
 export interface CarSave {
   garage: number;
@@ -239,7 +244,6 @@ export interface GameSystem {
 /** 스트리밍으로 로드된 섹터의 씬 객체 */
 export interface Chunk {
   grp: any;
-  gate: {grp: any; panel: any; gl: any};
   guard: {m: any; chase: boolean; home: any};
   nest: {id: number; grp: any}[];
 }

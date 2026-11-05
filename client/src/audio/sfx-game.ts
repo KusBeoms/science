@@ -118,5 +118,26 @@ export const GAME = {
     noise(t, 0.03, {vol: 0.2, lp: 3000});
     noise(t + 0.07, 0.04, {vol: 0.2, lp: 2000});
   },
+  /** 차 충돌 약: 퉁 */
+  crashL: t => {
+    tone(110, t, 0.12, {to: 55, vol: 0.28});
+    noise(t, 0.08, {vol: 0.14, lp: 1200});
+  },
+  /** 차 충돌 강: 쿵 + 금속 찌그러짐 */
+  crashH: t => {
+    tone(90, t, 0.35, {to: 30, vol: 0.45});
+    noise(t, 0.3, {vol: 0.3, lp: 1600});
+    tone(520, t + 0.03, 0.18, {to: 180, type: 'square', vol: 0.07, lp: 2000});
+  },
+  /** 침수: 치지직 */
+  sizzle: t => {
+    noise(t, 0.7, {vol: 0.16, lp: 5000});
+    tone(300, t, 0.6, {to: 70, type: 'sawtooth', vol: 0.08, lp: 700});
+  },
+  /** 엔진 꺼짐: 덜덜 하강 */
+  engineOff: t => {
+    for (let i = 0; i < 4; i++) tone(120 - i * 18, t + i * 0.09, 0.1, {type: 'sawtooth', vol: 0.14, lp: 400});
+    tone(70, t + 0.4, 0.5, {to: 28, vol: 0.2});
+  },
   moo: t => tone(120, t, 0.5, {to: 90, type: 'sawtooth', vol: 0.1, lp: 500}),
 } satisfies Record<string, Fn>;

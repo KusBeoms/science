@@ -29,14 +29,19 @@ test('weather follows the sector: snow, embers, mist, shards, spores; none in th
     );
   expect((await at(0, 17, null)).kind).toBe(null); // 도시
   // 구역 남쪽 가장자리(수호자가 중앙에 있어 중앙에 순간이동하면 잡혀 스폰으로 돌아간다)
-  const cases: [string, number, number, string][] = [
-    ['giants', 455, 210, 'snow'],
-    ['hotjup', -445, 210, 'ember'],
-    ['nebula', -455, 20, 'mist'],
-    ['supernova', -465, -355, 'shard'],
-    ['alpha', -10, -575, 'spore'],
+  const cases: [string, string][] = [
+    ['giants', 'snow'],
+    ['hotjup', 'ember'],
+    ['nebula', 'mist'],
+    ['supernova', 'shard'],
+    ['alpha', 'spore'],
   ];
-  for (const [name, x, z, kind] of cases) {
+  for (const [name, kind] of cases) {
+    // 섬 좌표는 데이터에서 읽는다 (섬 남쪽 가장자리 근처 — 수호자가 중앙에 있어 중앙에 순간이동하면 잡힌다)
+    const [x, z] = await page.evaluate(async (id: string) => {
+      const s = (await import('/js/data/sectors.js')).SECTORS.find((q: any) => q.id === id)!;
+      return [s.center.x, s.center.z + s.size / 2 - 35];
+    }, name);
     const w = await at(x, z, kind);
     expect(w.kind).toBe(kind);
     expect(w.visible).toBe(true);

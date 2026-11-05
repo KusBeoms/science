@@ -1,4 +1,4 @@
-// 포탈 패드 메시: 허브 1개 + 섹터마다 1개 (가벼워서 스트리밍하지 않고 항상 둔다. 보이기는 game/portal.ts 가 정한다)
+// 포탈 패드 메시: 허브(= 도시 포탈 광장 중앙) 1개 + 섹터마다 1개(귀환·이동용 입구 패드) (가벼워서 스트리밍하지 않고 항상 둔다. 보이기는 game/portal.ts 가 정한다)
 import {portalFrame} from './portal-art.js';
 import {lowMat} from './lowpoly/merge.js';
 import {groundH} from '../core/terrain.js';
@@ -6,6 +6,7 @@ import {G} from '../core/runtime.js';
 import {HUB_PAD, padPos} from '../core/geometry.js';
 import {SECTORS} from '../data/sectors.js';
 import {label} from './textures.js';
+import {buildPlaza} from './plaza.js';
 
 function pad(id: string, x: number, z: number, name: string) {
   const g = new THREE.Group(),
@@ -29,7 +30,9 @@ function pad(id: string, x: number, z: number, name: string) {
   G.pads[id] = {grp: g, x, z};
 }
 export function buildPads() {
+  buildPlaza(); // 도시 포탈 광장: 12 섹터 기둥 + 허브 받침
   pad('hub', HUB_PAD.x, HUB_PAD.z, '포탈');
+  G.pads.hub.grp.position.y = 0.5; // 광장 받침 위
   SECTORS.forEach((s, i) => {
     const p = padPos(i);
     pad(s.id, p.x, p.z, s.name);

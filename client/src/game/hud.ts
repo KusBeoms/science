@@ -22,7 +22,7 @@ export function infoHTML(p: Planet, o: Owned | null) {
   return (
     `<b>${p.name}</b> · ${p.grp} · 중력 <i>${p.g.toFixed(2)}g</i> · 탈출속도 <i>${p.ve.toFixed(1)}km/s</i>` +
     (o && o.mut ? ` · <i>${MUT[o.mut][0]}</i>` : '') +
-    (o && o.st ? ' · <i>연구됨 ✔ ×1.5</i>' : '') +
+    (o && o.st ? ' · <i>연구됨 (가치 ×1.5)</i>' : '') +
     `<br>${p.fact}`
   );
 }

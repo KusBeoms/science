@@ -6,17 +6,17 @@ import {toast} from './hud.js';
 
 export function missionTick() {
   if (S.mi >= MS.length) {
-    setTxt('#mission', '🏆 우주 도둑!');
+    setTxt('#mission', '모든 미션을 완료했습니다');
     return;
   }
   const m = MS[S.mi],
     cur = Math.min(m[1](), m[2]);
   if (cur >= m[2]) {
     S.cr += m[3];
-    toast(`🎯 ${m[0]} 완료! +${fmt(m[3])}`, 3);
+    toast(`미션 완료: ${m[0]} +${fmt(m[3])}`, 3);
     S.mi++;
     save();
     return;
   }
-  setTxt('#mission', `🎯 ${m[0]} (${cur}/${m[2]}) · +${fmt(m[3])}`);
+  setTxt('#mission', `미션: ${m[0]} (${cur}/${m[2]}) · 보상 +${fmt(m[3])}`);
 }

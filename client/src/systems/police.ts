@@ -2,11 +2,12 @@
 // 별은 경찰이 70u 안에 없는 채로 일정 시간이 지나면 하나씩 내려간다. 건물 안에 숨으면 더 빨리 식는다.
 import {S} from '../core/state.js';
 import {G, paused} from '../core/runtime.js';
-import {dropDynSolid} from '../core/terrain.js';
+import {dropDynSolid, groundH, solidAt} from '../core/terrain.js';
 import {CITY_ROADS} from '../data/city.js';
 import {CITY_HALF} from '../data/world-map.js';
 import {carOf} from '../data/cars.js';
 import {crowdApi} from './crowd.js';
+import {hitPerson} from './vehicle-damage.js';
 import {VEH, exitVeh, vehicleHooks, removeVeh, spawnVeh, stepVehicle, type Veh} from './vehicle.js';
 import {goJail} from './jail.js';
 import {heliSees} from './police-air.js';
@@ -20,11 +21,11 @@ export const addStars = (n: number, why = '') => {
   const before = S.wanted;
   S.wanted = Math.min(MAX_STARS, Math.max(0, S.wanted + n));
   coolT = 0;
-  if (S.wanted >= 3 && before < 3) pushMsg('cop', '🚔🚔 ⚠️');
+  if (S.wanted >= 3 && before < 3) pushMsg('cop', '경찰이 출동했습니다. 도망치세요');
   if (S.wanted > before) {
     flash('#4a82e8', 0.4);
     sfx('deny');
-    toast(`🚨 ${'★'.repeat(S.wanted)}${'☆'.repeat(MAX_STARS - S.wanted)} ${why}`.trim(), 2.2);
+    toast(`${why ? why + ' ' : ''}수배 ${S.wanted}단계`, 2.2);
   }
 };
 let coolT = 0,
@@ -58,6 +59,24 @@ function chase(v: Veh, dt: number) {
     dz = G.me.pos.z - v.z,
     want = Math.atan2(dx, dz);
   let err = Math.atan2(Math.sin(want - v.h), Math.cos(want - v.h));
+  // 입체교차로: 플레이어와 층이 다르면(고가 위↔아래) 길이 막혀 멈추므로 4초 뒤 플레이어와 같은 층 28u 곁으로 옮긴다
+  if (Math.abs(G.me.pos.y - v.y) > 3.5 && Math.hypot(dx, dz) < 120) {
+    if (((v as any).lvl = ((v as any).lvl || 0) + dt) > 4) {
+      (v as any).lvl = 0;
+      const py = G.me.pos.y,
+        a0 = Math.random() * 6.28;
+      for (let k = 0; k < 8; k++) {
+        const a = a0 + (k * Math.PI) / 4,
+          x = G.me.pos.x + Math.cos(a) * 28,
+          z = G.me.pos.z + Math.sin(a) * 28,
+          g = groundH(x, z, py);
+        if (Math.abs(g - py) < 1.2 && !solidAt(x, z, 2, py)) {
+          Object.assign(v, {x, z, y: g, v: 0, h: Math.atan2(G.me.pos.x - x, G.me.pos.z - z)});
+          return;
+        }
+      }
+    }
+  } else (v as any).lvl = 0;
   // 걸어서 도망 중이면 곁에 와서 멈춰 막아선다
   if (!G.drive && Math.hypot(dx, dz) < 6) {
     stepVehicle(v, 0, Math.max(-1, Math.min(1, err * 2)), true, dt);
@@ -96,7 +115,7 @@ export const policeSystem: GameSystem = {
       if ((coolT += dt) > 10) {
         coolT = 0;
         S.wanted--;
-        toast('🕵️ 시선을 피했다');
+        toast('경찰의 시선을 피했습니다. 수배가 한 단계 내려갑니다');
       }
       return;
     }
@@ -117,7 +136,7 @@ export const policeSystem: GameSystem = {
       if ((coolT += dt) > 22) {
         coolT = 0;
         S.wanted--;
-        toast('🚔 추격을 따돌렸다');
+        toast('추격을 따돌렸습니다. 수배가 한 단계 내려갑니다');
       }
     } else coolT = 0;
     if (list.some(v => Math.hypot(v.x - G.me.pos.x, v.z - G.me.pos.z) < (G.drive ? 4.6 : 3.4)) === false) bustT = Math.max(0, bustT - dt * 2);
@@ -129,7 +148,7 @@ export const policeSystem: GameSystem = {
     }
   },
 };
-addHudLine(() => (S.wanted > 0 ? `🚨 ${'★'.repeat(S.wanted)}${'☆'.repeat(MAX_STARS - S.wanted)}` : null));
+addHudLine(() => (S.wanted > 0 ? `수배 ${'★'.repeat(S.wanted)}${'☆'.repeat(MAX_STARS - S.wanted)}` : null));
 void carOf;
 
 /** 달리는 차가 시민을 치면 별이 오른다 */
@@ -137,5 +156,8 @@ vehicleHooks.push(v => {
   if (Math.abs(v.v) < 6 || v.own <= -3) return;
   const t = carOf(v.t),
     n = crowdApi.hitAt(v.x + Math.sin(v.h) * t.len * 0.3, v.z + Math.cos(v.h) * t.len * 0.3, t.wid * 0.5 + 1.2, Math.sin(v.h) * v.v, Math.cos(v.h) * v.v);
-  if (n) addStars(1, '🚶💥');
+  if (n) {
+    addStars(1, '시민을 쳤습니다.');
+    hitPerson(v);
+  }
 });

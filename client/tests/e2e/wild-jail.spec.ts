@@ -17,17 +17,19 @@ test('wild lands: bridge from the city, climbable mountain, lake under sea level
       y = ny;
     }
     return {
-      bridge: T.groundH(300, 400),
-      bridgeSide: T.groundH(250, 400),
+      bridge: T.groundH(74, 550, 5.5), // 금문교 상판 (BRIDGE_ENDS.x, 상판 높이 5.5)
+      bridgeFloor: T.groundH(74, 550), // 상판 밑은 바다 바닥(−12)
+      bridgeSide: T.groundH(150, 550),
       summit: T.groundH(W.SUMMIT.x, W.SUMMIT.z),
       climbable: ok,
       maxSlope,
       lake: T.groundH(W.LAKES[0].x, W.LAKES[0].z),
       sea: V.SEA_Y,
-      desert: T.groundH(300, 1000),
+      desert: T.groundH(340, 1400),
     };
   });
-  expect(Math.abs(r.bridge)).toBeLessThan(0.5);
+  expect(r.bridge).toBeCloseTo(5.5, 2);
+  expect(r.bridgeFloor).toBe(-12);
   expect(r.bridgeSide).toBe(-Infinity); // 다리 옆은 바다
   expect(r.summit).toBeGreaterThan(70);
   expect(r.climbable).toBe(true);

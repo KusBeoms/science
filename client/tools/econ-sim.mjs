@@ -1,6 +1,6 @@
 // 경제 시뮬레이터 실행기: `cd client && npx tsc; node tools/econ-sim.mjs` (또는 저장소 루트에서 node client/tools/econ-sim.mjs)
 // 1) V0  현행(재설계 전) 상수로 실측 약 10분이 재현되는지 — 플레이어 가정(훔치기 1회 시간)을 보정한다
-// 2) V1~V13  컴파일된 public/js 의 새 상수로 12구역 곡선을 평가한다 (기준: docs/ECONOMY.md 7장)
+// 2) V1~V13  컴파일된 public/js 의 새 상수로 12구역 곡선을 평가한다 (기준: docs/design/ECONOMY.md 7장)
 import {simulate} from './econ-model.mjs';
 import {legacyConfig} from './econ-legacy.mjs';
 import {newConfig, pacing, planets, sinks} from './econ-config.mjs';

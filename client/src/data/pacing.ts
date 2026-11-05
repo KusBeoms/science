@@ -1,4 +1,4 @@
-// 경제·진행 속도 수치를 한 곳에 모은다 (재설계 값: docs/ECONOMY.md, 검증: client/tools/econ-sim.mjs)
+// 경제·진행 속도 수치를 한 곳에 모은다 (재설계 값: docs/design/ECONOMY.md, 검증: client/tools/econ-sim.mjs)
 // 구매 sink(이동 수단·장비·건물·집)와 시뮬레이터 목표값은 pacing-sinks.ts.
 
 /** 등급(0~5)별 둥지 출현 가중치 — 희귀할수록 작다 */

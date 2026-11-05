@@ -1,9 +1,11 @@
-// 도시 허브 1차(W1) 배치 데이터: 도로·보도·광장·건물·랜드마크 (docs/WORLD.md 3장). 순수 데이터라 렌더(render/city/*)와 군중 경로(data/citygraph.ts)가 같이 쓴다.
+// 도시 허브 1차(W1) 배치 데이터: 도로·보도·광장·건물·랜드마크 (docs/design/WORLD.md 3장). 순수 데이터라 렌더(render/city/*)와 군중 경로(data/citygraph.ts)가 같이 쓴다.
 // 좌표계: x 동(+), z 남(+). 사과 대로는 x=0 에서 정북(−z)으로 뻗는다. 기지(0,0)·상점·포탈 패드 좌표는 core/geometry.ts 그대로.
 import type {PalName} from '../render/lowpoly/palette.js';
 import {BUILDINGS_W2} from './city-w2.js';
 import type {Purpose} from './interiors.js';
 import {BUILDINGS_W3, LANDMARKS_W3, ROADS_W3, PLAZAS_W3} from './city-w3.js';
+import {BUILDINGS_W4, ROADS_W4} from './city-w4.js';
+import {BUILDINGS_W6, PLAZAS_W6, ROADS_W6} from './city-w6.js';
 
 /** [x0, z0, x1, z1] */
 export type CityRect = readonly [number, number, number, number];
@@ -33,6 +35,8 @@ export const CITY_ROADS: readonly CityRoad[] = [
   {id: 'sci-east', x0: 50, z0: 62, x1: 150, z1: 62, w: 10, sidewalk: 3, car: true}, // 과학관 구역 가로 도로
   {id: 'resi', x0: -50, z0: 100, x1: -138, z1: 100, w: 10, sidewalk: 3, car: true}, // 주거 지구 도로
   ...ROADS_W3,
+  ...ROADS_W4,
+  ...ROADS_W6,
 ];
 
 /** 광장·마당(보행 전용 포장 사각형). 중앙 광장은 한가운데 기지 부지(±22)를 품는다 */
@@ -48,6 +52,7 @@ export const CITY_PLAZAS: readonly CityPlaza[] = [
   {id: 'pad-w', rect: [72, -116, 84, -84]}, // 정비소 착륙대 2곳
   {id: 'pad-e', rect: [132, -116, 148, -84]},
   ...PLAZAS_W3,
+  ...PLAZAS_W6,
 ];
 /** 우주항 발착 패드 4개 (바닥에 원 무늬로 그린다, 반지름 5) */
 export const CITY_PADS: readonly {x: number; z: number}[] = [-30, -10, 10, 30].map(x => ({x, z: 128}));
@@ -70,6 +75,18 @@ export const CITY_SIDEWALKS: readonly CityRect[] = CITY_ROADS.flatMap(r => {
 export type Facing = 'n' | 's' | 'e' | 'w';
 export type BuildingStyle = 'shop' | 'house' | 'office' | 'neon';
 export type SignIcon = 'gem' | 'planet' | 'cube' | 'cone' | 'cross';
+/** W6 DOWNTOWN: 고층·아파트 외형 (render/city/highrise.ts). glass 유리 커튼월 · stepped 계단식 · twin 쌍둥이 · crown 왕관형 · slab 아파트 동 · mixed 주상복합 · exchange 기둥 있는 거래소·은행 */
+export interface HrSpec {
+  kind: 'glass' | 'stepped' | 'twin' | 'crown' | 'slab' | 'mixed' | 'exchange';
+  /** 전체 높이(u) */
+  H: number;
+  /** 유리/벽 기본색 */
+  tint: PalName;
+  /** 옥상 로고 도형 0~4 (글자 없음) */
+  logo?: number;
+  /** 헬리패드 */
+  heli?: boolean;
+}
 export interface CityBuilding {
   id: string;
   district: string;
@@ -88,6 +105,8 @@ export interface CityBuilding {
   roof: PalName;
   /** 상점 간판 도형 (글자 없음) */
   sign?: SignIcon;
+  /** 고층·아파트 외형(있으면 render/city/highrise.ts 가 그린다) */
+  hr?: HrSpec;
 }
 /** 건물 발자국의 세계 좌표 사각형 */
 export function footprint(b: CityBuilding): CityRect {
@@ -171,6 +190,8 @@ export const CITY_BUILDINGS: readonly CityBuilding[] = [
   ),
   ...BUILDINGS_W2,
   ...BUILDINGS_W3,
+  ...BUILDINGS_W4,
+  ...BUILDINGS_W6,
 ];
 
 /** 랜드마크 (WORLD 3.2). 높이 h, 충돌 반폭 r. w·d 가 있으면 충돌체는 그 크기의 직사각형, y 는 바닥 높이(언덕 위 성) */

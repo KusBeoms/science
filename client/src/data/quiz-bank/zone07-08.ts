@@ -1,4 +1,4 @@
-// 문제 은행 — 구역 S7(쌍성·거주후보)·S8(뜨거운 목성들). 스키마: docs/QUIZ_BANK.md 1장.
+// 문제 은행 — 구역 S7(쌍성·거주후보)·S8(뜨거운 목성들). 스키마: docs/curriculum/QUIZ_BANK.md 1장.
 // 정답 위치는 파일에 두지 않는다(런타임 셔플). std 코드는 curriculum-units.json 기준.
 import type {QuizItem} from './types.js';
 

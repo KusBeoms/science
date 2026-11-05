@@ -1,9 +1,9 @@
-// 축구 (FC 온라인풍): 스타디움 킥오프 판에서 E → 7대7, 전·후반 90초. 구현은 src/soccer/ — 여기서는 시작/종료/순서/HUD/자유 연습만 한다.
+// 축구 (FC 온라인풍): 스타디움 킥오프 판에서 E → 7대7, 전·후반 5분. 구현은 src/soccer/ — 여기서는 시작/종료/순서/HUD/자유 연습만 한다.
 import {S, save} from '../core/state.js';
 import {G, paused} from '../core/runtime.js';
 import {PLAYER_SCALE} from '../core/scale.js';
 import {dist2} from '../core/util.js';
-import {KICKOFF, PITCH} from '../data/soccer.js';
+import {KICKOFF, MATCH_SEC, PITCH} from '../data/soccer.js';
 import {toast} from '../game/hud.js';
 import {pushMsg} from '../game/messenger.js';
 import {sfx} from '../audio/index.js';
@@ -31,8 +31,8 @@ function buildHud() {
     '<div id="fc-keys" style="position:absolute;left:12px;bottom:12px;font-size:12px;line-height:1.7;background:#0b0e18c0;border-radius:10px;padding:8px 12px"></div>';
   document.body.append(hud);
 }
-const KEYS_ATK = '⌨️ <b>← ↑ ↓ →</b> 이동 · <b>Shift</b> 달리기<br><b>A</b> 패스 · <b>S</b> 스루 · <b>W</b> 크로스 · <b>D</b> 슛(꾹) · <b>Space</b> 보호',
-  KEYS_DEF = '⌨️ <b>← ↑ ↓ →</b> 이동 · <b>Shift</b> 달리기<br><b>A</b> 선수교체 · <b>S</b> 압박(꾹) · <b>D</b> 태클 · <b>Space</b> 슬라이딩';
+const KEYS_ATK = '<b>← ↑ ↓ →</b> 이동 · <b>Shift</b> 달리기<br><b>A</b> 패스 · <b>S</b> 스루 · <b>W</b> 크로스 · <b>D</b> 슛(꾹) · <b>Space</b> 보호',
+  KEYS_DEF = '<b>← ↑ ↓ →</b> 이동 · <b>Shift</b> 달리기<br><b>A</b> 선수교체 · <b>S</b> 압박(꾹) · <b>D</b> 태클 · <b>Space</b> 슬라이딩';
 function updateHud() {
   const m = M();
   if (!hud || !m) return;
@@ -58,21 +58,21 @@ export function startMatch() {
     ref = makeRef(),
     marker = markerOf();
   const m: Match = {
-    t: 90, half: 1, score: [0, 0], phase: 'restart', pause: 0, pls, ctl: t0[6], restart: null, ref: {m: ref, x: cx, z: cz + 10},
+    t: MATCH_SEC / 2, half: 1, score: [0, 0], phase: 'restart', pause: 0, pls, ctl: t0[6], restart: null, ref: {m: ref, x: cx, z: cz + 10},
     cards: [[0, 0], [0, 0]], fouls: [0, 0], shots: [0, 0], poss: [0, 0], marker, prevCam: G.camDist, prevPitch: G.pitch, hint: '', hintT: 0,
   };
   setMatch(m);
   G.match = true;
   G.me.visible = false;
-  G.camDist = 36;
+  G.camDist = 46;
   G.pitch = 0.85;
   lineup(pls, 0);
   hooks.cheer = () => crowdCheer(0);
   hooks.end = () => endMatch(true);
   startKickoff(0);
   buildHud();
-  say('⚽', 2);
-  toast('⚽ 킥오프! 🔵 → 동쪽 골대', 3);
+  say('킥오프', 2);
+  toast('킥오프! 파란 팀은 동쪽 골대로 공격합니다', 3);
 }
 export function endMatch(natural: boolean) {
   const m = M();
@@ -95,11 +95,11 @@ export function endMatch(natural: boolean) {
       draw = a === b,
       prize = (win ? 800 : draw ? 300 : 100) + 50 * a;
     S.cr += prize;
-    toast(`${win ? '🏆' : draw ? '🤝' : '😅'} ${a} : ${b} — ✦ +${prize}`, 4.5);
+    toast(`${win ? '승리했습니다' : draw ? '무승부입니다' : '패배했습니다'}. ${a} : ${b}, ✦ +${prize}`, 4.5);
     setTimeout(() => pushMsg('coach', `${win ? '🏆👏' : draw ? '🤝' : '💪'} ${a}:${b}`), 2500);
     sfx('buy');
     save();
-  } else toast('⏹ 경기를 마쳤습니다');
+  } else toast('경기를 종료했습니다');
 }
 
 /** 경기 밖 자유 연습: 달려서 드리블, Space 슛 (예전 방식) */
@@ -176,8 +176,8 @@ export const soccerIt: Interactable<SoccerT> = {
     const d = dist2(me.pos, KICKOFF);
     return d < 4.5 ? {kind: 'soccer', d} : null;
   },
-  info: () => (M() ? '<b>⚽ 경기 중</b>' : '<b>⚽ 축구</b><br>7대7 · 전후반 90초 · 방향키 + A S W D'),
-  prompt: () => (M() ? 'E ⏹ 경기 종료' : 'E ⚽ 경기 시작'),
+  info: () => (M() ? '<b>축구 경기 중</b>' : '<b>축구</b><br>7대7 · 전후반 5분 (총 10분) · 방향키 + A S W D'),
+  prompt: () => (M() ? 'E 경기 종료' : 'E 경기 시작'),
   act(_t, key) {
     if (key !== 'e') return;
     if (M()) endMatch(false);

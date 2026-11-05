@@ -8,6 +8,7 @@ import {CARS, PAINTS, carOf} from '../data/cars.js';
 import {buildCar} from '../render/vehicle.js';
 import {mulberry32} from '../render/lowpoly/rng.js';
 import type {GameSystem, OwnedCar} from '../core/types.js';
+import type {CarDmg} from './vehicle-damage.js';
 
 export interface Veh {
   t: string;
@@ -26,6 +27,8 @@ export interface Veh {
   spot: number;
   solid: Solid | null;
   age: number;
+  /** 파손 상태 (systems/vehicle-damage.ts 가 처음 볼 때 채운다) */
+  d?: CarDmg;
 }
 export const VEH: Veh[] = [];
 const PARK: {x: number; z: number; h: number}[] = [];
@@ -70,6 +73,7 @@ export function syncSolid(v: Veh) {
     hx = (t.wid * c + t.len * s) / 2,
     hz = (t.wid * s + t.len * c) / 2;
   v.solid = addDynSolid(v.x - hx, v.z - hz, v.x + hx, v.z + hz);
+  Object.assign(v.solid, {lo: v.y - 1.4, hi: v.y + 3}); // 고가 층 구분(입체교차로): 위·아래 차는 서로 막지 않는다
 }
 export function placeMesh(v: Veh) {
   v.grp.position.set(v.x, v.y, v.z);
@@ -148,8 +152,8 @@ export function exitVeh() {
   for (const s of [1, -1, 2.4, -2.4]) {
     const x = v.x + rx * s * (t.wid / 2 + 1.1) * Math.sign(s) * (Math.abs(s) > 1 ? -1 : 1),
       z = v.z + rz * s * (t.wid / 2 + 1.1) * Math.sign(s) * (Math.abs(s) > 1 ? -1 : 1);
-    if (groundH(x, z) > -Infinity && !solidAt(x, z, 0.5)) {
-      G.me.pos.set(x, groundH(x, z), z);
+    if (groundH(x, z, v.y) > -Infinity && !solidAt(x, z, 0.5, v.y)) {
+      G.me.pos.set(x, groundH(x, z, v.y), z);
       break;
     }
   }
@@ -161,6 +165,11 @@ export function exitVeh() {
 
 /** 차 물리 한 걸음: fw −1~1(가속/후진), st −1~1(왼쪽+), brake 제동. 운전과 경찰 AI 가 같이 쓴다. 부딪히면 true */
 export function stepVehicle(v: Veh, fw: number, st: number, brake: boolean, dt: number, vmul = 1): boolean {
+  stepMod.fw = fw;
+  stepMod.vmul = vmul;
+  for (const f of stepMods) f(v, stepMod, dt);
+  fw = stepMod.fw;
+  vmul = stepMod.vmul;
   const t = carOf(v.t),
     vmax = t.vmax * (1 + 0.08 * v.eng) * vmul,
     turn = t.turn * (1 + 0.1 * v.tire);
@@ -175,17 +184,18 @@ export function stepVehicle(v: Veh, fw: number, st: number, brake: boolean, dt: 
     fx = Math.sin(v.h) * t.len * 0.3,
     fz = Math.cos(v.h) * t.len * 0.3;
   const hit = (x: number, z: number) =>
-    solidAt(x, z, rad) || solidAt(x + fx, z + fz, rad) || solidAt(x - fx, z - fz, rad) || !walkable(v.x, v.z, v.y, x, z) || groundH(x + fx, z + fz) === -Infinity;
+    solidAt(x, z, rad, v.y) || solidAt(x + fx, z + fz, rad, v.y) || solidAt(x - fx, z - fz, rad, v.y) || !walkable(v.x, v.z, v.y, x, z) || groundH(x + fx, z + fz, v.y) === -Infinity;
   let bumped = false;
   if (hit(nx, nz)) {
+    for (const f of bumpHooks) f(v, v.v, nx, nz);
     v.v *= -0.3;
     bumped = true;
   } else {
     v.x = nx;
     v.z = nz;
   }
-  const gy = groundH(v.x, v.z);
-  if (gy > -Infinity) v.y += (gy - v.y) * Math.min(1, dt * 12);
+  const gy = groundH(v.x, v.z, v.y);
+  if (gy > -Infinity) v.y += (gy - v.y) * Math.min(1, dt * (gy > v.y ? 30 : 12)); // 오르막은 빨리 붙는다(램프)
   placeMesh(v);
   return bumped;
 }
@@ -205,6 +215,11 @@ function drive(v: Veh, dt: number) {
   }
   vehicleHooks.forEach(f => f(v, dt));
 }
+/** 가속 입력·최고속도 보정 훅 (파손·침수가 엔진 고장 시 fw=0 으로 만든다) */
+export const stepMod = {fw: 0, vmul: 1};
+export const stepMods: ((v: Veh, m: {fw: number; vmul: number}, dt: number) => void)[] = [];
+/** 충돌 훅: (차, 부딪히기 직전 속도, 가려던 x, z) */
+export const bumpHooks: ((v: Veh, speed: number, nx: number, nz: number) => void)[] = [];
 /** 운전 중 매 프레임 불리는 훅 (시민 충돌 등) */
 export const vehicleHooks: ((v: Veh, dt: number) => void)[] = [];
 

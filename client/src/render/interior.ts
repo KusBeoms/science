@@ -7,10 +7,12 @@ import {glowMat, lowMat, mergePlaced, type Placed} from './lowpoly/merge.js';
 import {PURPOSE_INFO, type Enterable, type Purpose} from '../data/interiors.js';
 import type {Rect} from '../core/terrain.js';
 import {furnish2} from './interior-furn2.js';
+import {furnishShops} from './interior-shops.js';
+import {furnishDowntown} from './interior-downtown.js';
 
 export const RX = 1500,
   RZ = 1500;
-export type SpotKind = 'exit' | 'shop' | 'dealer' | 'tuning' | 'garage' | 'bed' | 'seat' | 'tv' | 'use';
+export type SpotKind = 'exit' | 'shop' | 'shop2' | 'dealer' | 'tuning' | 'garage' | 'bed' | 'seat' | 'tv' | 'use';
 export interface Spot {
   kind: SpotKind;
   x: number;
@@ -59,7 +61,7 @@ function furnish(p: Purpose, w: number, d: number, seed: number, spots: Spot[]):
     if (kind) spots.push({kind, x, z: z + 1.6});
   };
   const crate = (x: number, z: number, c: number = PAL.wood) => add({w: 1.1, h: 1.1, d: 1.1, c, x, z});
-  const more = furnish2(p, w, d, spots, add);
+  const more = furnish2(p, w, d, spots, add) || furnishShops(p, w, d, spots, add) || furnishDowntown(p, w, d, spots, add);
   if (more) return it.filter(i => i.w > 0.05);
   switch (p) {
     case 'shop': {

@@ -2,9 +2,10 @@
 import {S} from '../core/state.js';
 import {$, fmt} from '../core/util.js';
 import {CARS, GARAGE_LV, PAINTS, REG_COST, OWN_COST, TUNE, carOf, tuneCost} from '../data/cars.js';
-import {buyCar, buyGarage, hasRoom, makeMine, paintCar, registerCar, sellCar, storeCar, takeOut, tuneCar, registerCar as _r} from './cars.js';
+import {buyCar, buyGarage, hasRoom, makeMine, paintCar, repairCar, registerCar, sellCar, storeCar, takeOut, tuneCar, registerCar as _r} from './cars.js';
 import {openModal} from './modal.js';
 import {vehOfOwn} from '../systems/vehicle.js';
+import {condOf, repairCost} from '../systems/vehicle-damage.js';
 
 type Tab = 'buy' | 'tune' | 'garage';
 let tab: Tab = 'buy',
@@ -36,27 +37,32 @@ function render() {
   );
   const hint = $('#cshint');
   if (tab === 'buy') {
-    hint.textContent = hasRoom() ? '길가 차량은 시승 후 개조할 수 있습니다 🔑' : '🅿️ 보관 공간 부족 — 차고 확장 또는 차량 정리가 필요합니다';
+    hint.textContent = hasRoom() ? '길가 차량은 시승한 뒤 튜닝샵에서 개조할 수 있습니다' : '보관 공간이 부족합니다. 차고를 확장하거나 차를 정리하세요';
     CARS.forEach(c =>
       box.appendChild(
         btn(
-          `<div style="font-size:26px">${c.icon}</div><b>${c.name}</b>⚡${bar(c.vmax, 90)}🔄${bar(c.turn, 3)}<em>✦ ${fmt(c.price)}</em>`,
+          `<div style="font-size:26px">${c.icon}</div><b>${c.name}</b><span>속도</span>${bar(c.vmax, 90)}<span>핸들링</span>${bar(c.turn, 3)}<em>✦ ${fmt(c.price)}</em>`,
           () => (buyCar(c.id), render()),
           S.cr >= c.price ? '' : 'locked'
         )
       )
     );
   } else if (tab === 'tune') {
-    hint.textContent = S.cars.list.length ? '시승 차량은 먼저 "내 차로 개조"를 진행해 주세요' : '보유 차량이 없습니다';
+    hint.textContent = S.cars.list.length ? '시승 차량은 먼저 내 차로 개조하세요' : '보유한 차량이 없습니다';
     const strip = document.createElement('div');
     strip.style.cssText = 'grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap';
     S.cars.list.forEach((o, i) => strip.appendChild(btn(`${carOf(o.t).icon}${o.stolen ? '🔧' : ''}`, () => ((sel = i), render()), i === sel ? 'eq' : '')));
     box.appendChild(strip);
     const o = S.cars.list[sel];
     if (!o) return;
-    const t = carOf(o.t);
+    const t = carOf(o.t),
+      cond = condOf(sel),
+      rc = repairCost(sel);
+    box.appendChild(
+      btn(`<div style="font-size:26px">${cond.broken ? '🚚🔧' : '🔧'}</div><b>수리</b><span>차체</span>${bar(cond.hp, 100)}<span>엔진</span>${bar(cond.engine, 100)}<em>${rc ? '✦ ' + fmt(rc) : '✔'}</em>`, () => (repairCar(sel), render()), rc ? '' : 'locked')
+    );
     if (o.stolen)
-      box.appendChild(btn(`<div style="font-size:26px">🔓→🛠️</div><b>내 차로 개조</b><span>도색 · 번호판 재발급</span><em>✦ ${fmt(OWN_COST(t.price))}</em>`, () => (makeMine(sel), render())));
+      box.appendChild(btn(`<div style="font-size:26px">🔓→🛠️</div><b>내 차로 개조</b><span>도색하고 번호판을 다시 받습니다</span><em>✦ ${fmt(OWN_COST(t.price))}</em>`, () => (makeMine(sel), render())));
     else {
       TUNE.forEach(k =>
         box.appendChild(
@@ -79,14 +85,14 @@ function render() {
     }
   } else {
     const nx = GARAGE_LV[S.cars.garage + 1];
-    hint.textContent = `🅿️ ${GARAGE_LV[S.cars.garage].name}`;
+    hint.textContent = `현재 ${GARAGE_LV[S.cars.garage].name}`;
     if (nx) box.appendChild(btn(`<div style="font-size:26px">🅿️⬆</div><b>${nx.name}</b><span>${nx.slots}대</span><em>✦ ${fmt(nx.price)}</em>`, () => (buyGarage(), render())));
     S.cars.list.forEach((o, i) => {
       const t = carOf(o.t),
         out = !!vehOfOwn(i);
       const d = document.createElement('div');
       d.className = 'it';
-      d.innerHTML = `<div style="font-size:26px">${t.icon}</div><b>${o.stolen ? '🔧 개조 대기' : o.plate || '등록 필요'}</b><span>${o.stored ? '🅿️ 보관 중' : '🛣️ 주차 중'}</span>`;
+      d.innerHTML = `<div style="font-size:26px">${t.icon}</div><b>${o.stolen ? '개조 대기' : o.plate || '등록 필요'}</b><span>${o.stored ? '차고 보관 중' : '길가 주차 중'}</span>`;
       const row = document.createElement('div');
       row.className = 'pt';
       const add = (l: string, f: () => void) => {
@@ -95,10 +101,10 @@ function render() {
         b.onclick = () => (f(), render());
         row.appendChild(b);
       };
-      if (!o.stolen && !o.plate) add(`📋 ✦${fmt(REG_COST(t.price))}`, () => registerCar(i));
-      if (o.stored) add('🚗 출고', () => takeOut(i));
-      else if (out) add('🅿️ 입고', () => storeCar(i));
-      add('💰', () => sellCar(i));
+      if (!o.stolen && !o.plate) add(`등록 ✦${fmt(REG_COST(t.price))}`, () => registerCar(i));
+      if (o.stored) add('출고', () => takeOut(i));
+      else if (out) add('입고', () => storeCar(i));
+      add('판매', () => sellCar(i));
       d.appendChild(row);
       box.appendChild(d);
     });

@@ -1,4 +1,4 @@
-// 사람 조작 (FC 온라인 키보드): 방향키 이동 · Shift 달리기 · 공격 A 숏패스 / S 스루패스 / W 크로스·롱패스 / D 슛(꾹 눌러 게이지) / Space 보호(쉴드)
+// 사람 조작 (FC 온라인 키보드): 방향키 이동 · Shift 달리기 · 공격 S 패스 / A 로빙패스 / W 스루패스 / D 슛(꾹 눌러 게이지) / Z+D 감아차기 (패스는 보는 방향 동료에게 거리별 세기) / Space 보호(쉴드)
 // 수비 A 선수 교체 / S 압박(꾹) / D 태클 / Space 슬라이딩. 공을 받거나 뺏으면 그 선수로 자동 전환.
 import {G} from '../core/runtime.js';
 import {GH, M, atkX, ball, clamp, cx, cz, dir, dist, toGoal, type Pl} from './state.js';
@@ -64,31 +64,39 @@ export function humanUpdate(dt: number) {
     if (mine) {
       const fx = inp.l > 0.1 ? inp.x : Math.sin(p.ry),
         fz = inp.l > 0.1 ? inp.z : Math.cos(p.ry);
-      if (edge('KeyA')) {
+      // 패스류는 모두 '보고 있는 방향'의 동료에게, 거리에 맞는 세기로. S 땅볼 패스 · A 로빙 · W 스루
+      if (edge('KeyS')) {
         const q = pickMate(p, fx, fz);
-        if (q) groundPass(p, q.x + q.vx * 0.25, q.z + q.vz * 0.25);
+        if (q) groundPass(p, q.x + q.vx * 0.3, q.z + q.vz * 0.3);
         else groundPass(p, p.x + fx * 12, p.z + fz * 12);
-      } else if (edge('KeyS')) {
-        const q = pickMate(p, fx, fz, true) || pickMate(p, fx, fz);
-        if (q) groundPass(p, q.x + dir(0) * 9 + q.vx * 0.8, q.z + q.vz * 0.8); // 앞 공간으로
-        else groundPass(p, p.x + fx * 16, p.z + fz * 16);
+      } else if (edge('KeyA')) {
+        const q = pickMate(p, fx, fz);
+        if (q) lobPass(p, q.x + q.vx * 0.4, q.z + q.vz * 0.4);
+        else if (toGoal(p) < 34) lobPass(p, atkX(0) - dir(0) * 8, cz + clamp(fz * 5, -8, 8), fz * 0.8);
+        else lobPass(p, p.x + fx * 24, p.z + fz * 24);
       } else if (edge('KeyW')) {
-        if (toGoal(p) < 34) {
-          const bz = cz + clamp(fz * 5, -8, 8);
-          lobPass(p, atkX(0) - dir(0) * 8, bz, fz * 0.8); // 박스 안으로 크로스
-        } else {
-          const q = pickMate(p, fx, fz, true);
-          if (q) lobPass(p, q.x + dir(0) * 4, q.z);
-          else lobPass(p, p.x + fx * 26, p.z + fz * 26);
-        }
+        const q = pickMate(p, fx, fz, true) || pickMate(p, fx, fz);
+        if (q) {
+          const rl = Math.hypot(q.vx, q.vz);
+          const lx = rl > 1 ? q.vx / rl : dir(0),
+            lz = rl > 1 ? q.vz / rl : 0;
+          groundPass(p, q.x + lx * 8 + dir(0) * 3, q.z + lz * 8); // 달리는 앞 공간으로
+        } else groundPass(p, p.x + fx * 18, p.z + fz * 18);
       }
       if (edge('KeyD')) [charging, gauge] = [true, 0];
       if (charging && down('KeyD')) gauge = Math.min(1, gauge + dt / 1.05);
       if (charging && !down('KeyD')) {
         charging = false;
-        const aim = cz + clamp(inp.z * GH * 0.78, -GH * 0.85, GH * 0.85);
+        // 방향이 대충 골대 쪽이면 골문 안쪽 구석(키퍼 반대편, 입력이 있으면 그쪽)으로 보낸다
+        const gx = atkX(0) - p.x,
+          gz = cz - p.z,
+          cosg = (fx * gx + fz * gz) / (Math.hypot(fx, fz) * Math.hypot(gx, gz) || 1);
+        const gk = M!.pls.find(q => q.team === 1 && q.role === 'GK'),
+          side = Math.abs(inp.z) > 0.3 ? Math.sign(inp.z) : gk && gk.z !== cz ? (gk.z > cz ? -1 : 1) : Math.sign(p.z - cz) || 1;
+        const aim = cosg > 0.5 ? cz + side * GH * 0.8 : cz + clamp(inp.z * GH * 0.78, -GH * 0.85, GH * 0.85);
         const g = Math.max(0.18, gauge);
-        shoot(p, aim, g);
+        if (down('KeyZ')) shoot(p, cz + side * GH * 0.7, Math.max(0.5, g), 0.8, side as 1 | -1);
+        else shoot(p, aim, g);
         gauge = 0;
       }
     } else {

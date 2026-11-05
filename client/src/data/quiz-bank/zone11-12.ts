@@ -1,4 +1,4 @@
-// 문제 은행 — 구역 S11(가르강튀아)·S12(알파 센타우리·판도라). 스키마: docs/QUIZ_BANK.md 1장.
+// 문제 은행 — 구역 S11(가르강튀아)·S12(알파 센타우리·판도라). 스키마: docs/curriculum/QUIZ_BANK.md 1장.
 // S11 의 중력 개념(sci1-3-3) 문항은 Z03 소유 문항에 alsoZones:[11] 로 공유한다. 시간 지연·탈출 속도는 출제하지 않는다.
 // 윤리·쟁점 문항은 정답이 가치 중립적으로 판정되는 것만 쓴다.
 import type {QuizItem} from './types.js';

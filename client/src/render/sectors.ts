@@ -4,7 +4,7 @@ import {layoutOf, nests, nestPos} from '../core/layout.js';
 import {gateFrame, sectorDist} from '../core/geometry.js';
 import {heightAt} from '../core/heightmap.js';
 import {SECTORS} from '../data/sectors.js';
-import {dots, makeGate} from './gates.js';
+import {dots} from './plaza.js';
 import {makeGuardian} from './guardian.js';
 import {buildLandmark} from './landmarks.js';
 import {streamTerrain} from './terrain.js';
@@ -84,11 +84,9 @@ function buildChunk(i: number): Chunk {
   const gd = makeGuardian(s.guard.glow);
   gd.position.set(x, heightAt(x, z), z);
   grp.add(gd);
-  const gate = makeGate(grp, i);
   G.scene.add(grp);
   return {
     grp,
-    gate,
     guard: {m: gd, chase: false, home: new THREE.Vector3(x, 0, z)},
     nest: nests[i]!.s.map(() => ({id: -1, grp: null})),
   };

@@ -15,11 +15,12 @@ export function ensureStandCrowd() {
     gate = STADIUM.gateHalf;
   const spots: typeof base = [];
   const add = (x: number, y: number, z: number) => spots.push({x, y, z, ry: Math.atan2(PITCH.cx - x, PITCH.cz - z), ph: Math.random() * 6});
+  const T = STADIUM.stand / 4;
   for (let r = 0; r < 4; r++) {
     const h = 2.4 * (r + 1),
-      d = (3 - r) * 3 + 1.5;
+      d = (3 - r) * T + T / 2;
     for (let x = x0 + 2; x < x1 - 1; x += 2.1) add(x, h, z0 + d); // 북
-    for (let z = z0 + 14; z < z1 - 13; z += 2.1) (add(x0 + d, h, z), add(x1 - d, h, z)); // 서·동
+    for (let z = z0 + 12; z < z1 - 11; z += 2.1) (add(x0 + d, h, z), add(x1 - d, h, z)); // 서·동
     for (let x = x0 + 2; x < x1 - 1; x += 2.1) if (Math.abs(x - STADIUM.gateX) > gate + 1) add(x, h, z1 - d); // 남 (출입구 제외)
   }
   base = spots;

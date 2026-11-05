@@ -35,7 +35,7 @@ science/
 ```
 - 현재 코드 규모: `client/src` TS 약 4,565줄, 최대 파일 `systems/input.ts` 293줄(500줄 규칙 준수).
 - 주요 진입점: `client/src/main.ts` → `systems/index.ts`(시스템·상호작용 등록) → `systems/loop.ts`(프레임 루프).
-- 구조 상세·"새 기능 추가 레시피": [CLIENT.md](CLIENT.md). 서버: [SERVER.md](SERVER.md). 테스트: [TESTING.md](TESTING.md).
+- 구조 상세·"새 기능 추가 레시피": [CLIENT.md](tech/CLIENT.md). 서버: [SERVER.md](tech/SERVER.md). 테스트: [TESTING.md](tech/TESTING.md).
 
 ### 1.2 실행·검증 명령
 | 목적 | 명령 | 비고 |
@@ -50,7 +50,7 @@ science/
 ### 1.3 프로젝트 규칙 (CLAUDE.md + 사용자 지시)
 - **코드 파일(ts, css) 1개당 ~400줄 권장, 최대 500줄**. HTML은 예외. 읽기 좋게 포맷(한 줄 압축 금지)하고 죽은 코드 금지.
 - 작업 전 `docs/README.md` 읽기, 작업 후 **docs에 변경 반영**. 마일스톤 도달 시 간단히 **커밋**.
-- CLAUDE.md는 상위 `../README.md`를 읽고 갱신하라고 하지만 그 파일이 없었다 → 사용자 위임("알아서 만들어")으로 초안을 [WEB_ROOT_README.md](WEB_ROOT_README.md)에 작성했다. 상위 디렉터리로 복사해 사용(6장 해결).
+- CLAUDE.md는 상위 `../README.md`를 읽고 갱신하라고 하지만 그 파일이 없었다 → 사용자 위임("알아서 만들어")으로 초안을 [WEB_ROOT_README.md](tech/WEB_ROOT_README.md)에 작성했다. 상위 디렉터리로 복사해 사용(6장 해결).
 - **docker-compose**: 공개 서비스에 라벨 `science26.public=true`, API 서비스에 `science26.api=true`. **DB·Redis 컨테이너는 넣지 않는다.** 플랫폼이 주입하는 `DATABASE_URL`, `REDIS_URL` 환경변수를 서버가 읽는다(없으면 인메모리 폴백).
 - 배포 경로: 하위 경로(`/steal-an-planet/`)로 서빙될 수 있어 **정적 리소스·API는 상대 경로**여야 한다(최근 수정됨).
 - 사용자는 **여러 에이전트 병렬 사용을 허용**했다. 병렬 작업 시 파일 소유권을 나눌 것(7장).
@@ -104,17 +104,17 @@ science/
 ### 3.1 문서 지도
 | 문서 | 내용 | 코드 반영 |
 |---|---|---|
-| [CLIENT.md](CLIENT.md) / [SERVER.md](SERVER.md) / [TESTING.md](TESTING.md) | 구조·API·테스트 | **현재 코드 설명**(신뢰) |
-| [CURRICULUM.md](CURRICULUM.md) + `curriculum-units.json` | 2022 개정 통합과학1·2 조사, 출제 금지선, 오개념 | 조사 자료(출처 표기, 일부 [미확인]) |
-| [STORY.md](STORY.md) | 스토리 v2/v2.1, 비트 1~12, 무문자 규칙 | 기획 |
-| [CONTENT_PLAN.md](CONTENT_PLAN.md) | 12구역·행성 80·이동수단·하이스트 개요 | 기획 |
-| [ECONOMY.md](ECONOMY.md) | 10.5h 경제 곡선, 상수 후보 | 기획(시뮬 미구현) |
-| [QUIZ_BANK.md](QUIZ_BANK.md) | 210문항 설계·스키마 | 기획(본문 없음, 샘플 25) |
-| [PLANET_CATALOG.md](PLANET_CATALOG.md) | 행성 80종 명세 | 기획(수치 미기입) |
-| [GAMEPLAY_SYSTEMS.md](GAMEPLAY_SYSTEMS.md) | 이동수단·수배·하이스트 규칙 | 기획 |
-| [UX_CUTSCENE.md](UX_CUTSCENE.md) | 컷신 12개 스토리보드, 글 없는 UI | 기획 |
-| [QUESTS_ACHIEVEMENTS.md](QUESTS_ACHIEVEMENTS.md) | NPC 14·의뢰 30·업적 50 | 기획 |
-| [ROADMAP.md](ROADMAP.md) | 마일스톤 M0~M7 | M0·M1 완료, 나머지 미착수 |
+| [CLIENT.md](tech/CLIENT.md) / [SERVER.md](tech/SERVER.md) / [TESTING.md](tech/TESTING.md) | 구조·API·테스트 | **현재 코드 설명**(신뢰) |
+| [CURRICULUM.md](curriculum/CURRICULUM.md) + `curriculum-units.json` | 2022 개정 통합과학1·2 조사, 출제 금지선, 오개념 | 조사 자료(출처 표기, 일부 [미확인]) |
+| [STORY.md](design/STORY.md) | 스토리 v2/v2.1, 비트 1~12, 무문자 규칙 | 기획 |
+| [CONTENT_PLAN.md](design/CONTENT_PLAN.md) | 12구역·행성 80·이동수단·하이스트 개요 | 기획 |
+| [ECONOMY.md](design/ECONOMY.md) | 10.5h 경제 곡선, 상수 후보 | 기획(시뮬 미구현) |
+| [QUIZ_BANK.md](curriculum/QUIZ_BANK.md) | 210문항 설계·스키마 | 기획(본문 없음, 샘플 25) |
+| [PLANET_CATALOG.md](design/PLANET_CATALOG.md) | 행성 80종 명세 | 기획(수치 미기입) |
+| [GAMEPLAY_SYSTEMS.md](design/GAMEPLAY_SYSTEMS.md) | 이동수단·수배·하이스트 규칙 | 기획 |
+| [UX_CUTSCENE.md](design/UX_CUTSCENE.md) | 컷신 12개 스토리보드, 글 없는 UI | 기획 |
+| [QUESTS_ACHIEVEMENTS.md](design/QUESTS_ACHIEVEMENTS.md) | NPC 14·의뢰 30·업적 50 | 기획 |
+| [ROADMAP.md](design/ROADMAP.md) | 마일스톤 M0~M7 | M0·M1 완료, 나머지 미착수 |
 
 ### 3.2 기획서 6종이 만들어진 경위
 다른 Claude 세션이 브랜치 `claude/agent-docs-planning-k6o7cf`에서 작성해 master에 병합했다(+ 서버 보강, 하위 경로 배포 수정). **문서의 "현재 코드" 서술은 대체로 정확하나, 이 문서의 4장 수치(직접 확인)를 우선**한다.
@@ -180,7 +180,7 @@ science/
 | A4 | **외부 캐릭터(NPC)·행인 군중**: 걸어 다니고 반응 | NPC 1명(상점 점원, 제자리) | 있음(QUESTS: NPC 14, STORY: 행인 위장) 하지만 **군중 시스템 설계 없음** | L |
 | A5 | **시작 애니메이션(인트로)** | 메뉴 → 바로 시작 | 컷신 1번(UX_CUTSCENE) | M |
 | A6 | 하늘·조명·분위기·날씨 | 단순 검은 배경+별, 낮밤은 성장 배율만 | 없음 | M |
-| A7 | 월드 연결 방식·그래픽 스타일 | **결정됨**: 이어진 대륙 + 로우폴리 | [WORLD.md](WORLD.md) | 완료(결정) |
+| A7 | 월드 연결 방식·그래픽 스타일 | **결정됨**: 이어진 대륙 + 로우폴리 | [WORLD.md](design/WORLD.md) | 완료(결정) |
 
 #### B. 스토리 연출 (문서 있음, 코드 0)
 | ID | 항목 | 증거 | 문서 | 규모 |
@@ -264,12 +264,12 @@ science/
 
 | # | 항목 | 상태 |
 |---|---|---|
-| 1 | **월드 방향** | **결정됨(사용자)**: 도시 허브 + 이어진 대륙, 로우폴리. 설계는 [WORLD.md](WORLD.md) — **W1 범위·대륙 규모(약 740×1050u) 승인됨(사용자)**, 그 외 세부는 제안 |
+| 1 | **월드 방향** | **결정됨(사용자)**: 도시 허브 + 이어진 대륙, 로우폴리. 설계는 [WORLD.md](design/WORLD.md) — **W1 범위·대륙 규모(약 740×1050u) 승인됨(사용자)**, 그 외 세부는 제안 |
 | 2 | STORY v2.1의 AI 추가 설정(3.3장 표)을 받아들일지 | **대부분 정리됨**(수호신·사과 행성·칼은 사용자 결정으로 해소). 남은 미승인: 사과 게이지, 중간 비트의 역할 |
 | 3 | 사과 행성: 엔딩 전에 사는 것처럼 보이게 할지 | **해결(사용자)**: "파는 곳을 못 찾았다" — 멀리서 항상 보이되 어디서 파는지 모름(🔍❓), 구매 UI 없음 |
 | 4 | 칼을 친 사람의 정체 | **해결(사용자)**: 절대 공개하지 않음(실루엣만, 엔딩 후 단서도 특정 인물을 가리키지 않음) |
 | 5 | 영화 소재(인터스텔라·아바타) 행성의 공개 배포 저작권 리스크 | **해결(사용자)**: 배포 안 함, 그대로 사용 |
-| 6 | `../README.md`가 없음 — 어디에 어떻게 만들지 | **해결**: 사용자 위임("알아서 만들어") → 초안을 [WEB_ROOT_README.md](WEB_ROOT_README.md)에 작성. 상위 디렉터리 `../README.md`로 복사해 사용 |
+| 6 | `../README.md`가 없음 — 어디에 어떻게 만들지 | **해결**: 사용자 위임("알아서 만들어") → 초안을 [WEB_ROOT_README.md](tech/WEB_ROOT_README.md)에 작성. 상위 디렉터리 `../README.md`로 복사해 사용 |
 | 7 | `CLAUDE.md`는 이미 커밋되어 추적 중인데 `.gitignore`에도 있음(추적을 끊을지) | 미결(사용자 변경) |
 | 8 | 천체 사실(⚠ 항목)·문제 내용의 교사 검수 | 미실시 |
 | 9 | 기지 칸 최대: "5칸" 의미 확인 필요(현재 최대 10, 시작 6) | 확인 필요(문서는 그대로 둠) |
@@ -312,7 +312,7 @@ science/
 
 | 갭 | 상태 | 비고 |
 |---|---|---|
-| A (월드) | 방향 확정 + 설계서 작성 | 사용자 확정: **도시 허브 + 이어진 대륙, 로우폴리**. 설계는 [WORLD.md](WORLD.md)(**W1 범위·대륙 규모 승인됨(사용자)**, 나머지 세부는 제안, 행성 외형은 보류). 코드 0 |
+| A (월드) | 방향 확정 + 설계서 작성 | 사용자 확정: **도시 허브 + 이어진 대륙, 로우폴리**. 설계는 [WORLD.md](design/WORLD.md)(**W1 범위·대륙 규모 승인됨(사용자)**, 나머지 세부는 제안, 행성 외형은 보류). 코드 0 |
 | B1·B6·B7 | **구현 일부** | 컷신 디렉터 + C01 + 샘플, `iconToast`/`HudWidget`, 세이브 v6 `S.story`. 컷신 C02~C12·중간 비트·암시장·시선 수호신·엔딩은 미구현 |
 | B2 문서 동기화 | 완료 | UX_CUTSCENE·QUESTS의 도장 버전을 원안으로 복구, "✅ 확정"은 "🟡 추천값 적용(사용자 미승인)"으로 정정. 이후 **사용자 결정(수호신 원안 복귀·사과 '파는 곳을 못 찾았다'·칼 비공개)을 STORY v2.2·UX_CUTSCENE·QUESTS·PLANET_CATALOG·WORLD·ECONOMY 에 반영**(C01 컷3, 중간 비트 4-1·4-2·4-4·4-5, C12 컷2 재작성) |
 | C1·C2 | **구현** | `pacing.ts` 새 곡선 + 시뮬레이터. V0(현행 상수 → 실측 ~10분 재현) 합격, 총 10.42h. **불합격 1건**: V6(S12 판매 비중 8%). V7(워프·글라이더 돈 대기)은 사용자가 **관문을 하이스트 클리어(H3·H4)로 확정**해 합격 기준을 '클리어 후 구매 가능'으로 바꿨고 **기준 변경으로 해소**(클리어 시각 기준 재측정은 C3 구현 후) — ECONOMY.md 9장 |
@@ -320,7 +320,7 @@ science/
 | C4 | 부분 | 신발 Lv30·스프링 25·가방 6 반영. 기지 칸은 5×2 배치 때문에 **최대 10으로 제한**(도시 허브에서 30) |
 | D2 | **데이터 완료, 연결 완료** | 210문항(검증 오류 0, 경고 2), 입장 시험 `GQU` 연결. 행성 문제 `PQ` 연결, 이미지 문항, `S.review`(오답 복습)는 미구현 |
 | G1 | **구현** | Web Audio 합성 효과음·BGM, 컷신 소리 큐 연결. 귀로 확인한 음색 검증은 안 됨 |
-| 서버 | 보강 | 세이브 검증·`If-Match` 낙관적 락·요청 제한 등 ([SERVER.md](SERVER.md)) |
+| 서버 | 보강 | 세이브 검증·`If-Match` 낙관적 락·요청 제한 등 ([SERVER.md](tech/SERVER.md)) |
 | 검증 | tsc 0, E2E 17/17 | FPS 기준선은 환경에 따라 20~57 (이 환경 24) |
 
 ### 9.x W1 진행 현황 (2026-11-05 검증 완료 — 아래 표는 중단 시점 기록)
@@ -343,7 +343,7 @@ science/
 
 **배경**: W1 = WORLD.md의 "최소 플레이 슬라이스"(도시 허브 + 연결 대륙, 로우폴리). 사용자가 승인함. 에이전트 5개를 병렬로 돌리다 토큰이 떨어져 중단 → 코드는 `claude/agent-docs-planning-k6o7cf`에 WIP 커밋으로 있음(tsc 0, 나머지 미검증). **새 기획 결정은 필요 없고, 아래를 검증·마무리하는 것이 일.**
 
-**에이전트별 목표(= 완료 기준)** — 상세 설계는 `docs/WORLD.md`
+**에이전트별 목표(= 완료 기준)** — 상세 설계는 `docs/design/WORLD.md`
 | 영역 | 담당 파일 | 완료 기준 |
 |---|---|---|
 | T 지형 | `core/heightmap.ts`, `core/terrain.ts`, `render/gates.ts`, `render/world.ts` | 높이 지도로 지형이 구워져 걸어 다닐 수 있음, 원경(바다/먼 산), 문 아치 개구 40, 구역 이름표의 글자 → 아이콘 |

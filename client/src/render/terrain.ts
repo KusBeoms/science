@@ -1,11 +1,14 @@
-// 지형 메시 (docs/WORLD.md 7.1): 굽어 둔 높이 격자(core/heightmap.ts)에서 면마다 색을 칠한 플랫 셰이딩 메시를 뽑는다.
+// 지형 메시 (docs/design/WORLD.md 7.1): 굽어 둔 높이 격자(core/heightmap.ts)에서 면마다 색을 칠한 플랫 셰이딩 메시를 뽑는다.
 // 근거리 = 160u 타일(5u 격자, 플레이어 주변만 만들고 멀어지면 해제, 프레임당 1개) / 원경 = 대륙 전체를 10u 격자로 한 번에 1개.
 // 면 색 = ramp(바이옴, 높이, 경사) + 면별 밝기 흔들림. 아직 잠긴 구역의 분지는 안개색으로 가려진다 (능선은 그대로 보임).
 import {G} from '../core/runtime.js';
 import {locked} from '../core/progress.js';
-import {GX0, GZ0, NX, NZ, REG_CITY, REG_PASS, REG_WILD, STEP, bakeContinent, gridOf, CLIFF1} from '../core/heightmap.js';
+import {GX0, GZ0, NX, NZ, REG_CITY, REG_PASS, REG_WILD, STEP, bakeContinent, beachW, gridOf, CLIFF1} from '../core/heightmap.js';
+import {BRIDGE_ENDS} from '../data/outline.js';
 import {SECTORS} from '../data/sectors.js';
-import {COUNTRY, DESERT} from '../data/wild.js';
+import {COUNTRY, DESERT, LAKES, LAKE_ROAD_W} from '../data/wild.js';
+import {roadNear} from '../data/wild-road.js';
+import {lakeT} from '../core/lake-shape.js';
 import {CITY_HALF, SEA_Y, TERRAIN} from '../data/world-map.js';
 import {registerLandmarkSolids} from './landmarks.js';
 import {PAL, TINT, mix, ramp, rgb, type Biome} from './lowpoly/palette.js';
@@ -30,8 +33,6 @@ const tiles = new Map<number, {mesh: any; dirty: boolean}>();
 /** 땅(또는 첫 낭떠러지 겹)이 있는 타일만 만든다 */
 let hasLand: Uint8Array;
 
-/** 사과 대로가 통로를 따라 S1 문까지 이어진 아스팔트 띠 (도시 지면 자체는 render/city 가 깐다) */
-const APPLE_ROAD = [-12, -365, 12, -335];
 const GRASS = mix(PAL.green, PAL.ink, 0.5),
   CITY_GROUND = mix(PAL.slate, PAL.steel, 0.4),
   PASS_STONE = mix(PAL.paving, PAL.clay, 0.3);
@@ -44,7 +45,8 @@ const SAND = mix(PAL.bone, PAL.amber, 0.25),
   WET_SAND = mix(SAND, PAL.clay, 0.45);
 /** 도시 둘레 띠: 남쪽 해변은 모래(물가는 젖은 모래), 나머지는 풀 → 바위 → 눈 */
 function beltColor(cx: number, cz: number, y: number, slope: number): number {
-  if (cz > CITY_HALF && Math.abs(cx) < CITY_HALF) return y < SEA_Y + 1.2 ? WET_SAND : SAND;
+  const bw = beachW(cx, cz);
+  if (bw > 0.5 || y < SEA_Y + 1.5) return y < SEA_Y + 1.2 ? WET_SAND : SAND;
   let c = y < 9 ? mix(GRASS, PAL.stone, smooth(0, 9, y) * 0.5) : mix(PAL.stone, PAL.steel, smooth(9, 30, y));
   if (y > 33) c = mix(c, PAL.white, smooth(33, 41, y));
   return mix(c, PAL.stone, smooth(0.45, 0.8, slope) * 0.7);
@@ -56,9 +58,29 @@ const SANDY = mix(PAL.bone, PAL.amber, 0.45),
   TILLED = mix(PAL.clay, PAL.green, 0.2),
   MEADOW = mix(PAL.green, PAL.lime, 0.45);
 /** 남부 야생지 색: 호수 바닥·물가 모래, 사막, 산(숲→바위→눈), 시골 농지 격자, 평야 */
+const MUD = mix(PAL.clay, PAL.slate, 0.45),
+  DEEP_BED = mix(PAL.slate, PAL.teal, 0.35),
+  PEBBLE = mix(SANDY, PAL.stone, 0.35),
+  VERGE = mix(PAL.clay, PAL.stone, 0.5);
+/** 호수 바닥·물가 색 (호수 근처가 아니면 null): 깊을수록 모래 → 진흙 → 어두운 청회색, 수면 위 0.9u 는 젖은 자갈, 그 위 2u 는 풀과 섞인 모래 */
+function lakeColor(cx: number, cz: number, y: number): {c: number; w: number} | null {
+  for (const L of LAKES) {
+    if (Math.abs(cx - L.x) > L.rx * 1.5 || Math.abs(cz - L.z) > L.rx * 1.5) continue;
+    if (lakeT(L, cx, cz) > 1.4) continue;
+    const dep = L.level - y;
+    if (dep > 0.3) return {c: mix(mix(SANDY, MUD, smooth(0.3, 4, dep)), DEEP_BED, smooth(4, 13, dep)), w: 1};
+    if (dep > -0.9) return {c: PEBBLE, w: 1};
+    if (dep > -2.6) return {c: SANDY, w: 0.7 * (1 - (-dep - 0.9) / 1.7)};
+  }
+  return null;
+}
 function wildColor(cx: number, cz: number, y: number, slope: number): number {
-  if (y < SEA_Y - 1.5) return mix(PAL.slate, PAL.teal, 0.4);
-  if (y < SEA_Y + 1) return SANDY;
+  const lk = lakeColor(cx, cz, y);
+  if (lk && lk.w >= 1) return lk.c;
+  if (!lk && y < SEA_Y - 1.5) return mix(PAL.slate, PAL.teal, 0.4);
+  if (!lk && y < SEA_Y + 1) return SANDY;
+  const rd = roadNear(cx, cz).d;
+  if (rd < LAKE_ROAD_W / 2 + 3.5) return mix(mix(PAL.asphalt, PAL.stone, 0.45), VERGE, smooth(LAKE_ROAD_W / 2 - 1, LAKE_ROAD_W / 2 + 3, rd));
   const desert = smooth(DESERT.x0 - 30, DESERT.x0 + 30, cx) * smooth(DESERT.z0 - 30, DESERT.z0 + 30, cz);
   let c = MEADOW; // 농지는 rural-landscape의 실제 패치로 배치하고 바탕은 연속 초지로 둔다.
   if (hash2(Math.floor(cx / 7), Math.floor(cz / 7), 9) < 0.25) c = mix(c, PAL.green, 0.25);
@@ -66,6 +88,7 @@ function wildColor(cx: number, cz: number, y: number, slope: number): number {
   if (y > 6) c = mix(c, GRASS, smooth(6, 26, y));
   if (y > 36) c = mix(c, PAL.stone, smooth(36, 60, y));
   if (y > 68) c = mix(c, PAL.white, smooth(68, 80, y));
+  if (lk) c = mix(c, lk.c, lk.w);
   return mix(c, PAL.stone, smooth(0.5, 0.85, slope) * 0.6);
 }
 /** 면(중심 cx,cz · 평균 높이 y · 경사 slope=sin각) 의 색 */
@@ -79,11 +102,8 @@ function faceColor(reg: number, cx: number, cz: number, y: number, slope: number
   } else if (reg === REG_WILD) {
     c = wildColor(cx, cz, y, slope);
   } else if (reg === REG_PASS) {
-    if (cz > 330 && cx > 100) c = Math.abs(cx - 300) < 8 ? PAL.asphalt : PASS_STONE;
-    else {
-    const road = cx >= APPLE_ROAD[0] && cx <= APPLE_ROAD[2] && cz >= APPLE_ROAD[1] && cz <= APPLE_ROAD[3];
-    c = mix(road ? PAL.asphalt : PASS_STONE, PAL.stone, smooth(0.35, 0.75, slope) * 0.8);
-    }
+    // 임시 다리: 중심선은 아스팔트 (BRIDGE 에이전트가 금문교로 대체)
+    c = mix(Math.abs(cx - BRIDGE_ENDS.x) < 8 ? PAL.asphalt : PASS_STONE, PAL.stone, smooth(0.35, 0.75, slope) * 0.8);
   } else {
     const i = reg - 1,
       s = SECTORS[i],

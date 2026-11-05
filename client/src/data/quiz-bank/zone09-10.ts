@@ -1,4 +1,4 @@
-// 문제 은행 — 구역 S9(성운)·S10(초신성 잔해·죽은 별). 스키마: docs/QUIZ_BANK.md 1장.
+// 문제 은행 — 구역 S9(성운)·S10(초신성 잔해·죽은 별). 스키마: docs/curriculum/QUIZ_BANK.md 1장.
 // 스펙트럼 문항은 텍스트 대체 문장만 쓴다(img 필드는 이번에 두지 않음).
 import type {QuizItem} from './types.js';
 

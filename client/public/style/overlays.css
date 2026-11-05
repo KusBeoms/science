@@ -358,7 +358,7 @@
 }
 #phone .phgrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 10px;
 }
 #phone .phapp {
@@ -408,10 +408,25 @@
   font-weight: bold;
   margin-bottom: 8px;
 }
+#phbody:has(#phmap) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#phbody:has(#phmap) #phplaces {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
 #phmap {
+  position: static;
+  inset: auto;
   display: block;
-  width: 100%;
-  height: auto;
+  flex: none;
+  height: min(44%, 230px);
+  width: auto;
+  max-width: 100%;
+  margin: 0 auto;
   aspect-ratio: 1;
   border-radius: 10px;
   background: #111;
@@ -464,3 +479,117 @@
 #phone .phmsg.me { align-self: flex-end; background: #2f6fe0; }
 #phone .phphotos { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
 #phone .phphotos img { width: 100%; border-radius: 8px; cursor: pointer; }
+/* W5 상점 거리 공용 패널 (#shop2, game/shops2-ui.ts) — #carshop 과 같은 모양 */
+#shop2 .card { width: 700px; max-height: 88vh; overflow: auto; }
+#shop2 .ctabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+#shop2 .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+#shop2 .bar { width: 100%; height: 5px; background: #fff2; border-radius: 3px; overflow: hidden; }
+#shop2 .bar i { display: block; height: 100%; background: var(--acc); }
+#shop2 .pt { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+#shop2 .pt b { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff6; cursor: pointer; }
+#shop2 .pt b.on { border-color: #fff; box-shadow: 0 0 0 2px var(--acc); }
+#shop2 .it.locked { opacity: 0.45; }
+#shop2 .it .tag { position: absolute; top: 2px; right: 4px; font-size: 13px; }
+#shop2 .it { position: relative; }
+#shop2 s { color: var(--dim); font-size: 10px; }
+@media (max-width: 700px) { #shop2 .card { width: 96vw; padding: 14px; } }
+/* 우주 지도(포탈): 아이콘 격자 + 해금 검토 */
+#portal .card {
+  width: 560px;
+}
+#plist.sm-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+.sm-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 2px;
+  text-align: center !important;
+  border-radius: 12px;
+}
+.sm-card i {
+  font-style: normal;
+  font-size: 30px;
+  line-height: 1.1;
+}
+.sm-card small {
+  font-size: 11px;
+  min-height: 28px;
+  color: var(--dim);
+}
+.sm-card.lock {
+  filter: grayscale(0.8);
+  opacity: 0.75;
+}
+.sm-card.here {
+  border-color: #7cf0ff;
+}
+.sm-card.open {
+  border-color: #3fae6a;
+}
+#plist.sm-review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+.sm-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 22px;
+}
+.sm-head i {
+  font-style: normal;
+  font-size: 48px;
+}
+.sm-req {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+.sm-req i {
+  font-style: normal;
+  font-size: 28px;
+}
+.sm-req .bar {
+  flex: 1;
+  height: 12px;
+  border-radius: 6px;
+  background: #1c2540;
+  overflow: hidden;
+}
+.sm-req .bar span {
+  display: block;
+  height: 100%;
+  background: #ff7a8a;
+}
+.sm-req.ok .bar span {
+  background: #7cf09a;
+}
+.sm-req small {
+  min-width: 64px;
+  font-size: 13px;
+}
+.sm-req em {
+  font-style: normal;
+  min-width: 42px;
+  text-align: right;
+}
+.sm-btns {
+  display: flex;
+  gap: 10px;
+}
+.sm-btns button {
+  flex: 1;
+  padding: 12px;
+  font-size: 18px;
+}
+.sm-btns button:disabled {
+  opacity: 0.35;
+}

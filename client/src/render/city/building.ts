@@ -6,6 +6,7 @@ import {box, gable, panel, wedge, type Geo} from '../lowpoly/prim.js';
 import {mergePlaced, type Placed} from '../lowpoly/merge.js';
 import {hash2} from '../lowpoly/rng.js';
 import {signEmblem} from './props.js';
+import {hasShopFront, shopFront} from './shopfront.js';
 
 export interface Built {
   solid: Geo;
@@ -117,6 +118,12 @@ export function makeBuilding(b: CityBuilding): Built {
     strip(0.4, H * 0.8, w / 2 - 0.5, 1.2, d / 2 + 0.2, 0, NEON[(NEON.indexOf(c) + 2) % 3]);
   }
 
+  // W5 상점 거리: 용도별 지붕 간판 (글자 없는 그림, 편의점은 밤에 빛나는 24)
+  if (hasShopFront(b.purpose)) {
+    const sf = shopFront(b.purpose!, w, d, H);
+    solid.push(...sf.solid);
+    lit.push(...sf.lit);
+  }
   const parts = (list: Geo[]): Placed[] => list.map(g => ({g}));
   return {solid: mergePlaced([...parts(solid), ...extra]), lit: mergePlaced(parts(lit))};
 }

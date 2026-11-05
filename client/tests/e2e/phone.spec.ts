@@ -8,6 +8,7 @@ test('phone: P opens, estate.web buys a building (income), taxi warps, food deli
   await page.evaluate(() => ((window as any).__game.S.cr = 1e6));
   await page.keyboard.press('KeyP');
   await expect(page.locator('#phone')).toHaveClass(/on/);
+  await page.waitForTimeout(700); // 튀어나오는 애니메이션이 끝난 뒤 촬영
   await page.screenshot({path: `${OUT}/phone-home.png`});
   // 부동산
   await page.click('[data-act="app:web:estate"]');
@@ -29,6 +30,7 @@ test('phone: P opens, estate.web buys a building (income), taxi warps, food deli
   await page.click('[data-act="app:map"]');
   await expect(page.locator('#phmap')).toHaveCount(1);
   await page.locator('[data-act^="wp:"]').first().evaluate((b: HTMLElement) => b.click());
+  await page.waitForTimeout(300);
   await page.screenshot({path: `${OUT}/phone-map.png`});
   // 택시: 경기장
   await page.locator('#phhome').evaluate((b: HTMLElement) => b.click());
@@ -36,7 +38,7 @@ test('phone: P opens, estate.web buys a building (income), taxi warps, food deli
   await page.locator('[data-act="taxi:stadium"]').click();
   await expect(page.locator('#phone')).not.toHaveClass(/on/);
   const p = await page.evaluate(() => ({x: (window as any).__game.G.me.pos.x, z: (window as any).__game.G.me.pos.z}));
-  expect(Math.hypot(p.x - 272, p.z + 212)).toBeLessThan(5);
+  expect(Math.hypot(p.x - 270, p.z + 203)).toBeLessThan(5);
   // 배달
   await page.keyboard.press('KeyP');
   await page.click('[data-act="app:food"]');

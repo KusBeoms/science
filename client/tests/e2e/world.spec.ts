@@ -31,42 +31,48 @@ test('v4 zone count is read in the legacy sector order', async ({game}) => {
   expect(await gameEval<string[]>(page, 'Object.keys(g.S.unlocked).sort()')).toEqual(['exo', 'gargantua', 'solar']);
 });
 
-test('groundH: city, passes and void; walkable network connects all 12 sectors once unlocked', async ({game}) => {
+test('groundH: city, wild and the 12 sector islands are separate lands (no pass between them)', async ({game}) => {
   const {page} = game;
   await game.open('?debug=1');
   const r = await page.evaluate(async t => {
     const T = await import(t);
     const g = (window as any).__game;
-    const before = [T.groundH(0, 0), T.groundH(0, -350), T.groundH(0, -420), T.groundH(100, 390), T.groundH(200, 535), T.groundH(200, 480)];
+    const before = [T.groundH(0, 0), T.groundH(0, -350), T.groundH(-200, -1100), T.groundH(100, 2000)];
     g.unlockAll();
     const reach = (x0: number, z0: number) => {
-      const seen = new Set<number>([0]);
-      const W = 330, key = (i: number, j: number) => (i + 400) * 1000 + (j + 400);
-      const q = [[Math.round(x0 / 4), Math.round(z0 / 4)]];
-      seen.clear();
-      seen.add(key(q[0][0], q[0][1]));
+      const K = 8, key = (i: number, j: number) => (i + 300) * 1000 + (j + 300);
+      const q = [[Math.round(x0 / K), Math.round(z0 / K)]], seen = new Set<number>([key(q[0][0], q[0][1])]);
       while (q.length) {
         const [i, j] = q.pop()!;
         for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           const a = i + di, b = j + dj;
-          if (Math.abs(a) > W || Math.abs(b) > W || seen.has(key(a, b)) || T.groundH(a * 4, b * 4) === -Infinity) continue;
+          if (Math.abs(a) > 260 || Math.abs(b) > 260 || seen.has(key(a, b)) || T.groundH(a * K, b * K) === -Infinity) continue;
           seen.add(key(a, b));
           q.push([a, b]);
         }
       }
-      return (x: number, z: number) => seen.has(key(Math.round(x / 4), Math.round(z / 4)));
+      return (x: number, z: number) => seen.has(key(Math.round(x / K), Math.round(z / K)));
     };
     const has = reach(0, 0);
-    return {before, centers: g.SECTORS.map((s: any) => has(s.center.x, s.center.z)), void1: has(100, 390), wild: has(0, 1000), jail: has(-200, 1060)};
+    return {
+      before,
+      land: g.SECTORS.map((s: any) => T.groundH(s.center.x, s.center.z) > -Infinity),
+      linked: g.SECTORS.map((s: any) => has(s.center.x, s.center.z)),
+      wild: has(0, 1310), jail: has(-200, 1260), void1: has(-900, -800),
+    };
   }, T);
-  expect(r.before).toEqual([0, 0, -Infinity, -Infinity, 0, -Infinity]); // 잠긴 S1 은 허공 취급(막힘은 blockedAt), 해협 다리·허공 구분
-  expect(r.centers).toEqual(Array(12).fill(true));
+  expect(r.before[0]).toBe(0);
+  expect(r.before[1]).toBeGreaterThan(-Infinity); // 도시 북쪽 산자락(윤곽 안)은 땅
+  expect(r.before[2]).toBe(-Infinity); // 잠긴 S1 은 허공 취급(막힘은 blockedAt)
+  expect(r.before[3]).toBe(-Infinity);
+  expect(r.land).toEqual(Array(12).fill(true)); // 해금하면 12개 섬 모두 땅
+  expect(r.linked).toEqual(Array(12).fill(false)); // 도시에서 걸어서는 어느 섬에도 못 간다 (포탈만)
   expect(r.void1).toBe(false);
   expect(r.wild).toBe(true); // 도시 남쪽 다리를 건너 야생지(산·호수·사막·교도소)에 닿는다
   expect(r.jail).toBe(true);
 });
 
-test('walking north from the city reaches the unlocked S1 through the pass', async ({game}) => {
+test('walking north from the city never reaches S1 (islands are portal-only)', async ({game}) => {
   const {page} = game;
   await game.open('?debug=1');
   await page.click('#mstart');
@@ -77,10 +83,11 @@ test('walking north from the city reaches the unlocked S1 through the pass', asy
   });
   await page.keyboard.down('KeyW');
   await page.keyboard.down('Shift');
-  await page.waitForFunction(() => (window as any).__game.G.curZone === 0, undefined, {timeout: 30000});
+  await page.waitForTimeout(7000);
   await page.keyboard.up('Shift');
   await page.keyboard.up('KeyW');
-  expect(await gameEval<number>(page, 'g.G.me.pos.y')).toBeGreaterThan(-1); // 떨어지지 않았다 (통로를 지나 S1 안)
+  expect(await gameEval<number>(page, 'g.G.curZone')).not.toBe(0);
+  expect(await gameEval<number>(page, 'g.G.me.pos.z')).toBeGreaterThan(-800); // 북쪽 해안에서 멈춘다(또는 되돌려짐)
 });
 
 test('debug overlay shows renderer.info counters', async ({game}) => {

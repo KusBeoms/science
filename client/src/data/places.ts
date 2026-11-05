@@ -2,7 +2,10 @@
 import {CITY_BUILDINGS, CITY_LANDMARKS, doorOf} from './city.js';
 import {ENTERABLES, PURPOSE_INFO, purposeOf, type Purpose} from './interiors.js';
 import {JAIL} from './wild.js';
+import {BRIDGE_ENDS} from './outline.js';
 import {KICKOFF, STADIUM} from './soccer.js';
+import {SHOP_PLACES} from './shops2.js';
+import {W6_LISTED} from './city-w6.js';
 
 export interface Place {
   id: string;
@@ -29,13 +32,25 @@ export const PLACES: readonly Place[] = [
   {id: 'light', icon: '🔦', name: '등대', ...door('L12')},
   {id: 'tv', icon: '📡', name: '전망 타워', ...door('L11')},
   {id: 'beach', icon: '🏖️', name: '해변', x: 0, z: 346},
-  {id: 'bridge', icon: '🌉', name: '남쪽 다리', x: 300, z: 345},
-  {id: 'plains', icon: '🌾', name: '평야', x: 280, z: 760},
-  {id: 'farm', icon: '🚜', name: '시골 마을', x: -200, z: 800},
-  {id: 'lake', icon: '🏞️', name: '호수', x: 70, z: 840},
-  {id: 'desert', icon: '🏜️', name: '사막', x: 280, z: 990},
-  {id: 'mount', icon: '⛰️', name: '등산로 입구', x: 0, z: 925},
+  // W5 FUN: 구역별 즐길 거리 (data/city-w5.ts · fun-spots.ts)
+  {id: 'park', icon: '🌳', name: '중앙 공원', x: -244, z: -262},
+  {id: 'theme', icon: '🎢', name: '테마파크', x: -226, z: -16},
+  {id: 'seaside', icon: '🏄', name: '해수욕장', x: -100, z: 331},
+  {id: 'harbor', icon: '⚓', name: '항구', x: 60, z: 320},
+  {id: 'nightmkt', icon: '🌮', name: '야시장 광장', x: 238, z: 176},
+  {id: 'leisure', icon: '🏀', name: '레저 광장', x: 222, z: 236},
+  {id: 'playground', icon: '🛝', name: '놀이터', x: -246, z: 298},
+  {id: 'bridge', icon: '🌉', name: '남쪽 다리', x: BRIDGE_ENDS.x, z: 366},
+  {id: 'plains', icon: '🌾', name: '평야', x: 120, z: 930},
+  {id: 'farm', icon: '🚜', name: '시골 마을', x: -170, z: 1010},
+  {id: 'lake', icon: '🏞️', name: '호수', x: 70, z: 1040},
+  {id: 'desert', icon: '🏜️', name: '사막', x: 400, z: 1560},
+  {id: 'mount', icon: '⛰️', name: '등산로 입구', x: 0, z: 1125},
   {id: 'prison', icon: '⛓️', name: '교도소', x: JAIL.release.x, z: JAIL.release.z},
+  {id: 'shopst', icon: '🛍️', name: '상가 골목', x: -238, z: 238}, // W5 SHOPS
+  {id: 'finance', icon: '🏙️', name: '금융 지구', x: 140, z: -205}, // W6 DOWNTOWN (순환로 r1-n 보도)
+  {id: 'aptcx', icon: '🏘️', name: '아파트 단지', x: -119, z: 149}, // W6 DOWNTOWN (단지 B 중앙 보행로)
+  ...SHOP_PLACES,
 ];
 export const placeNameAt = (x: number, z: number) => {
   let best = PLACES[0],
@@ -60,13 +75,19 @@ export interface Listing {
 const BASE: Partial<Record<Purpose, number>> = {
   shop: 4000, cafe: 3000, restaurant: 5000, hotel: 30000, apartment: 18000, mall: 40000, cinema: 35000, karaoke: 12000, bowling: 15000,
   arcade: 8000, gym: 10000, pool: 12000, office: 20000, bank: 30000, library: 9000, museum: 50000, house: 6000, school: 25000, hospital: 45000, concert: 45000,
+  hq: 80000, exchange: 120000,
 };
-export const LISTINGS: readonly Listing[] = CITY_BUILDINGS.filter(b => BASE[purposeOf(b)]).filter((_, i) => i % 3 === 0).map(b => {
+const mkListing = (b: (typeof CITY_BUILDINGS)[number], cap = 1e9): Listing => {
   const p = purposeOf(b),
-    price = Math.round(((BASE[p]! * (0.6 + (b.w * b.d * b.floors) / 600)) / 500)) * 500,
+    price = Math.round((BASE[p]! * Math.min(cap, 0.6 + (b.w * b.d * b.floors) / 600)) / 500) * 500,
     d = doorOf(b);
   return {id: b.id, purpose: p, price, income: Math.max(1, Math.round(price * 0.012)), x: d.x, z: d.z};
-});
+};
+/** W6 DOWNTOWN 대표 매물(본사·거래소·아파트 동·주상복합·빌라)은 고층이라 면적 배율을 8 로 막아 가격을 고른다 */
+export const LISTINGS: readonly Listing[] = [
+  ...CITY_BUILDINGS.filter(b => !b.id.startsWith('w6-') && BASE[purposeOf(b)]).filter((_, i) => i % 3 === 0).map(b => mkListing(b)),
+  ...W6_LISTED.map(id => CITY_BUILDINGS.find(b => b.id === id)!).filter(b => BASE[purposeOf(b)]).map(b => mkListing(b, 8)),
+];
 export const listingName = (l: Listing) => `${PURPOSE_INFO[l.purpose].icon} ${PURPOSE_INFO[l.purpose].name}`;
 void CITY_LANDMARKS;
 void KICKOFF;

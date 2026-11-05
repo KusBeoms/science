@@ -10,6 +10,8 @@ import {audioSystem} from './audio.js';
 import {cutsceneSystem} from './cutscene.js';
 import {crowdSystem} from './crowd.js';
 import {citySystem} from '../render/city/index.js';
+import {overpassSystem} from '../render/overpass.js';
+import {bridgeSystem} from '../render/bridge.js';
 import '../game/goal.js';
 import {enterIt, roomIt, interiorSystem} from '../game/interior.js';
 import {carIt, carExitIt} from '../game/cars.js';
@@ -23,10 +25,19 @@ import '../game/phone.js';
 import {summitIt, wildSystem} from './wild.js';
 import {soccerIt, soccerSystem} from './soccer.js';
 import {vehicleSystem} from './vehicle.js';
+import {vehicleDamageSystem} from './vehicle-damage.js';
+import '../game/car-hud.js';
 import {addHudLine} from '../game/hud.js';
 import {S} from '../core/state.js';
 import {G} from '../core/runtime.js';
 import {weatherSystem} from '../render/weather.js';
+import {funIt, funPlaySystem} from '../game/fun.js';
+import {funSystem} from '../render/city/fun.js';
+import {downtownSystem} from '../render/city/downtown.js';
+import {shops2System} from '../game/shops2.js';
+import {ridesSystem} from '../game/rides.js';
+import {petIt, petsSystem} from '../game/pets.js';
+import {shopStreetSystem} from '../render/city/shopstreet.js';
 
 CORE_INTERACTABLES.forEach(registerInteractable);
 registerInteractable(portalIt);
@@ -40,6 +51,8 @@ registerInteractable(brickIt);
 registerInteractable(summitIt);
 registerInteractable(animalIt);
 registerInteractable(fishIt);
+registerInteractable(funIt); // W5 FUN
+registerInteractable(petIt);
 
 registerSystem(hazardSystem);
 registerSystem(rivalSystem);
@@ -48,9 +61,12 @@ registerSystem(audioSystem);
 registerSystem(cutsceneSystem);
 registerSystem(crowdSystem);
 registerSystem(citySystem);
+registerSystem(overpassSystem);
+registerSystem(bridgeSystem);
 registerSystem(weatherSystem);
 registerSystem(interiorSystem);
 registerSystem(vehicleSystem);
+registerSystem(vehicleDamageSystem);
 addHudLine(() => (G.drive ? `🚗 ${Math.round(Math.abs(G.drive.v) * 3.6)} km/h` : null));
 registerSystem(soccerSystem);
 registerSystem(policeSystem);
@@ -60,3 +76,10 @@ registerSystem(estateSystem);
 registerSystem(policeAirSystem);
 registerSystem(wildlifeSystem);
 registerSystem(messengerSystem);
+registerSystem(shops2System);
+registerSystem(ridesSystem);
+registerSystem(petsSystem);
+registerSystem(shopStreetSystem);
+registerSystem(funSystem); // W5 FUN: 놀이기구·오리 애니메이션
+registerSystem(downtownSystem); // W6 DOWNTOWN: 단지 소품 밤 조명
+registerSystem(funPlaySystem); // W5 FUN: 미니게임·탑승

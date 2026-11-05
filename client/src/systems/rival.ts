@@ -1,7 +1,7 @@
 // 라이벌 도둑 시스템: 기지에 침입해 다 큰 행성을 훔쳐 달아난다
 import {S, save, freeSlot} from '../core/state.js';
 import {G} from '../core/runtime.js';
-import {dist2, rnd} from '../core/util.js';
+import {dist2, rnd, eul} from '../core/util.js';
 import {slotPos} from '../core/geometry.js';
 import {P} from '../data/planets.js';
 import {animateWalk} from '../render/characters.js';
@@ -26,7 +26,7 @@ function updateRival(dt: number) {
         rival.approach = Math.hypot(sp0.x - rival.position.x, sp0.z - rival.position.z) / 30; // 도착까지 약 30초
         rival.t = 0;
         rival.stolen = null;
-        toast('⚠️ 라이벌이 기지에 접근 중입니다');
+        toast('라이벌이 기지에 접근 중입니다');
       } else G.raidT = 15;
     }
     return;
@@ -52,11 +52,11 @@ function updateRival(dt: number) {
       rival.stolen = o;
       S.base[rival.slot] = null;
       rival.state = 'flee';
-      toast(`⚠️ ${P[o.id].name}을(를) 빼앗기고 있습니다 — 추격하세요`);
+      toast(`${eul(P[o.id].name)} 빼앗기고 있습니다. 추격하세요`);
     }
     if (dist2(rp, me.pos) < 2.2) {
       rival.state = 'out';
-      toast('🛡️ 침입을 막아냈습니다');
+      toast('침입을 막아냈습니다');
     }
   }
   if (rival.state === 'flee' || rival.state === 'out') {
@@ -68,11 +68,11 @@ function updateRival(dt: number) {
       if (i >= 0) S.base[i] = rival.stolen;
       rival.stolen = null;
       rival.state = 'out';
-      toast('✅ 되찾았습니다');
+      toast('되찾았습니다');
       save();
     }
     if (Math.abs(rp.x) > FAR) {
-      if (rival.stolen) toast(`${P[rival.stolen.id].name}을(를) 빼앗겼습니다`);
+      if (rival.stolen) toast(`${eul(P[rival.stolen.id].name)} 빼앗겼습니다`);
       rival.visible = false;
       rival.state = 'off';
       G.raidT = rnd(1100, 1300); // 약 20분에 한 번

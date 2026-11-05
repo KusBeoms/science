@@ -41,17 +41,17 @@ export function goJail(stars: number) {
   G.me.vy = 0;
   G.yaw = 0;
   G.camDist = 11;
-  toast(`⛓️ 검거! 벌금 ✦${fine} — 형기 ${sentence}초. 어딘가 허술한 곳이 있을지도…`, 4);
+  toast(`체포되었습니다. 벌금 ✦${fine}, 형기 ${sentence}초. 벽을 살펴보세요`, 4);
   sfx('deny');
-  setTimeout(() => pushMsg('friend', '🧱 ← ⛓️ 😢'), 5000);
+  setTimeout(() => pushMsg('friend', '벽 어딘가가 헐거워 보여. 잘 찾아봐'), 5000);
   save();
 }
 function release(escaped: boolean) {
   G.jail = null;
   if (!escaped) {
     G.me.pos.set(JAIL.release.x, groundH(JAIL.release.x, JAIL.release.z), JAIL.release.z);
-    toast('🔓 출소했습니다');
-  } else toast('🏃 탈출 성공! 아무도 쫓지 않는다', 3.5);
+    toast('형기를 마치고 출소했습니다');
+  } else toast('탈출에 성공했습니다. 아무도 쫓지 않습니다', 3.5);
   sfx('buy');
 }
 const outside = (x: number, z: number) => x < JAIL.rect[0] - 1 || x > JAIL.rect[2] + 1 || z < JAIL.rect[1] - 1 || z > JAIL.rect[3] + 1;
@@ -96,7 +96,7 @@ function patrol(dt: number) {
       g.seen = 0;
       G.jail.t = Math.min(G.jail.total + 40, G.jail.t + 15);
       G.me.pos.set(JAIL.cell.x, groundH(JAIL.cell.x, JAIL.cell.z), JAIL.cell.z);
-      toast('👮❗ 걸렸다! 감방으로 +15초', 3);
+      toast('간수에게 들켰습니다. 감방으로 돌아가고 형기 15초 추가', 3);
       sfx('deny');
     }
   });
@@ -104,7 +104,7 @@ function patrol(dt: number) {
 export const jailSystem: GameSystem = {
   id: 'jail',
   update(dt) {
-    if (G.me.pos.z > 900) patrol(dt);
+    if (G.me.pos.z > JAIL.rect[1] - 125) patrol(dt);
     if (barsMesh) barsMesh.visible = !!bars;
     const j = G.jail;
     if (!j) return;
@@ -121,7 +121,7 @@ export const jailSystem: GameSystem = {
 addHudLine(() => {
   if (!G.jail) return null;
   const t = Math.ceil(G.jail.t);
-  return `⛓️ ${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}${wall ? ' 🧱' : ' 🕳️'}`;
+  return `형기 ${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}${wall ? '' : ' · 벽에 구멍이 났습니다'}`;
 });
 
 interface BrickT extends Target {
@@ -135,16 +135,16 @@ export const brickIt: Interactable<BrickT> = {
     const d = dist2(me.pos, JAIL.brick);
     return d < 3.2 ? {kind: 'brick', d} : null;
   },
-  info: () => '<b>🧱 헐거운 벽돌</b>',
-  prompt: () => `E 🧱 ${'●'.repeat(hits)}${'○'.repeat(3 - hits)}`,
+  info: () => '<b>헐거운 벽돌</b>',
+  prompt: () => `E 벽돌 밀기 (${hits}/3)`,
   act(_t, key) {
     if (key !== 'e' || !wall) return;
     if (++hits >= 3) {
       dropDynSolid(wall);
       wall = null;
       if (brickMesh) brickMesh.visible = false;
-      toast('🕳️ 벽에 구멍이 뚫렸다 — 마당 서쪽 끝으로!', 3);
-    } else toast('🧱 덜컥…');
+      toast('벽에 구멍이 뚫렸습니다. 마당 서쪽 끝으로 가세요', 3);
+    } else toast('벽돌이 흔들립니다');
     sfx('jump');
   },
 };

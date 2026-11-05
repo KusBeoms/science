@@ -81,6 +81,12 @@ function build(): CityGraph {
 
   buildW2(link);
   buildW3(link);
+  // 막다른 노드(스타디움 쪽으로 잘린 보도 끝)는 이웃의 다음 이웃과도 이어 한 칸 건너뛰는 갈래를 만든다(통행은 같은 보도 위)
+  nb.forEach((set, i) => {
+    if (set.size >= 2) return;
+    const n1 = [...set][0];
+    for (const n2 of nb[n1]) if (n2 !== i) { set.add(n2); nb[n2].add(i); break; }
+  });
 
   return {
     x: Float32Array.from(xs),
@@ -146,25 +152,49 @@ function buildW3(link: (z: number, pts: Pt[]) => void) {
         a1 = Math.max(vert ? r.z0 : r.x0, vert ? r.z1 : r.x1);
       return [-1, 1].map(s => ({vert, c: (vert ? r.x0 : r.z0) + s * o, a0, a1}));
     });
-  for (const L of lanes) {
+  // 스타디움(관중석이 보도 위까지 덮는다)은 보행 경로에서 뺀다: 그 안의 보도 노드는 지우고, 잘린 끝은 맞은편 보도와 이어 막다른 곳을 없앤다
+  const inStad = (x: number, z: number) => x >= 205 && z <= -205;
+  const pt = (L: {vert: boolean; c: number}, a: number): [number, number] => (L.vert ? [L.c, a] : [a, L.c]);
+  const sets = lanes.map(L => {
     const at = new Set<number>();
     for (let a = Math.ceil(L.a0 / 20) * 20; a <= L.a1; a += 20) at.add(a);
     at.add(L.a0);
     at.add(L.a1);
     for (const M of lanes) if (M.vert !== L.vert && M.c >= L.a0 && M.c <= L.a1 && L.c >= M.a0 && L.c <= M.a1) at.add(M.c);
-    const pts = [...at].sort((p, q) => p - q).map((a, k): Pt => {
-      const idle = k % 3 === 1;
-      return L.vert ? (idle ? [L.c, a, 1] : [L.c, a]) : idle ? [a, L.c, 1] : [a, L.c];
+    return at;
+  });
+  const cuts: [number, number][] = []; // [레인 인덱스, 잘린 끝 a]
+  lanes.forEach((L, i) => {
+    const sorted = [...sets[i]].sort((p, q) => p - q);
+    sorted.forEach((a, k) => {
+      if (inStad(...pt(L, a))) return;
+      const nb = [sorted[k - 1], sorted[k + 1]].filter(v => v !== undefined && inStad(...pt(L, v!)));
+      if (nb.length) cuts.push([i, a]);
     });
-    link(Z, pts);
-  }
+  });
+  // 맞은편 보도(같은 도로, 반대쪽) 인덱스: lanes 는 도로마다 [-1, +1] 쌍
+  for (const [i, a] of cuts) sets[i ^ 1].add(a);
+  lanes.forEach((L, i) => {
+    const pts = [...sets[i]]
+      .sort((p, q) => p - q)
+      .filter(a => !inStad(...pt(L, a)))
+      .map((a, k): Pt => {
+        const idle = k % 3 === 1,
+          [x, z] = pt(L, a);
+        return idle ? [x, z, 1] : [x, z];
+      });
+    if (pts.length > 1) link(Z, pts);
+  });
+  for (const [i, a] of cuts) link(Z, [pt(lanes[i], a), pt(lanes[i ^ 1], a)]);
   // 길 끝에서는 양쪽 보도를 이어 막다른 곳을 없앤다
   for (const r of cars) {
     const vert = r.x0 === r.x1,
       o = r.w / 2 + r.sidewalk / 2,
       c = vert ? r.x0 : r.z0;
-    for (const a of [Math.min(vert ? r.z0 : r.x0, vert ? r.z1 : r.x1), Math.max(vert ? r.z0 : r.x0, vert ? r.z1 : r.x1)])
-      link(Z, vert ? [[c - o, a], [c + o, a]] : [[a, c - o], [a, c + o]]);
+    for (const a of [Math.min(vert ? r.z0 : r.x0, vert ? r.z1 : r.x1), Math.max(vert ? r.z0 : r.x0, vert ? r.z1 : r.x1)]) {
+      const ends: Pt[] = vert ? [[c - o, a], [c + o, a]] : [[a, c - o], [a, c + o]];
+      if (!inStad(ends[0][0], ends[0][1]) && !inStad(ends[1][0], ends[1][1])) link(Z, ends);
+    }
   }
   // 원도심 끝과 연결
   const LANE = 13.5;

@@ -23,11 +23,11 @@ function hazards(dt: number) {
   if (tm !== 1) tag.push(`⏳ 시간 ×${tm}`);
   const gE = gravityNow();
   if (Math.abs(gE - 1) > 0.02) tag.push(`중력 ${gE.toFixed(2)}g`);
-  if (G.night > 0) tag.push('🌙 밤 — 성장 ×30');
+  if (G.night > 0) tag.push('밤: 성장 ×30');
   setTxt('#tag', tag.join(' · '));
   setTxt(
     '#carryTag',
-    carry.length ? `✋ ${carry.map(c => P[c.id].name).join(', ')} (${carry.length}/${cap()}) — 기지로!` : ''
+    carry.length ? `운반 중: ${carry.map(c => P[c.id].name).join(', ')} (${carry.length}/${cap()}) 기지로 가져가세요` : ''
   );
   if (!G.comet) {
     if (inBase(me.pos.x, me.pos.z) && !carry.length && (G.cometT -= dt) <= 0) {
@@ -39,7 +39,7 @@ function hazards(dt: number) {
     if (Math.hypot(me.pos.x - G.comet.g.position.x, me.pos.z - G.comet.z) < 3) {
       const b = income() * 40;
       S.cr += b;
-      toast(`☄ 혜성 포획! +${fmt(b)} · 핼리 혜성은 약 76년마다 온다`, 3.5);
+      toast(`혜성을 포획했습니다. +${fmt(b)} (핼리 혜성은 약 76년마다 옵니다)`, 3.5);
       G.scene.remove(G.comet.g);
       freeTree(G.comet.g);
       G.comet = null;
@@ -64,7 +64,7 @@ function spawnComet() {
   g.position.set(-H - 6, 2.4, z);
   G.scene.add(g);
   G.comet = {g, z};
-  toast('☄ 혜성 출현! 닿으면 포획');
+  toast('혜성이 나타났습니다. 닿으면 포획됩니다');
 }
 export const hazardSystem: GameSystem = {
   id: 'hazards',

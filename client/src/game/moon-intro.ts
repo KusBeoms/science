@@ -1,4 +1,4 @@
-// 시작 연출(글 없음): 지구에서 로켓이 날아 달에 내린다 → 달 구역(S1) 해금 + 달 포탈 패드에서 게임 시작.
+// 시작 연출(글 없음): 지구에서 로켓이 날아 달에 내린다 → 달 구역(S1) 해금 + 달 포탈 패드에서 게임 시작. 달은 도시와 떨어진 섬 — 패드의 포탈로 도시에 간다(해금 불필요).
 // 새 게임(처음 컷신을 안 본 세이브)에서만 자동 재생, 클릭/Space/Esc 로 건너뛴다. ?cine=0 이면 재생하지 않는다(E2E).
 import {G} from '../core/runtime.js';
 import {S, save} from '../core/state.js';
@@ -6,6 +6,7 @@ import {padPos} from '../core/geometry.js';
 import {groundH} from '../core/terrain.js';
 import {unlockSector} from '../core/progress.js';
 import {SECTORS} from '../data/sectors.js';
+import {toast} from './hud.js';
 
 const DUR = 9000;
 let running = false;
@@ -18,6 +19,7 @@ export function startOnMoon() {
   G.me.pos.set(p.x, groundH(p.x, p.z), p.z + 4);
   G.me.vy = 0;
   G.yaw = 0;
+  toast('도시로 가려면 포탈 패드에서 E를 누르세요', 3.5); // 도시로 가는 길은 포탈뿐 — 패드에서 E
   save();
 }
 

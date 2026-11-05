@@ -5,7 +5,10 @@ import {uniform} from './uniform.js';
 import {G} from '../core/runtime.js';
 import {addSolid, groundH, solidAt} from '../core/terrain.js';
 import {COUNTRY, DESERT, JAIL, LAKES, MOUNTAIN, SUMMIT, WILD_RECT} from '../data/wild.js';
-import {SEA_Y} from '../data/world-map.js';
+import {WILD_DZ} from '../data/outline.js';
+import {buildLakeside} from './wild-lake.js';
+import {roadNear} from '../data/wild-road.js';
+import {lakeT} from '../core/lake-shape.js';
 import {ACCENT, NEUTRAL, PAL, mix} from './lowpoly/palette.js';
 import {box, cone, cyl, gable, ico, type Geo} from './lowpoly/prim.js';
 import {hash2, mulberry32} from './lowpoly/rng.js';
@@ -87,11 +90,7 @@ export function buildWild(): any {
   const wx = cx0 + 160,
     wz = cz0 + 30;
   put(wm.still, wx, wz, 0, 3.5, 3.5);
-  // --- 호수 선착장 + 작은 배 ---
-  const L = LAKES[0],
-    dockX = L.x - L.r * 0.98;
-  for (let k = 0; k < 6; k++) put(mergePlaced(parts([box(2.6, 0.4, 4, PAL.wood), box(0.4, 1.2, 0.4, PAL.coal, -1.1, -0.8, 1.5), box(0.4, 1.2, 0.4, PAL.coal, 1.1, -0.8, 1.5)])), dockX + 5 + k * 4, L.z, Math.PI / 2);
-  solids.push({g: mergePlaced(parts([box(2.4, 0.8, 5.4, PAL.red), box(2, 0.3, 4.6, PAL.bone, 0, 0.8)])), x: dockX + 32, y: SEA_Y + 0.1, z: L.z + 4, ry: 0.4});
+  grp.add(buildLakeside()); // 호숫가 길·선착장·보트·갈대 (render/wild-lake.ts)
   // --- 산: 이정표(나선형 등산로) · 오두막 · 정상 깃발 ---
   const M = MOUNTAIN,
     post = mergePlaced(parts([cyl(0.18, 2.6, PAL.wood, 0, 0, 0, 0, 5), box(1.2, 0.5, 0.15, PAL.red, 0, 2, 0)]));
@@ -107,7 +106,7 @@ export function buildWild(): any {
   for (let k = 0; k < 90; k++) {
     const x = DESERT.x0 + 20 + rnd() * (WILD_RECT[2] - DESERT.x0 - 30),
       z = DESERT.z0 + 20 + rnd() * (WILD_RECT[3] - DESERT.z0 - 30);
-    if (Math.hypot(x - M.x, z - M.z) < M.r * 0.95) continue;
+    if (Math.hypot(x - M.x, z - M.z) < M.r * 0.95 || groundH(x, z) < -2.5) continue; // 윤곽 밖·물가는 건너뜀
     if (k % 3) put(cac, x, z, rnd() * 6);
     else put(mergePlaced(parts([ico(1.2 + rnd() * 1.6, 0, mix(PAL.stone, PAL.clay, 0.4), 0, 1, 0)])), x, z, rnd() * 6);
   }
@@ -121,11 +120,13 @@ export function buildWild(): any {
       const x = gx + (hash2(gx, gz, 5) - 0.5) * 9,
         z = gz + (hash2(gx, gz, 6) - 0.5) * 9,
         y = groundH(x, z);
-      if (y < SEA_Y + 1.2 || y > 55 || ruralFieldAt(x, z, 3) || solidAt(x, z, 2)) continue;
+      if (y < -3.4 || y > 70 || ruralFieldAt(x, z, 3) || solidAt(x, z, 2)) continue;
+      if (LAKES.some(L => y < L.level + 1.6 && lakeT(L, x, z) < 1.2)) continue; // 호수·물가엔 나무 없음
+      if (roadNear(x, z).d < 11) continue;
       if (x > DESERT.x0 && z > DESERT.z0) continue; // 사막엔 나무 없음
       const inFarm = x < COUNTRY[2] && z > COUNTRY[1] && z < COUNTRY[3];
       const m = Math.hypot(x - M.x, z - M.z) / M.r;
-      const dens = m < 1 ? 0.45 : inFarm ? 0.07 : 0.2;
+      const dens = m < 1 || (y > 7 && z > 1150 + WILD_DZ) ? 0.45 : inFarm ? 0.07 : 0.2;
       if (hash2(gx, gz, 7) > dens) continue;
       if (x > JAIL.flat[0] - 4 && x < JAIL.flat[2] + 4 && z > JAIL.flat[1] - 4 && z < JAIL.flat[3] + 4) continue;
       (hash2(gx, gz, 8) < (m < 1 ? 0.7 : 0.35) ? pines : trees).push({x, y, z, ry: hash2(gx, gz, 9) * 6, s: 1.1 + hash2(gx, gz, 4) * 0.7});

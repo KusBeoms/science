@@ -1,22 +1,18 @@
-// 로드된 섹터만: 문 표시(잠김/다음 차례/열림) + 수호자 AI (자기 섹터에 들어온 플레이어를 쫓는다)
+// 로드된 섹터만: 수호자 AI (자기 섹터에 들어온 플레이어를 쫓는다)
 import {G} from '../core/runtime.js';
 import {clamp, dist2} from '../core/util.js';
 import {inSector} from '../core/geometry.js';
 import {heightAt} from '../core/heightmap.js';
-import {isNext, locked, reqMissing} from '../core/progress.js';
+import {locked} from '../core/progress.js';
 import {SECTORS} from '../data/sectors.js';
 import {animateWalk} from '../render/characters.js';
-import {animateGate, setGateState} from '../render/gates.js';
 import {caught} from '../game/actions.js';
 
 export function updateGuardians(dt: number, t: number) {
   G.chunks.forEach((c, i) => {
     if (!c) return;
     const s = SECTORS[i],
-      lk = locked(i),
-      next = isNext(i);
-    setGateState(c.gate, lk ? (next ? (reqMissing(i).length ? 'next' : 'ready') : 'far') : 'open', i);
-    animateGate(c.gate, t);
+      lk = locked(i);
     const g = c.guard,
       gp = g.m.position,
       h = s.size / 2,

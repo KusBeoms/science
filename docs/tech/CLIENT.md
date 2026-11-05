@@ -104,7 +104,7 @@ python3 -m http.server -d public        # 정적 서빙만으로 동작 (서버 
 | 11 | neutron | 중성자별 | extreme | (0,−804) | 220 | s | 10 · 도감 22 · 이동 수단 2 | 중력 ×1.8 · 시간 ×2 |
 | 12 | edmunds | 에드먼즈 | fiction | (340,−360) | 260 | w | 11 · 도감 24 · 이동 수단 3 · 챕터 3 | |
 
-> ⚠ 이 표는 **M1 임시 틀**이다(`이동 수단 N`·`챕터 N` 칸은 M5 전 임시값, 최종 이동 수단 조건은 S6 하나). 최종 구역 순서·id는 [CONTENT_PLAN.md](CONTENT_PLAN.md) 2장의 "구역 번호↔섹터 id 매핑"을 따르며(M5에서 재배치), `챕터` 조건은 `S.story.beat` 기반 `beat`로 대체된다.
+> ⚠ 이 표는 **M1 임시 틀**이다(`이동 수단 N`·`챕터 N` 칸은 M5 전 임시값, 최종 이동 수단 조건은 S6 하나). 최종 구역 순서·id는 [CONTENT_PLAN.md](../design/CONTENT_PLAN.md) 2장의 "구역 번호↔섹터 id 매핑"을 따르며(M5에서 재배치), `챕터` 조건은 `S.story.beat` 기반 `beat`로 대체된다.
 
 - 걸어서 이어짐: 허브→1→2→3→4 (북쪽 일렬), 1→5→6 (동쪽). 권역 안 7→8→9, 10→11 은 맞닿아 있다.
 - 허공으로 떨어짐: 7(1에서 서쪽 126), 10(4에서 북쪽 120), 12(6에서 남북 109·3에서 동쪽 166) → 이동 수단(`vehicle` 조건)이나 포탈이 필요. (임시 틀 기준 설명 — M5 재배치 후 허공 횡단은 S6 우주선부터.)
@@ -190,9 +190,9 @@ registerInteractable<T extends Target>({
 | 컷신 | `game/cutscene*.ts`, `data/cutscenes.ts`, `data/cutscene-types.ts`, `systems/cutscene.ts`, `public/style/cine.css` | 타임라인 컷신 디렉터(카메라·배우·이모지 말풍선·FX·소리 큐·HUD 훅). 상태 변경은 `onEnd` 에서만. 데이터 포맷은 UX_CUTSCENE.md 0.1장 |
 | 글 없는 UI | `game/hud.ts` | `iconToast(icons[])`, `HudWidget`(`GameSystem.widget?()`), 기존 `toast`/`renderHudLines` 유지 |
 | 사운드 | `audio/*`, `systems/audio.ts` | Web Audio 합성 효과음·BGM, 음소거 🔊/🔇 버튼, 컷신 소리 큐는 `G.cineHooks.sound` 로 연결. [AUDIO.md](AUDIO.md) |
-| 경제 | `data/pacing.ts`, `data/pacing-sinks.ts`, `data/planet-zones.ts`, `client/tools/econ-*.mjs` | 구역×등급 가격, 새 비용 곡선, 시뮬레이터(`cd client && npx tsc && node tools/econ-sim.mjs`). [ECONOMY.md](ECONOMY.md) 9장 |
+| 경제 | `data/pacing.ts`, `data/pacing-sinks.ts`, `data/planet-zones.ts`, `client/tools/econ-*.mjs` | 구역×등급 가격, 새 비용 곡선, 시뮬레이터(`cd client && npx tsc && node tools/econ-sim.mjs`). [ECONOMY.md](../design/ECONOMY.md) 9장 |
 | 문제 은행 | `data/quiz-bank/*` | 210문항(구역 1~12). `GQU` 는 `buildGQUByZone(BANK_ALL)`, 섹터 `units` 는 구역 키(`Z01`~`Z12`). 행성 문제 `PQ` 는 아직 기존 `quiz-planet.ts` |
-| 월드 W1 | `core/heightmap.ts`, `core/terrain.ts`, `data/world-map.ts`, `data/city.ts`, `data/citygraph.ts`, `render/city/*`, `render/crowd.ts`, `systems/crowd.ts`, `render/sky.ts`, `render/apple.ts`, `systems/daynight.ts`, `render/characters-look.ts` | 5u 격자 높이 지도(부팅 1회 굽기)·`groundH`, 도시 광장·사과 대로·상점가, 보행 그래프 군중(≤24, 말풍선 `.bub.crowd`), 하늘 돔·사과 천체, 로우폴리 캐릭터. 설계는 [WORLD.md](WORLD.md) |
+| 월드 W1 | `core/heightmap.ts`, `core/terrain.ts`, `data/world-map.ts`, `data/city.ts`, `data/citygraph.ts`, `render/city/*`, `render/crowd.ts`, `systems/crowd.ts`, `render/sky.ts`, `render/apple.ts`, `systems/daynight.ts`, `render/characters-look.ts` | 5u 격자 높이 지도(부팅 1회 굽기)·`groundH`, 도시 광장·사과 대로·상점가, 보행 그래프 군중(≤24, 말풍선 `.bub.crowd`), 하늘 돔·사과 천체, 로우폴리 캐릭터. 설계는 [WORLD.md](../design/WORLD.md) |
 | 월드 W2 | `data/city-w2.ts`, `render/city/landmarks2.ts`, `render/city/tradeline.ts` (+ `data/city.ts`·`layout.ts`·`citygraph.ts` 확장) | 도시 8구역 완성: 건물 82채(암시장 노점 28·정비 창고 3·우주항 창고 6·연구동 8·주거 8 추가), 랜드마크 L4 관제탑·L5 격납고·L6 천문대 돔·L7 성(언덕 위 y=12), 거래의 선(바닥 인레이 + 금빛 기둥띠, 북쪽 사과 대로만 개구), 우주항 패드 4·정비소 착륙대 2, 군중 8구역 그래프·데스크톱 66/모바일 24. **상점 노점·점원은 `SHOP_AT=(47,−10)`(상점가 입구)로 이전**, 기지에는 받침대·포탈 패드만 남음 |
 | 날씨 W3 | `render/weather.ts` (시스템 `weatherSystem`) | 카메라 둘레 상자(70×34)를 도는 `Points` 1개를 구역에 따라 종류만 바꿔 쓴다: giants 눈 · hotjup 불씨 · nebula 안개 띠 · supernova 결정 파편 · alpha 포자. 도시·그 외 구역은 없음. 전환은 1.2초 페이드 |
 - 세이브 v6: `S.story`(beat·mid·seen·ended·hints). v5→v6 마이그레이션은 보유 현금을 해금 구역의 누적 지출 목표(`TARGET_CUM_SPEND`)로 1회 제한한다.
@@ -255,3 +255,6 @@ registerInteractable<T extends Target>({
 | systems/police-air.ts | 헬기·바리케이드 |
 | systems/wildlife.ts | 동물·낚시 |
 | game/messenger.ts · game/phone-social.ts | 메신저·사진 |
+
+### 안내 문구 규칙 (2026-11-05)
+설명·상태·실패 사유는 이모지 나열 대신 짧은 한국어 문장으로 쓴다(이모지는 앱/장소 아이콘 라벨 + 이름 정도, 동물 교감 반응은 이모지 유지). 폰·포탈·미션·HUD·놀거리(game/fun.ts, 이름·설명은 data/fun-spots.ts 의 FUN_NAME/FUN_HELP)에 적용. 포탈 해금 검토 화면은 아이콘 + 라벨 글자 + 진행 막대. 연락처 메시지는 짧은 문장 + 이모지 1~2개.

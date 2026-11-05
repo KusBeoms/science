@@ -29,7 +29,7 @@ export function tryGrab(zi: number, k: number) {
   const id = n.s[k],
     p = P[id];
   openQuiz({
-    title: `⏸ 시간 정지 · ${p.name} — 문제를 맞혀야 훔칠 수 있다`,
+    title: `시간 정지 · ${p.name} — 문제를 맞혀야 훔칠 수 있습니다`,
     qs: [PQ[p.name] || shuffle(GQ.slice())[0]], // 행성 문제가 아직 없으면 입장 시험 문제로 대신한다
     need: 1,
     onDone(ok) {
@@ -47,28 +47,30 @@ export function tryGrab(zi: number, k: number) {
     },
   });
 }
-/** 섹터 zi 입장 시험. 해금 조건(도감·신발·이동 수단·챕터)을 못 채웠으면 안내만 한다 */
-export function openGate(zi: number) {
+/** 섹터 zi 입장 시험 (우주 지도에서 잠긴 섹터를 눌렀을 때). 해금 조건을 못 채웠으면 안내만 한다. 통과 시 onPass, 실패 시 onFail */
+export function openGate(zi: number, onPass?: () => void, onFail?: () => void) {
   if (!locked(zi) || paused()) return;
   const miss = reqMissing(zi),
     s = SECTORS[zi];
-  if (miss.length) return toast(`🔒 ${zi + 1}단계 조건: ${miss.join(' · ')}`, 3);
+  if (miss.length) return toast(`${zi + 1}단계 조건: ${miss.join(' · ')}`, 3);
   const bank = s.units.flatMap(u => GQU[u] || []),
     qs = shuffle((bank.length >= 3 ? bank : GQ).slice()).slice(0, 3);
   openQuiz({
-    title: `🔒 ${zi + 1}단계 ${s.icon} ${s.name} 입장 시험 — 3문제 중 2문제`,
+    title: `${zi + 1}단계 ${s.icon} ${s.name} 입장 시험 — 3문제 중 2문제`,
     qs,
     need: 2,
     onDone(ok) {
       if (ok) {
         unlockSector(zi);
         sfx('quizPass');
-        toast(`🔓 ${zi + 1}단계 열림! ${s.icon} ${s.name}`, 3);
+        toast(`${zi + 1}단계 ${s.name} 구역이 열렸습니다`, 3);
         flash('#7cf09a', 0.35);
         save();
+        onPass?.();
       } else {
         toast('통과 실패 — 다시 도전하세요');
         sfx('quizFail');
+        onFail?.();
       }
     },
   });
@@ -122,7 +124,7 @@ export function deposit() {
       S.dex[id] = 1;
       const rw = P[id].price / DEX_REWARD_DIV;
       S.cr += rw;
-      toast(`📖 도감 등록! +${fmt(rw)}`, 2.6);
+      toast(`도감에 등록했습니다. +${fmt(rw)}`, 2.6);
       sfx('dex');
     }
     const n = nestOf(c.z);

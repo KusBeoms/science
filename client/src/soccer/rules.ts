@@ -4,6 +4,7 @@ import {uniform} from '../render/uniform.js';
 import {G} from '../core/runtime.js';
 import {PLAYER_SCALE} from '../core/scale.js';
 import {blocky} from '../render/characters.js';
+import {MATCH_SEC} from '../data/soccer.js';
 import {atkX, ball, BR, cx, cz, defX, dir, dist, GH, hl, hw, inBox, M, wrap, type Pl, type RestartKind} from './state.js';
 import {kickBall, placeBall} from './ball.js';
 import {lineup} from './team.js';
@@ -41,7 +42,7 @@ export function refUpdate(dt: number) {
 }
 
 // ---------- 재개 ----------
-const KICK_TEXT: Record<RestartKind, string> = {kickoff: '⚽', throw: '🤾', goalkick: '🥅↗', corner: '🚩', free: '🦵', penalty: '⚽●', indirect: '⚑'};
+const KICK_TEXT: Record<RestartKind, string> = {kickoff: '킥오프', throw: '스로인', goalkick: '골킥', corner: '코너킥', free: '프리킥', penalty: '페널티킥', indirect: '간접 프리킥'};
 export function setRestart(kind: RestartKind, team: 0 | 1, x: number, z: number) {
   if (!M) return;
   const pool = M.pls.filter(p => p.team === team && !p.off && (kind === 'goalkick' ? p.role === 'GK' : p.role !== 'GK'));
@@ -112,12 +113,12 @@ export function checkTouches(dt: number) {
       if (sp > 24 && Math.random() < 0.4) {
         kickBall(p, ball.x - p.x, (ball.z - cz) * 0.4 + ball.z - p.z, 14, 5); // 쳐내기
         p.cd = 0.6;
-        say('🧤');
+        say('골키퍼가 쳐냈습니다');
       } else {
         ball.owner = p;
         ball.vx = ball.vy = ball.vz = 0;
         p.hold = 1.4;
-        say('🧤');
+        say('골키퍼가 잡았습니다');
       }
       continue;
     }
@@ -155,7 +156,7 @@ export function markPass(passer: Pl) {
 function callOffside(p: Pl) {
   const m = M!;
   sfx('whistle');
-  say('⚑ 오프사이드', 3);
+  say('오프사이드입니다', 3);
   ball.offsideSet = [];
   ball.passTeam = -1;
   setRestart('indirect', p.team === 0 ? 1 : 0, clampX(p.x), clampZ(p.z));
@@ -199,7 +200,7 @@ function goalScored(team: 0 | 1) {
   sfx('cheer');
   sfx('net');
   hooks.cheer(team);
-  say(`⚽ GOAL! ${team === 0 ? '🔵' : '🔴'} ${m.score[0]} : ${m.score[1]}`, 3);
+  say(`골! ${team === 0 ? '파란 팀' : '빨간 팀'} 득점 ${m.score[0]} : ${m.score[1]}`, 3);
 }
 
 // ---------- 태클·반칙 ----------
@@ -215,31 +216,31 @@ export function foul(att: Pl, victim: Pl, sev: 0 | 1 | 2) {
   const m = M!;
   sfx('whistle');
   m.fouls[att.team]++;
-  let msg = '🦵 파울';
+  let msg = '파울입니다';
   const r = Math.random();
   if (sev === 2 && r < 0.25) {
     m.cards[att.team][1]++;
-    msg = '🟥 퇴장';
+    msg = '레드카드, 퇴장입니다';
     sendOff(att);
   } else if ((sev === 2 && r < 0.9) || (sev === 1 && r < 0.35)) {
     att.yellow++;
     if (att.yellow >= 2) {
       m.cards[att.team][1]++;
-      msg = '🟨🟨→🟥 퇴장';
+      msg = '경고 누적, 퇴장입니다';
       sendOff(att);
     } else {
       m.cards[att.team][0]++;
-      msg = '🟨 경고';
+      msg = '옐로카드, 경고입니다';
     }
   }
-  say(`${att.team === 0 ? '🔵' : '🔴'} ${msg}`, 3);
+  say(`${att.team === 0 ? '파란 팀' : '빨간 팀'} ${msg}`, 3);
   ball.owner = null;
   const vx = clampX(victim.x),
     vz = clampZ(victim.z);
   if (inBox(victim.x, victim.z, att.team)) {
     const gx = defX(att.team);
-    setRestart('penalty', victim.team, gx + dir(att.team) * 9, cz);
-    say('⚽● 페널티킥', 3);
+    setRestart('penalty', victim.team, gx + dir(att.team) * 11, cz);
+    say('페널티킥입니다', 3);
   } else setRestart('free', victim.team, vx, vz);
 }
 /** att 가 공 가진 상대를 태클한다. 성공하면 공을 빼앗고, 뒤에서/무리하면 반칙 */
@@ -286,7 +287,7 @@ export function stepClock(dt: number) {
   if (m.phase === 'half') {
     if ((m.pause -= dt) <= 0) {
       m.half = 2;
-      m.t = 90;
+      m.t = MATCH_SEC / 2;
       startKickoff(1);
     }
     return;
@@ -301,7 +302,7 @@ export function stepClock(dt: number) {
       if (m.half === 1) {
         m.phase = 'half';
         m.pause = 4;
-        say('⏸ 하프타임', 4);
+        say('하프타임입니다', 4);
         ball.owner = null;
         m.restart = null;
         placeBall(cx, cz);
@@ -310,7 +311,7 @@ export function stepClock(dt: number) {
         m.pause = 3.5;
         ball.owner = null;
         m.restart = null;
-        say('🏁', 4);
+        say('경기 종료', 4);
       }
     }
   }

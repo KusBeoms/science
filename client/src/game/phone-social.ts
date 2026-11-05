@@ -23,7 +23,7 @@ export function renderChatList(body: HTMLElement) {
       const msgs = S.chat.filter(m => m.from === id || m.from === 'me:' + id),
         last = msgs[msgs.length - 1],
         un = S.chat.filter(m => m.from === id && !m.read).length;
-      return `<button class="phrow phchat" data-act="chat:${id}"><span style="font-size:26px">${CONTACTS[id].icon}</span><span style="flex:1;text-align:left"><b>${CONTACTS[id].name}</b><br><small>${last ? last.text : '—'}</small></span>${un ? `<span class="phdot">${un}</span>` : ''}</button>`;
+      return `<button class="phrow phchat" data-act="chat:${id}"><span style="font-size:26px">${CONTACTS[id].icon}</span><span style="flex:1;text-align:left"><b>${CONTACTS[id].name}</b><br><small>${last ? last.text : '대화 없음'}</small></span>${un ? `<span class="phdot">${un}</span>` : ''}</button>`;
     })
     .join('');
 }
@@ -33,7 +33,7 @@ export function renderThread(body: HTMLElement, id: string) {
     msgs = S.chat.filter(m => m.from === id || m.from === 'me:' + id);
   body.innerHTML =
     `<div class="phtitle">${C.icon} ${C.name}</div><div class="phthread">` +
-    (msgs.map(m => `<div class="phmsg ${m.from.startsWith('me') ? 'me' : ''}">${m.text}</div>`).join('') || row('💬 …')) +
+    (msgs.map(m => `<div class="phmsg ${m.from.startsWith('me') ? 'me' : ''}">${m.text}</div>`).join('') || row('아직 대화가 없습니다')) +
     `</div><div class="phrow" style="flex-wrap:wrap;justify-content:center">${C.replies.map(r => `<button class="phb" data-act="say:${id}:${r}">${r}</button>`).join('')}</div>`;
   const t = body.querySelector('.phthread');
   if (t) t.scrollTop = t.scrollHeight;
@@ -69,10 +69,10 @@ export function snap(): boolean {
 }
 export function renderGallery(body: HTMLElement, open = -1) {
   if (open >= 0 && photos[open]) {
-    body.innerHTML = `<img src="${photos[open]}" style="width:100%;border-radius:10px"><div class="phrow" style="justify-content:center;gap:10px"><a class="phb" download="photo.jpg" href="${photos[open]}">⬇️</a><button class="phb" data-act="photodel:${open}">🗑️</button></div>`;
+    body.innerHTML = `<img src="${photos[open]}" style="width:100%;border-radius:10px"><div class="phrow" style="justify-content:center;gap:10px"><a class="phb" download="photo.jpg" href="${photos[open]}">저장</a><button class="phb" data-act="photodel:${open}">삭제</button></div>`;
     return;
   }
-  body.innerHTML = `<button class="phb big" data-act="photosnap">📸</button><div class="phphotos">${photos.map((p, i) => `<img data-act="photo:${i}" src="${p}">`).join('')}</div>`;
+  body.innerHTML = `<button class="phb big" data-act="photosnap">📸 사진 찍기</button>${photos.length ? '' : row('찍은 사진이 없습니다')}<div class="phphotos">${photos.map((p, i) => `<img data-act="photo:${i}" src="${p}">`).join('')}</div>`;
 }
 export function deletePhoto(i: number) {
   photos.splice(i, 1);

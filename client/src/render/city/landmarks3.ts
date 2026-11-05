@@ -34,13 +34,16 @@ export function stadium(): Landmark {
   const line = (w: number, d: number, x: number, z: number) => solid.push(box(w, 0.04, d, LINE, x, Y, z));
   // 경계선·중앙선·센터서클(조각)·페널티 박스
   line(2 * hl, 0.5, 0, -hw); line(2 * hl, 0.5, 0, hw); line(0.5, 2 * hw, -hl, 0); line(0.5, 2 * hw, hl, 0); line(0.5, 2 * hw, 0, 0);
-  for (let k = 0; k < 20; k++) {
-    const a = (k / 20) * Math.PI * 2;
-    solid.push(box(1.6, 0.04, 0.5, LINE, Math.cos(a) * 7, Y, Math.sin(a) * 7, -a + Math.PI / 2));
+  for (let k = 0; k < 28; k++) {
+    const a = (k / 28) * Math.PI * 2;
+    solid.push(box(2.2, 0.04, 0.5, LINE, Math.cos(a) * 9.15, Y, Math.sin(a) * 9.15, -a + Math.PI / 2));
   }
+  solid.push(box(0.9, 0.04, 0.9, LINE, 0, Y, 0));
   for (const s of [-1, 1]) {
-    line(0.5, 26, s * (hl - 14), 0); line(14, 0.5, s * (hl - 7), -13); line(14, 0.5, s * (hl - 7), 13);
-    line(0.5, 12, s * (hl - 5), 0);
+    // 페널티 박스 16.5×40.3, 골 에어리어 5.5×18.3, 페널티 지점 11m
+    line(0.5, 40.32, s * (hl - 16.5), 0); line(16.5, 0.5, s * (hl - 8.25), -20.16); line(16.5, 0.5, s * (hl - 8.25), 20.16);
+    line(0.5, 18.32, s * (hl - 5.5), 0); line(5.5, 0.5, s * (hl - 2.75), -9.16); line(5.5, 0.5, s * (hl - 2.75), 9.16);
+    solid.push(box(0.8, 0.04, 0.8, LINE, s * (hl - 11), Y, 0));
     // 골대: 기둥 둘 + 크로스바 + 뒷그물
     const gx = s * hl;
     solid.push(box(0.4, 3.4, 0.4, LINE, gx, 0, -gh), box(0.4, 3.4, 0.4, LINE, gx, 0, gh), box(0.4, 0.4, 2 * gh + 0.4, LINE, gx, 3.2, 0));
@@ -51,24 +54,24 @@ export function stadium(): Landmark {
   const [x0, z0, x1, z1] = STADIUM.rect,
     cx = PITCH.cx,
     cz = PITCH.cz,
+    T = STADIUM.stand / 4, // 한 단 깊이
     seats = [ACCENT.red, PAL.cloud, ACCENT.blue, PAL.cloud];
   for (let r = 0; r < 4; r++) {
     const h = 2.4 * (r + 1),
       c = seats[r];
-    const inset = r * 3; // 뒤로 갈수록 높아진다
     // 북쪽
-    solid.push(box(x1 - x0 - inset * 0, h, 3, c, 0, 0, z0 + (3 - r) * 3 + 1.5 - cz));
+    solid.push(box(x1 - x0, h, T, c, 0, 0, z0 + (3 - r) * T + T / 2 - cz));
     // 서·동쪽
-    solid.push(box(3, h, z1 - z0 - 24, c, x0 + (3 - r) * 3 + 1.5 - cx, 0, 0), box(3, h, z1 - z0 - 24, c, x1 - (3 - r) * 3 - 1.5 - cx, 0, 0));
+    solid.push(box(T, h, z1 - z0 - 24, c, x0 + (3 - r) * T + T / 2 - cx, 0, 0), box(T, h, z1 - z0 - 24, c, x1 - (3 - r) * T - T / 2 - cx, 0, 0));
     // 남쪽: 출입구 양옆
     const half = (x1 - x0) / 2 - STADIUM.gateHalf;
-    for (const s of [-1, 1]) solid.push(box(half, h, 3, c, s * (STADIUM.gateHalf + half / 2), 0, z1 - (3 - r) * 3 - 1.5 - cz));
+    for (const s of [-1, 1]) solid.push(box(half, h, T, c, s * (STADIUM.gateHalf + half / 2), 0, z1 - (3 - r) * T - T / 2 - cz));
   }
   solid.push(...stadiumDetails());
   // 조명탑 4개 (밤에 켜짐)
   for (const sx of [-1, 1])
     for (const sz of [-1, 1]) {
-      const x = sx * (hl + 8), z = sz * (hw + 24);
+      const x = sx * (hl + 6), z = sz * (hw + 22);
       solid.push(cyl(0.6, 24, NEUTRAL.steel, x, 0, z, 0, 6), box(5, 1.6, 1.2, NEUTRAL.coal, x, 24, z));
       lit.push(box(4.6, 1.2, 0.5, PAL.yellow, x, 24.2, z - sz * 0.8));
     }

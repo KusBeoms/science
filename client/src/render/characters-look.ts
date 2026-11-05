@@ -126,8 +126,35 @@ export function applyLook() {
   const p = me.userData,
     Lk = S.look,
     V = (k: string) => LOOK[k].v[Lk[k]] || LOOK[k].v[0];
-  p.mat.shirt.color.set(V('shirt')[1]);
-  p.mat.pants.color.set(V('pants')[1]);
+  // W5 옷가게: S.look.shirtC/pantsC/hatC (0xRRGGBB, 0 = 기본 색표 사용), back/backC = 등 장식
+  p.mat.shirt.color.set(Lk.shirtC || V('shirt')[1]);
+  p.mat.pants.color.set(Lk.pantsC || V('pants')[1]);
   p.mat.sk.color.set(V('skin')[1]);
-  dress(p.headG, Lk.hat, hex(V('hat')[1]), Lk.face, hex(V('face')[1]));
+  dress(p.headG, Lk.hat, Lk.hatC || hex(V('hat')[1]), Lk.face, hex(V('face')[1]));
+  dressBack(me, Lk.back || 0, Lk.backC || 0);
 }
+
+/** 등 장식 1~5: 망토 · 책가방 · 천사 날개 · 로켓 팩 · 나비 날개. 몸통(2×2×1, y 2~4) 뒤쪽(z −0.5)에 붙는다 */
+const BACKS: Record<number, Maker> = {
+  1: c => [lit(box(1.9, 2.8, 0.14, c, 0, 1.3, -0.62), box(2.1, 0.4, 0.5, mix(c, PAL.white, 0.25), 0, 3.7, -0.5), box(2.3, 0.5, 0.14, mix(c, PAL.ink, 0.25), 0, 1.0, -0.62))],
+  2: c => [lit(box(1.5, 1.8, 0.8, c, 0, 2.0, -0.9), box(1.1, 0.8, 0.3, mix(c, PAL.white, 0.3), 0, 2.2, -1.4), box(0.2, 1.8, 0.1, PAL.ink, -0.6, 2.0, -0.5), box(0.2, 1.8, 0.1, PAL.ink, 0.6, 2.0, -0.5))],
+  3: c => [-1, 1].map(s => lit(box(0.3, 2.2, 0.6, c).rotateZ(s * 0.5).translate(s * 1.3, 3.2, -0.9), box(0.3, 1.5, 0.5, mix(c, PAL.cloud, 0.4)).rotateZ(s * 0.9).translate(s * 2.0, 2.6, -0.9), box(0.3, 1.0, 0.4, c).rotateZ(s * 1.2).translate(s * 2.4, 2.3, -0.9))),
+  4: c => [
+    lit(cyl(0.42, 1.9, c, -0.55, 1.6, -0.95, 0, 8), cyl(0.42, 1.9, c, 0.55, 1.6, -0.95, 0, 8), cone(0.42, 0.7, ACCENT.red, -0.55, 3.5, -0.95, 0, 8), cone(0.42, 0.7, ACCENT.red, 0.55, 3.5, -0.95, 0, 8)),
+    glow(cone(0.3, 1.0, ACCENT.orange, 0, 0, 0, 0, 6).rotateX(Math.PI).translate(-0.55, 1.1, -0.95), cone(0.3, 1.0, ACCENT.orange, 0, 0, 0, 0, 6).rotateX(Math.PI).translate(0.55, 1.1, -0.95)),
+  ],
+  5: c => [-1, 1].map(s => lit(box(0.25, 1.9, 1.2, c).rotateZ(s * 0.7).translate(s * 1.5, 3.2, -0.8), box(0.25, 1.3, 0.9, ACCENT.cyan).rotateZ(s * 1.0).translate(s * 1.9, 2.4, -0.8))),
+};
+/** 플레이어 몸 뒤에 등 장식 그룹(backG)을 (없으면 만들어) 갈아 끼운다. id 0 = 없음, c = 색(0 이면 기본색) */
+export function dressBack(me: any, id: number, c: number) {
+  const p = me.userData;
+  if (!p.backG) me.add((p.backG = new THREE.Group()));
+  const bg = p.backG;
+  bg.children.slice().forEach((m: any) => {
+    bg.remove(m);
+    freeTree(m);
+  });
+  const mk = BACKS[id];
+  if (mk) mk(c || BACK_COLOR[id]).forEach((m: any) => bg.add(m));
+}
+const BACK_COLOR: Record<number, number> = {1: 0xe5483f, 2: 0x4a82e8, 3: 0xf2f2f2, 4: 0xcfd6e6, 5: 0xcc4ac0};
