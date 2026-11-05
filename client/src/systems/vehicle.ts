@@ -2,6 +2,7 @@
 import {S, save, saveHooks} from '../core/state.js';
 import {G} from '../core/runtime.js';
 import {addDynSolid, dropDynSolid, groundH, solidAt, walkable, type Solid} from '../core/terrain.js';
+import {approachNear, CITY_APPROACH_START, Z_UP0} from '../data/bridge.js';
 import {CITY_ROADS} from '../data/city.js';
 import {CARS, PAINTS, carOf} from '../data/cars.js';
 import {buildCar} from '../render/vehicle.js';
@@ -44,7 +45,10 @@ function planSpots() {
     for (let a = a0; a <= a1; a += 19 + rnd() * 5, k++) {
       const side = k % 2 ? 1 : -1,
         c = horiz ? r.z0 : r.x0;
-      PARK.push(horiz ? {x: a, z: c + side * off, h: Math.PI / 2 * (side > 0 ? 1 : -1)} : {x: c + side * off, z: a, h: side > 0 ? Math.PI : 0});
+      const p = horiz ? {x: a, z: c + side * off, h: Math.PI / 2 * (side > 0 ? 1 : -1)} : {x: c + side * off, z: a, h: side > 0 ? Math.PI : 0};
+      const ap = approachNear(p.x, p.z);
+      if (p.z > CITY_APPROACH_START - 8 && p.z < Z_UP0 + 8 && ap.d < ap.w + 5) continue; // 다리 진입·확폭 구간에는 주차하지 않는다
+      PARK.push(p);
     }
   }
 }

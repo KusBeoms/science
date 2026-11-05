@@ -3,6 +3,7 @@ import {
   CITY_BUILDINGS, CITY_LANDMARKS, CITY_PADS, CITY_PLAZAS, CITY_ROADS, CITY_SIDEWALKS, footprint,
   type CityRect, type CityRoad,
 } from '../../data/city.js';
+import {CITY_APPROACH_START, approachNear} from '../../data/bridge.js';
 import {ROADS_W3} from '../../data/city-w3.js';
 import {CITY_HILL} from '../../data/world-map.js';
 import {PITCH, STADIUM} from '../../data/soccer.js';
@@ -51,6 +52,11 @@ const LM_RECTS: CityRect[] = CITY_LANDMARKS.filter(l => l.kind !== 'orrery' && l
 
 /** 칸 (cx,cz 는 칸 중심 좌표) 의 지면색. 도로 > 보도 > 광장 > 건물 마당 > 잔디 */
 export function surfaceAt(cx: number, cz: number): number {
+  // 긴 진입 곡선은 bridge가 덧그린다. 옛 직선 차도·보도의 남은 꼬리는 잔디로 마감한다.
+  if (cz > CITY_APPROACH_START + 12 && cz <= CITY_HALF && Math.abs(cx) < 12) {
+    const ap = approachNear(cx, cz);
+    if (ap.d > ap.w + 0.5) return LAWN_A;
+  }
   // 거래의 선 인레이: 도시 둘레 1u 폭 금빛 띠
   if (Math.floor(Math.max(Math.abs(cx), Math.abs(cz)) - (TRADE_EDGE - 0.5)) === 0) return GOLD;
   // 우주항 패드: 원 무늬 (바깥 테두리 노랑, 안쪽 아스팔트)
@@ -231,5 +237,6 @@ export function planProps(): PropPlan {
   for (const x of [-20, 20]) benches.push({x, y: 0, z: 121, ry: 0, s: 1.6});
   for (const x of [86, 114]) benches.push({x, y: 0, z: 82, ry: 0, s: 1.6});
   BENCH_SPOTS = benches;
-  return {lamps, trees, pines, benches};
+  const clear = (p: Inst) => { const a = approachNear(p.x, p.z); return p.z < CITY_APPROACH_START + 8 || p.z > 380 || a.d > a.w + 2; };
+  return {lamps: lamps.filter(clear), trees: trees.filter(clear), pines: pines.filter(clear), benches: benches.filter(clear)};
 }
