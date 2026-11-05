@@ -448,3 +448,19 @@
 @media (max-width: 700px) {
   #phone { padding: 0 8px 8px 0; justify-content: center; }
 }
+#phone .phdot {
+  background: #e5483f;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 11px;
+  padding: 1px 6px;
+  font-style: normal;
+}
+#phone .phapp { position: relative; }
+#phone .phapp .phdot { position: absolute; top: 2px; right: 6px; }
+#phone .phchat { width: 100%; background: none; border: 0; color: inherit; }
+#phone .phthread { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow: auto; padding: 4px; }
+#phone .phmsg { align-self: flex-start; background: #2a3045; border-radius: 14px; padding: 6px 12px; font-size: 14px; max-width: 80%; }
+#phone .phmsg.me { align-self: flex-end; background: #2f6fe0; }
+#phone .phphotos { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+#phone .phphotos img { width: 100%; border-radius: 8px; cursor: pointer; }

@@ -112,7 +112,7 @@ test('human keys: A passes, D charges the shot gauge and releases, Shift sprints
   const p0 = await pos();
   await page.keyboard.down('ArrowRight');
   await page.keyboard.down('ShiftLeft');
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1600);
   await page.keyboard.up('ShiftLeft');
   await page.keyboard.up('ArrowRight');
   const p1 = await pos();

@@ -104,6 +104,8 @@ export interface SaveState {
   cars: CarSave;
   /** 내가 산 건물 id → 1 (game/estate.ts) */
   props: Record<string, 1>;
+  /** 휴대폰 메신저 대화 (game/messenger.ts), 최대 60개 */
+  chat: {from: string; text: string; t: number; read: 0 | 1}[];
 }
 export interface OwnedCar {
   t: string;

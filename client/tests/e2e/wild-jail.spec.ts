@@ -51,13 +51,13 @@ test('police: stars rise to 6, cops chase, getting caught sends you to prison; t
     P.addStars(9, 'test');
     out.stars = g.S.wanted;
     g.teleport(0, -100);
-    await new Promise(r => setTimeout(r, 7000));
+    for (let k = 0; k < 60 && !V.VEH.some((v: any) => v.own === -3); k++) await new Promise(r => setTimeout(r, 250));
     out.cops = V.VEH.filter((v: any) => v.own === -3).length;
     // 경찰차를 바로 옆에 붙여 검거
     const cop = V.VEH.find((v: any) => v.own === -3);
     cop.x = g.G.me.pos.x + 1.5;
     cop.z = g.G.me.pos.z;
-    await new Promise(r => setTimeout(r, 2500));
+    for (let k = 0; k < 40 && !g.G.jail; k++) await new Promise(r => setTimeout(r, 250));
     out.jailed = !!g.G.jail;
     out.starsAfter = g.S.wanted;
     out.inCell = Math.hypot(g.G.me.pos.x - W.JAIL.cell.x, g.G.me.pos.z - W.JAIL.cell.z) < 6;

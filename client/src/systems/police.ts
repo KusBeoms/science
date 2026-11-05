@@ -9,8 +9,10 @@ import {carOf} from '../data/cars.js';
 import {crowdApi} from './crowd.js';
 import {VEH, exitVeh, vehicleHooks, removeVeh, spawnVeh, stepVehicle, type Veh} from './vehicle.js';
 import {goJail} from './jail.js';
+import {heliSees} from './police-air.js';
 import {addHudLine, flash, toast} from '../game/hud.js';
 import {sfx} from '../audio/index.js';
+import {pushMsg} from '../game/messenger.js';
 import type {GameSystem} from '../core/types.js';
 
 export const MAX_STARS = 6;
@@ -18,6 +20,7 @@ export const addStars = (n: number, why = '') => {
   const before = S.wanted;
   S.wanted = Math.min(MAX_STARS, Math.max(0, S.wanted + n));
   coolT = 0;
+  if (S.wanted >= 3 && before < 3) pushMsg('cop', '🚔🚔 ⚠️');
   if (S.wanted > before) {
     flash('#4a82e8', 0.4);
     sfx('deny');
@@ -110,7 +113,7 @@ export const policeSystem: GameSystem = {
       if (d < 70) near = true;
       if (d < (G.drive ? 4.6 : 3.4) && spd < 11) bustT += dt;
     }
-    if (!near) {
+    if (!near && !heliSees) {
       if ((coolT += dt) > 22) {
         coolT = 0;
         S.wanted--;

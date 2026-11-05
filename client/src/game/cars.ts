@@ -8,6 +8,7 @@ import {sfx} from '../audio/index.js';
 import {crowdApi} from '../systems/crowd.js';
 import {addStars} from '../systems/police.js';
 import {toast} from './hud.js';
+import {pushMsg} from './messenger.js';
 import type {Interactable, OwnedCar, Target} from '../core/types.js';
 
 export const cap = () => GARAGE_LV[S.cars.garage].slots;
@@ -42,6 +43,7 @@ export function buyCar(id: string): boolean {
   const at = outSpot();
   S.cars.list.push({t: t.id, c: t.color, plate: '', stolen: 0, eng: 0, tire: 0, neon: 0, stored: 0, ...at});
   spawnOwned(S.cars.list.length - 1, at);
+  setTimeout(() => pushMsg('mech', '🛠️ 🔧 💡'), 4000);
   toast(`${t.icon} 구매 완료 — 차고 앞에 인도되었습니다. 등록소에서 번호판을 발급받으세요`);
   save();
   return true;

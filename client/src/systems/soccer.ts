@@ -5,6 +5,7 @@ import {PLAYER_SCALE} from '../core/scale.js';
 import {dist2} from '../core/util.js';
 import {KICKOFF, PITCH} from '../data/soccer.js';
 import {toast} from '../game/hud.js';
+import {pushMsg} from '../game/messenger.js';
 import {sfx} from '../audio/index.js';
 import {ball, clamp, cx, cz, hw, setMatch, type Match} from '../soccer/state.js';
 import * as ST from '../soccer/state.js';
@@ -95,6 +96,7 @@ export function endMatch(natural: boolean) {
       prize = (win ? 800 : draw ? 300 : 100) + 50 * a;
     S.cr += prize;
     toast(`${win ? '🏆' : draw ? '🤝' : '😅'} ${a} : ${b} — ✦ +${prize}`, 4.5);
+    setTimeout(() => pushMsg('coach', `${win ? '🏆👏' : draw ? '🤝' : '💪'} ${a}:${b}`), 2500);
     sfx('buy');
     save();
   } else toast('⏹ 경기를 마쳤습니다');

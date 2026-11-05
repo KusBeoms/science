@@ -6,6 +6,10 @@ import {JAIL} from '../data/wild.js';
 import {dist2} from '../core/util.js';
 import {addHudLine, toast} from '../game/hud.js';
 import {sfx} from '../audio/index.js';
+import {pushMsg} from '../game/messenger.js';
+import {guards} from '../render/wild.js';
+import {animateWalk} from '../render/characters.js';
+import {solidAt as solidHit} from '../core/terrain.js';
 import type {GameSystem, Interactable, Target} from '../core/types.js';
 
 let bars: Solid | null = null,
@@ -39,6 +43,7 @@ export function goJail(stars: number) {
   G.camDist = 11;
   toast(`⛓️ 검거! 벌금 ✦${fine} — 형기 ${sentence}초. 어딘가 허술한 곳이 있을지도…`, 4);
   sfx('deny');
+  setTimeout(() => pushMsg('friend', '🧱 ← ⛓️ 😢'), 5000);
   save();
 }
 function release(escaped: boolean) {
@@ -51,9 +56,55 @@ function release(escaped: boolean) {
 }
 const outside = (x: number, z: number) => x < JAIL.rect[0] - 1 || x > JAIL.rect[2] + 1 || z < JAIL.rect[1] - 1 || z > JAIL.rect[3] + 1;
 
+/** 간수 순찰: 마당 세 곳을 돈다. 시야(범위·부채꼴, 벽에 막힘)에 0.7초 보이면 감방으로 끌려가고 형기 +15초 */
+const J0 = JAIL.rect[1] - 725;
+const ROUTES: [number, number][][] = [
+  [[-182, 770], [-182, 790], [-200, 790], [-212, 772]],
+  [[-222, 731], [-190, 731], [-170, 731], [-170, 745], [-190, 731]],
+  [[-230, 790], [-230, 764], [-221, 764], [-221, 790]],
+];
+const RANGE = [12, 12, 9];
+const gs: {i: number; k: number; seen: number; face: number}[] = [0, 1, 2].map(i => ({i, k: 0, seen: 0, face: 0}));
+function patrol(dt: number) {
+  guards.forEach((m: any, i: number) => {
+    const g = gs[i],
+      r = ROUTES[i];
+    if (!r) return;
+    const [tx, tz] = [r[g.k][0], r[g.k][1] + J0];
+    const dx = tx - m.position.x,
+      dz = tz - m.position.z,
+      d = Math.hypot(dx, dz);
+    if (d < 0.6) g.k = (g.k + 1) % r.length;
+    else {
+      m.position.x += (dx / d) * 3.2 * dt;
+      m.position.z += (dz / d) * 3.2 * dt;
+      g.face = Math.atan2(dx, dz);
+      m.rotation.y = g.face;
+      animateWalk(m, performance.now() / 1000 * 9 + i, false);
+    }
+    if (!G.jail) return;
+    // 시야 판정
+    const px = G.me.pos.x - m.position.x,
+      pz = G.me.pos.z - m.position.z,
+      pd = Math.hypot(px, pz);
+    let see = pd < RANGE[i] && Math.abs(Math.atan2(Math.sin(Math.atan2(px, pz) - g.face), Math.cos(Math.atan2(px, pz) - g.face))) < 0.95;
+    if (see) for (let t = 1; t < pd; t += 1.5) if (solidHit(m.position.x + (px * t) / pd, m.position.z + (pz * t) / pd, 0.3)) { see = false; break; }
+    // 감방 안에 있으면 안 본다
+    if (see && Math.abs(G.me.pos.x - JAIL.cell.x) < 5.2 && Math.abs(G.me.pos.z - JAIL.cell.z) < 5.5) see = false;
+    g.seen = see ? g.seen + dt : Math.max(0, g.seen - dt * 2);
+    if (g.seen > 0.7) {
+      g.seen = 0;
+      G.jail.t = Math.min(G.jail.total + 40, G.jail.t + 15);
+      G.me.pos.set(JAIL.cell.x, groundH(JAIL.cell.x, JAIL.cell.z), JAIL.cell.z);
+      toast('👮❗ 걸렸다! 감방으로 +15초', 3);
+      sfx('deny');
+    }
+  });
+}
 export const jailSystem: GameSystem = {
   id: 'jail',
   update(dt) {
+    if (G.me.pos.z > 900) patrol(dt);
     if (barsMesh) barsMesh.visible = !!bars;
     const j = G.jail;
     if (!j) return;

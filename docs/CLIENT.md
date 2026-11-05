@@ -247,3 +247,11 @@ registerInteractable<T extends Target>({
 | systems/police.ts · systems/jail.ts | 수배 ★6·경찰 추격·교도소(탈출 허점) |
 | game/phone.ts · game/phone-apps.ts · game/estate.ts · data/places.ts | 휴대폰·지도·택시·부동산 |
 | render/interior-furn2.ts | 신도심 용도 방 가구·사용 지점 |
+
+### 축구·부가 기능 (추가)
+| 파일 | 역할 |
+|---|---|
+| soccer/state.ts · ball.ts · team.ts · rules.ts · actions.ts · ai.ts · control.ts · crowd.ts | FC 온라인풍 축구 (상태·공 물리·선수·규칙·패스슛·AI·사람 조작·관중) |
+| systems/police-air.ts | 헬기·바리케이드 |
+| systems/wildlife.ts | 동물·낚시 |
+| game/messenger.ts · game/phone-social.ts | 메신저·사진 |

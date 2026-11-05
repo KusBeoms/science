@@ -8,6 +8,8 @@ import {flipMap, resetMap, renderAssets, renderCars, renderFood, renderMap, rend
 import {closeModal, openModal} from './modal.js';
 import {openShop} from './shop-ui.js';
 import {sfx} from '../audio/index.js';
+import {renderChatList, renderGallery, renderThread, sayTo, snap, deletePhoto} from './phone-social.js';
+import {unread} from './messenger.js';
 import {openCarShop} from './car-shop.js';
 
 type View = 'home' | 'map' | 'taxi' | 'cars' | 'food' | 'assets' | 'soccer' | 'web' | string;
@@ -16,6 +18,7 @@ let view: View = 'home',
 const APPS: [View, string, string][] = [
   ['web', '🌐', '인터넷'], ['map', '🗺️', '지도'], ['taxi', '🚕', '택시'], ['cars', '🚗', '내 차'],
   ['food', '🍔', '배달'], ['assets', '💼', '자산'], ['soccer', '⚽', '축구'], ['web:estate', '🏢', '부동산'],
+  ['chat', '💬', '메신저'], ['photo', '📸', '사진'],
 ];
 const SITES: [string, string, string][] = [
   ['mart', '🛒', '우주 잡화점'], ['fashion', '👕', '패션몰'], ['cars', '🚗', '자동차 딜러'], ['tune', '🛠️', '튜닝샵'],
@@ -69,7 +72,7 @@ function render() {
   $('#phcr').textContent = '✦ ' + fmt(S.cr);
   $('#phurl').textContent = view.startsWith('web:') ? view.slice(4) + '.web' : view === 'web' ? '🌐' : '📱';
   if (view === 'home') {
-    body.innerHTML = `<div class="phgrid">${APPS.map(([k, i, n]) => `<button class="phapp" data-act="app:${k}"><span>${i}</span><em>${n}</em></button>`).join('')}</div>`;
+    body.innerHTML = `<div class="phgrid">${APPS.map(([k, i, n]) => `<button class="phapp" data-act="app:${k}"><span>${i}</span>${k === 'chat' && unread() ? `<b class="phdot">${unread()}</b>` : ''}<em>${n}</em></button>`).join('')}</div>`;
   } else if (view === 'web') {
     body.innerHTML = `<div class="phgrid">${SITES.map(([k, i, n]) => `<button class="phapp" data-act="app:web:${k}"><span>${i}</span><em>${n}.web</em></button>`).join('')}</div>`;
   } else if (view === 'map') renderMap(body);
@@ -79,7 +82,11 @@ function render() {
   else if (view === 'assets') renderAssets(body);
   else if (view === 'soccer') {
     body.innerHTML = `<div class="phhero">⚽</div>${row('⌨️ ← ↑ → ↓ · Shift 🏃 · Space 🥅')}${row('🔵 ➜ 🥅 (동쪽)  ⏱ 3:00')}${btn('taxi:stadium', '🚕 경기장')}${btn('wp:stadium', '📍')}`;
-  } else if (view.startsWith('web:')) renderSite(body, view.slice(4));
+  } else if (view === 'chat') renderChatList(body);
+  else if (view.startsWith('chat:')) renderThread(body, view.slice(5));
+  else if (view === 'photo') renderGallery(body);
+  else if (view.startsWith('photo:')) renderGallery(body, +view.slice(6));
+  else if (view.startsWith('web:')) renderSite(body, view.slice(4));
 }
 function hero(icon: string, title: string) {
   return `<div class="phhero">${icon}</div><div class="phtitle">${title}</div>`;
@@ -111,6 +118,15 @@ function act(a: string) {
   else if (k === 'wpl') { const l = LISTINGS.find(q => q.id === v)!; setWaypoint({x: l.x, z: l.z, name: listingName(l)}); }
   else if (k === 'wp') { import('../data/places.js').then(m => { const p = m.PLACES.find(q => q.id === v)!; setWaypoint({x: p.x, z: p.z, name: p.name}); render(); }); return; }
   else if (k === 'wpoff') setWaypoint(null);
+  else if (k === 'chat') return go('chat:' + v, false);
+  else if (k === 'say') { const [id, ...t] = v.split(':'); const text = t.join(':'); sayTo(id, text); if (text.includes('보기')) { go('web:estate', false); return; } if (text.includes('경기장')) return taxiTo('stadium'); if (text.includes('튜닝')) { closeModal(); return openCarShop('tune'); } }
+  else if (k === 'photo') return go('photo:' + v, false);
+  else if (k === 'photodel') { deletePhoto(+v); hist.pop(); return go('photo', false); }
+  else if (k === 'photosnap') {
+    closeModal();
+    setTimeout(() => { snap(); setTimeout(() => { openPhone(); go('photo', false); }, 600); }, 250);
+    return;
+  }
   else if (k === 'taxi') return taxiTo(v);
   else if (k === 'call') return callCar(+v);
   else if (k === 'food') orderFood(v);

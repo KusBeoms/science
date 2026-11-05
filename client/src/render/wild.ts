@@ -192,10 +192,8 @@ function buildPrison(grp: any) {
     guards.push(gd);
   }
 }
-const guards: any[] = [];
+export const guards: any[] = [];
 export const wildUpdate = (raw: number) => {
   if (wheel) wheel.rotation.z += raw * 0.6;
-  const t = performance.now() / 1000;
-  guards.forEach((g, i) => (g.rotation.y = Math.PI + Math.sin(t * 0.4 + i) * 0.8));
 };
 void keep;
