@@ -1,4 +1,5 @@
 // 팀 구성(7대7)·포메이션·선수 이동/체력/충돌·애니메이션·조작 선수 표시
+import {uniform} from '../render/uniform.js';
 import {G} from '../core/runtime.js';
 import {PLAYER_SCALE} from '../core/scale.js';
 import {animateWalk, blocky} from '../render/characters.js';
@@ -12,6 +13,7 @@ export function makeTeam(team: 0 | 1): Pl[] {
   return FORM.map(([role, u, v], i) => {
     const shirt = role === 'GK' ? (team ? 0xf5b73a : 0x2fb5a0) : team === 0 ? 0x3b82f6 : 0xd23a4a,
       m = blocky(shirt, team === 0 ? 0xf2f2f2 : 0x2a2230, SKIN[(i + team) % 4], PLAYER_SCALE);
+    uniform(m, 'player', i + 1);
     m.rotation.order = 'YXZ';
     G.scene.add(m);
     return {m, team, role, u, v: team ? -v : v, x: 0, z: 0, vx: 0, vz: 0, ry: team ? -Math.PI / 2 : Math.PI / 2, stam: 100, cd: 0, down: 0, slide: 0, tackleCd: 0, think: Math.random() * 0.3, sprint: false, shield: false, yellow: 0, off: false, dive: 0, hold: 0, tx: 0, tz: 0};

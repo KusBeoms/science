@@ -1,4 +1,5 @@
 // 구역 랜드마크 12종 (docs/WORLD.md 2.5): 구역마다 멀리서도 "저기!" 가 되는 큰 물체 1개. 전부 로우폴리 프리미티브를 병합한 메시 (드로우콜 1~2회).
+import {sectorDetails} from './sector-art.js';
 import {heightAt} from '../core/heightmap.js';
 import {addSolid} from '../core/terrain.js';
 import {SECTORS} from '../data/sectors.js';
@@ -96,7 +97,7 @@ export function buildLandmark(i: number): any {
     pal = BIOME[s.id as Biome],
     shape = SHAPES[lm.kind](pal),
     g = new THREE.Group();
-  g.add(new THREE.Mesh(mergeGeometries(shape.lit), lowMat()));
+  g.add(new THREE.Mesh(mergeGeometries([...shape.lit, ...sectorDetails(lm.kind, pal)]), lowMat()));
   if (shape.glow) g.add(new THREE.Mesh(mergeGeometries(shape.glow), glowMat()));
   const x = s.center.x + lm.dx,
     z = s.center.z + lm.dz;

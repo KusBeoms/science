@@ -1,5 +1,6 @@
 // 야생지 동물(소·토끼·사슴·낙타·오리)과 낚시. 동물은 상자 모델로 구역 안을 어슬렁거리고, 토끼·사슴은 다가가면 도망친다. 소·낙타·오리는 E 로 쓰다듬는다.
 // 낚시: 호수/해변 물가에서 E → 찌 던지기 → 입질(❗) 순간에 E → 물고기. 잡은 수는 S.coins['fish:*'] 에 저장.
+import {animalModel} from '../render/animals.js';
 import {S, save} from '../core/state.js';
 import {G, paused} from '../core/runtime.js';
 import {dist2} from '../core/util.js';
@@ -35,37 +36,11 @@ const INFO: Record<Kind, {icon: string; speed: number; fleeR: number; pettable: 
   camel: {icon: '🐫', speed: 1.8, fleeR: 0, pettable: true, sound: 'moo'},
   duck: {icon: '🦆', speed: 1.2, fleeR: 0, pettable: true, sound: 'splash'},
 };
-const P = (g: any, x = 0, y = 0, z = 0): Placed => ({g, x, y, z});
-function geo(kind: Kind) {
-  const L: Placed[] = [];
-  const legs = (w: number, h: number, zs: number[], c: number) => zs.forEach(z => [-1, 1].forEach(s => L.push(P(box(0.35, h, 0.35, c), s * w, 0, z))));
-  switch (kind) {
-    case 'cow':
-      L.push(P(box(1.8, 1.5, 3.2, PAL.cloud), 0, 1.2), P(box(1.1, 1.1, 1.2, PAL.cloud), 0, 1.6, 2.2), P(box(0.5, 0.4, 0.5, PAL.pink), 0, 1.5, 2.9), P(box(0.9, 0.5, 0.9, PAL.coal), 0.2, 1.7, 0.2));
-      legs(0.6, 1.3, [-1.1, 1.1], PAL.coal);
-      break;
-    case 'rabbit':
-      L.push(P(box(0.7, 0.7, 1.1, PAL.bone), 0, 0.3), P(box(0.5, 0.5, 0.5, PAL.bone), 0, 0.7, 0.7), P(box(0.15, 0.7, 0.15, PAL.bone), -0.15, 1.2, 0.6), P(box(0.15, 0.7, 0.15, PAL.bone), 0.15, 1.2, 0.6));
-      break;
-    case 'deer':
-      L.push(P(box(1, 1.1, 2.2, PAL.clay), 0, 1.5), P(box(0.7, 0.7, 0.8, PAL.clay), 0, 2.4, 1.3), P(box(0.12, 0.8, 0.12, PAL.bone), -0.25, 3.0, 1.2), P(box(0.12, 0.8, 0.12, PAL.bone), 0.25, 3.0, 1.2));
-      legs(0.35, 1.6, [-0.8, 0.8], PAL.wood);
-      break;
-    case 'camel':
-      L.push(P(box(1.5, 1.4, 3, PAL.amber), 0, 1.8), P(box(0.9, 0.9, 0.9, PAL.amber), 0, 3.2, -0.2), P(box(0.5, 1.4, 0.5, PAL.amber), 0, 2.6, 1.7), P(box(0.7, 0.6, 0.9, PAL.amber), 0, 3.8, 2.1));
-      legs(0.5, 1.9, [-1, 1], PAL.clay);
-      break;
-    case 'duck':
-      L.push(P(box(0.7, 0.5, 1, PAL.white), 0, 0), P(box(0.4, 0.4, 0.4, PAL.green), 0, 0.5, 0.5), P(box(0.25, 0.12, 0.3, PAL.orange), 0, 0.5, 0.85));
-      break;
-  }
-  return mergePlaced(L.filter(p => (p as any).g?.attributes));
-}
 const animals: Animal[] = [];
 export const animalCount = () => animals.length;
 let built = false;
 function spawn(kind: Kind, x: number, z: number, r: number) {
-  const m = new THREE.Mesh(geo(kind), lowMat());
+  const m = animalModel(kind);
   const y = Math.max(groundH(x, z), kind === 'duck' ? SEA_Y : -99);
   m.position.set(x, y, z);
   G.scene.add(m);

@@ -3,7 +3,7 @@
 // userData 계약: legL/legR/armL/armR(관절 그룹, rotation.x 로 흔듦), headG(모자·얼굴 장식 자리),
 // head(머리+얼굴, 숨기기용), mat{shirt,pants,sk}
 import {NEUTRAL, PAL} from './lowpoly/palette.js';
-import {box, type Geo} from './lowpoly/prim.js';
+import {box, panel, type Geo} from './lowpoly/prim.js';
 import {keep, lowMat, mergeGeometries} from './lowpoly/merge.js';
 import {dress} from './characters-look.js';
 
@@ -26,18 +26,22 @@ function getShapes(): Shapes {
   const W = PAL.white;
   shapes = {
     // 로블록스식 사각 블록: 몸통 2×2×1, 팔다리 0.9×2×0.9, 머리 1.6 정육면체
-    torso: box(2, 2, 1, W, 0, 2, 0),
+    torso: mergeGeometries([box(2, 2, 1, W, 0, 2, 0), panel(0.45, 0.18, NEUTRAL.fog, -0.5, 3.55, 0.52), panel(0.45, 0.18, NEUTRAL.fog, 0.5, 3.55, 0.52)]),
     // 다리(바지) / 신발. 엉덩이 관절에서 아래로
-    leg: box(0.9, 2, 0.9, W, 0, -2, 0),
+    leg: mergeGeometries([box(0.9, 0.96, 0.9, W, 0, -0.96, 0), box(0.86, 1, 0.88, W, 0, -2, 0)]),
     shoe: box(0.96, 0.3, 0.98, NEUTRAL.coal, 0, -2, 0.04),
     // 팔: 윗부분은 소매(옷 색), 아래는 피부. 어깨 관절에서 아래로
     sleeve: box(0.94, 1.0, 0.94, W, 0, -0.8, 0),
-    arm: box(0.9, 1.0, 0.9, W, 0, -1.8, 0),
+    arm: mergeGeometries([box(0.84, 0.7, 0.86, W, 0, -1.5, 0), box(0.9, 0.3, 0.94, W, 0, -1.82, 0.03)]),
     head: box(1.6, 1.6, 1.6, W, 0, -0.8, 0),
     // 얼굴: 네모 눈 둘 + 입
     face: mergeGeometries([
+      box(1.66, 0.22, 1.66, PAL.wood, 0, 0.61, 0),
+      box(1.66, 0.6, 0.18, PAL.wood, 0, 0.1, -0.77),
       box(0.2, 0.34, 0.06, NEUTRAL.ink, -0.33, -0.1, 0.8),
       box(0.2, 0.34, 0.06, NEUTRAL.ink, 0.33, -0.1, 0.8),
+      panel(0.07, 0.08, PAL.white, -0.35, 0.1, 0.84),
+      panel(0.07, 0.08, PAL.white, 0.31, 0.1, 0.84),
       box(0.5, 0.08, 0.06, NEUTRAL.ink, 0, -0.5, 0.8),
       box(0.1, 0.1, 0.06, NEUTRAL.ink, -0.3, -0.42, 0.8),
       box(0.1, 0.1, 0.06, NEUTRAL.ink, 0.3, -0.42, 0.8),

@@ -5,6 +5,7 @@ import {addSolid} from '../../core/terrain.js';
 import {CITY_BUILDINGS, CITY_LANDMARKS, footprint, type CityBuilding, type Facing} from '../../data/city.js';
 import {glowMat, instanced, instancedChunks, keep, lowMat, mergePlaced, type Placed} from '../lowpoly/merge.js';
 import type {GameSystem} from '../../core/types.js';
+import {facadeDetails} from './facade-art.js';
 import {makeBuilding} from './building.js';
 import {barrierGeo, benchGeo, lampGeo, pineGeo, roundTreeGeo} from './props.js';
 import {clockTower, marketArch, orrery} from './landmarks.js';
@@ -26,7 +27,7 @@ function addBuildings(grp: any, list: readonly CityBuilding[]) {
   const solid: Placed[] = [],
     lit: Placed[] = [];
   for (const b of list) {
-    const built = makeBuilding(b),
+    const built = facadeDetails(b, makeBuilding(b)),
       at = {x: b.x, z: b.z, ry: FACE_RY[b.face]};
     solid.push({g: built.solid, ...at});
     lit.push({g: built.lit, ...at});

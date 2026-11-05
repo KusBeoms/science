@@ -16,9 +16,12 @@ export function lampGeo(): {pole: Geo; bulb: Geo} {
   return {pole: keep(pole), bulb: keep(bulb)};
 }
 
-/** 둥근 가로수: 줄기 + 흔들린 이코스피어 수관 (약 100 tris) */
+/** 둥근 가로수: 줄기 + 흔들린 이코스피어 수관 (56 tris) */
 export function roundTreeGeo(): Geo {
-  const crown = wobble(ico(1.9, 1, mix(PAL.green, PAL.lime, 0.25), 0, 3.9, 0, 0, 1.1), 0.25, 11);
+  const crown = mergeGeometries([
+    wobble(ico(1.9, 0, mix(PAL.green, PAL.lime, 0.25), -0.35, 3.7, 0, 0, 1.1), 0.2, 11),
+    ico(1.4, 0, mix(PAL.green, PAL.lime, 0.38), 0.65, 4.4, 0.15),
+  ]);
   return keep(mergeGeometries([cyl(0.3, 2.8, NEUTRAL.wood, 0, 0, 0, 0, 5), crown]));
 }
 /** 소나무: 줄기 + 콘 3단 (약 50 tris) */

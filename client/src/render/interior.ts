@@ -1,5 +1,6 @@
 // 건물 내부 방 생성: 월드 밖 한 곳(RX,RZ)에 방 하나를 짓고(바닥+안쪽만 보이는 벽+가구) 들어갈 때마다 새로 만든다.
 // 벽은 BackSide 재질이라 카메라가 방 밖에 있어도 안쪽이 보인다. 가구는 용도(Purpose)별 목록으로 배치.
+import {interiorDetails} from './interior-art.js';
 import {PAL} from './lowpoly/palette.js';
 import {box, cyl} from './lowpoly/prim.js';
 import {glowMat, lowMat, mergePlaced, type Placed} from './lowpoly/merge.js';
@@ -214,6 +215,7 @@ export function buildRoom(e: Enterable): Room {
     (i.glow ? lit : solid).push(p);
     if (i.solid) solids.push([RX + i.x - i.w / 2, RZ + i.z - i.d / 2, RX + i.x + i.w / 2, RZ + i.z + i.d / 2]);
   }
+  solid.push(...interiorDetails(e.purpose, w, d, items).map(g => ({g, x: RX, y: 0.1, z: RZ})));
   void tint;
   const s = new THREE.Mesh(mergePlaced(solid), lowMat()),
     l = new THREE.Mesh(mergePlaced(lit), glowMat());

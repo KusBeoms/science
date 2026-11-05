@@ -142,11 +142,13 @@ function buildGeo(i0: number, j0: number, i1: number, j1: number, k: number, far
     }
     const len = Math.hypot(nx, ny, nz) || 1;
     nx /= len; ny /= len; nz /= len;
-    const jit = (hash2(seed, o, 5) - 0.5) * 0.16,
-      [cr, cg, cb] = rgb(mix(faceColor(r, (ax + bx + cx) / 3, (az + bz + cz) / 3, (ay + by + cy) / 3, Math.sqrt(Math.max(0, 1 - ny * ny))), jit > 0 ? 0xffffff : 0x000000, Math.abs(jit)));
+    const slope = Math.sqrt(Math.max(0, 1 - ny * ny));
     for (const [px, py, pz] of [[ax, ay, az], [bx, by, bz], [cx, cy, cz]]) {
       pos[o] = px; pos[o + 1] = py; pos[o + 2] = pz;
       nor[o] = nx; nor[o + 1] = ny; nor[o + 2] = nz;
+      // 같은 월드 정점은 같은 색: 타일 경계와 삼각형 대각선의 얼룩을 줄인다.
+      const c = faceColor(r, px, pz, py, slope), jitter = (hash2(Math.floor(px / 18), Math.floor(pz / 18), 5) - 0.5) * 0.025;
+      const [cr, cg, cb] = rgb(mix(c, jitter > 0 ? PAL.white : PAL.ink, Math.abs(jitter)));
       col[o] = cr; col[o + 1] = cg; col[o + 2] = cb;
       o += 3;
     }

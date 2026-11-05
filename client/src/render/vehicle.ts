@@ -1,4 +1,5 @@
 // 자동차 모델: 로블록스식 상자 조립. 앞 = 로컬 +z, 바닥 y=0. 차체 색·튜닝(스포일러·휠·언더글로)을 반영해 solid/lit 2메시 그룹을 만든다.
+import {carDetails} from './vehicle-art.js';
 import {PAL} from './lowpoly/palette.js';
 import {box} from './lowpoly/prim.js';
 import {glowMat, lowMat, mergePlaced, type Placed} from './lowpoly/merge.js';
@@ -121,6 +122,7 @@ export function buildCar(look: CarLook): any {
   }
   if ((look.eng || 0) >= 2 && !['bus', 'rocket'].includes(shape)) S(W * 0.4, 0.25, 0.7, PAL.ink, 0, y0 + ch, L * 0.28); // 후드 스쿱
   if (look.neon) G(W * 1.1, 0.08, L * 1.05, PAL.cyan, 0, 0.06, 0);
+  solid.push(...carDetails(shape, W, H, L, col).map(g => ({g})));
   const grp = new THREE.Group();
   grp.add(new THREE.Mesh(mergePlaced(solid), lowMat()), new THREE.Mesh(mergePlaced(lit), glowMat()));
   grp.userData.look = look;

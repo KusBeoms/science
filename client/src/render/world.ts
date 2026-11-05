@@ -1,4 +1,5 @@
 // 씬 구성: 렌더러·카메라·하늘·허브 타일·상점·포탈 패드·플레이어·라이벌 (섹터는 render/sectors.ts)
+import {buildShoreline} from './shoreline.js';
 import {buildWild} from './wild.js';
 import {PLAYER_SCALE} from '../core/scale.js';
 import {buildSea} from './sea.js';
@@ -29,7 +30,7 @@ export function initWorld() {
   initTerrain(); // 대륙 높이 지도 굽기 + 원경 지형 (근거리 타일은 streamSectors 가 만든다)
   G.scene.add(buildCity());
   G.scene.add(buildWild());
-  G.scene.add(buildSea());
+  G.scene.add(buildSea(), buildShoreline());
   const bl = label('내 기지', '#9dffb0', 12);
   bl.position.set(0, 9, 10);
   G.scene.add(bl);

@@ -1,5 +1,6 @@
 // 남부 야생지 장식: 숲·농장(헛간·사일로·풍차·울타리·건초)·사막 선인장/바위·호수 선착장·산길 이정표와 정상 깃발·오두막, 그리고 교도소 단지.
 // 전부 병합/인스턴싱. 충돌체는 건물·교도소 벽만 등록한다(나무는 지나갈 수 있다).
+import {uniform} from './uniform.js';
 import {G} from '../core/runtime.js';
 import {addSolid, groundH} from '../core/terrain.js';
 import {COUNTRY, DESERT, JAIL, LAKES, MOUNTAIN, SUMMIT, WILD_RECT} from '../data/wild.js';
@@ -186,6 +187,7 @@ function buildPrison(grp: any) {
   // 간수 (마당을 느긋이 지키는 장식)
   for (const [gx, gz] of [[-225, 750 + J0], [-200, 772 + J0], [-176, 740 + J0]]) {
     const gd = blocky(0x2a3f6a, 0x1b2438, '#e0b090', PLAYER_SCALE, 0x1b2438);
+    uniform(gd, 'guard');
     gd.position.set(gx, 0, gz);
     gd.rotation.y = Math.PI;
     G.scene.add(gd);

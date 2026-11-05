@@ -1,4 +1,5 @@
 // 랜드마크 3차 (W3): 스타디움 · 대관람차 · 수족관 · 전망 타워 · 등대. 로컬 원점은 중심의 바닥.
+import {stadiumDetails} from './stadium-art.js';
 import {ACCENT, NEUTRAL, PAL, mix} from '../lowpoly/palette.js';
 import {box, cyl, frustum, taper, type Geo} from '../lowpoly/prim.js';
 import {mergePlaced, type Placed} from '../lowpoly/merge.js';
@@ -43,8 +44,8 @@ export function stadium(): Landmark {
     // 골대: 기둥 둘 + 크로스바 + 뒷그물
     const gx = s * hl;
     solid.push(box(0.4, 3.4, 0.4, LINE, gx, 0, -gh), box(0.4, 3.4, 0.4, LINE, gx, 0, gh), box(0.4, 0.4, 2 * gh + 0.4, LINE, gx, 3.2, 0));
-    solid.push(box(0.2, 3.2, 2 * gh, PAL.cloud, gx + s * gd, 0, 0), box(gd, 0.15, 2 * gh, PAL.cloud, gx + s * gd / 2, 3.2, 0));
-    for (const z of [-gh, gh]) solid.push(box(gd, 3.2, 0.12, PAL.cloud, gx + s * gd / 2, 0, z));
+
+    for (const z of [-gh, gh]) solid.push(box(0.12, 3.2, 0.12, PAL.cloud, gx + s * gd, 0, z));
   }
   // 관중석: 4면, 4단 계단식 (남쪽은 출입구를 비운다)
   const [x0, z0, x1, z1] = STADIUM.rect,
@@ -63,6 +64,7 @@ export function stadium(): Landmark {
     const half = (x1 - x0) / 2 - STADIUM.gateHalf;
     for (const s of [-1, 1]) solid.push(box(half, h, 3, c, s * (STADIUM.gateHalf + half / 2), 0, z1 - (3 - r) * 3 - 1.5 - cz));
   }
+  solid.push(...stadiumDetails());
   // 조명탑 4개 (밤에 켜짐)
   for (const sx of [-1, 1])
     for (const sz of [-1, 1]) {

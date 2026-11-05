@@ -1,5 +1,6 @@
 // 규칙: 소유·터치·골키퍼 선방, 골·아웃(스로인/골킥/코너), 반칙(프리킥·페널티·카드·퇴장), 오프사이드, 재개(킥오프 포함), 심판, 전후반
 import {sfx} from '../audio/index.js';
+import {uniform} from '../render/uniform.js';
 import {G} from '../core/runtime.js';
 import {PLAYER_SCALE} from '../core/scale.js';
 import {blocky} from '../render/characters.js';
@@ -17,6 +18,7 @@ export const say = (t: string, sec = 2.6) => {
 
 export function makeRef() {
   const m = blocky(0x111111, 0x111111, '#e0b090', PLAYER_SCALE, 0xf3e04a);
+  uniform(m, 'referee');
   m.rotation.order = 'YXZ';
   G.scene.add(m);
   return m;
