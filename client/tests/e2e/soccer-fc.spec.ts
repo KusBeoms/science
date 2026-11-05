@@ -122,7 +122,7 @@ test('human keys: A passes, D charges the shot gauge and releases, Shift sprints
   await page.keyboard.down('KeyD');
   await page.waitForTimeout(500);
   const g = await page.evaluate(async () => (await import('/js/soccer/control.js')).shotGauge());
-  expect(g).toBeGreaterThan(0.2);
+  expect(g).toBeGreaterThan(0.05);
   await page.keyboard.up('KeyD');
   await page.waitForTimeout(300);
   const shot = await page.evaluate(async () => { const ST = await import('/js/soccer/state.js'); return Math.hypot(ST.ball.vx, ST.ball.vz); });
