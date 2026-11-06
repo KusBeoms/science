@@ -20,6 +20,7 @@ import {movePlayer} from './move.js';
 import {updateGuardians} from './guardians.js';
 import {sectorChanged, updateSystems} from './registry.js';
 import {updateTarget} from './target.js';
+import {updateCharacterGaze} from '../render/characters-gaze.js';
 
 function dayNight(dt: number) {
   G.cycT += dt;
@@ -94,6 +95,7 @@ export function frame() {
   G.camera.position.y = Math.max(G.camera.position.y, heightAt(G.camera.position.x, G.camera.position.z) + 0.8); // 언덕·능선 속으로 파고들지 않게
   G.camera.lookAt(G.me.pos.x, G.me.pos.y + EYE_Y, G.me.pos.z);
   cineCamera(); // 컷신 중이면 카메라 덮어쓰기
+  updateCharacterGaze(G.me, G.camera, raw);
   updateSky(dt, t); // 천구를 카메라에 붙이고 낮밤 틴트·조명·안개 갱신
   G.renderer.render(G.scene, G.camera);
   setTxt('#cr', '✦ ' + fmt(S.cr));

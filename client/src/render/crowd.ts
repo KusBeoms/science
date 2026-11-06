@@ -63,11 +63,10 @@ function build(parts: Part[]): Geo {
 const SKIN = PAL.plaster,
   PANTS = PAL.slate,
   SHIRT = PAL.white;
-/** 몸통 + 머리 + 머리카락 (발바닥 y=0) */
+/** 몸통 + 머리 (발바닥 y=0, 기본 머리카락 없음) */
 const torso = (): Part[] => [
   [box(0.5, 0.7, 0.3, SHIRT, 0, HIP, 0), 1],
   [box(0.36, 0.36, 0.36, SKIN, 0, 1.5, 0), 0], // 사각 머리(로블록스식)
-  [box(0.36, 0.1, 0.36, PAL.coal, 0, 1.82, -0.02), 0],
 ];
 /** 다리 1개: 엉덩이 y=0 에서 아래로 */
 const leg = (x = 0): Part[] => [

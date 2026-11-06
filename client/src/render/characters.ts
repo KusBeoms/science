@@ -1,11 +1,12 @@
 // 로블록스식 사각 블록 캐릭터(플레이어·점원·라이벌·수호자), 걷기 애니메이션 — 사용자 요청으로 사각형 느낌을 유지한다(둥글리지 말 것)
 // 모양은 정점색 지오메트리(전 캐릭터 공유)이고, 옷·바지·피부 색은 재질 색으로 바꾼다 → 꾸미기는 재질만 건드린다.
 // userData 계약: legL/legR/armL/armR(관절 그룹, rotation.x 로 흔듦), headG(모자·얼굴 장식 자리),
-// head(머리+얼굴, 숨기기용), mat{shirt,pants,sk}
+// head(머리+얼굴, 숨기기용), eyes/gazeEyes(눈동자 그룹), mat{shirt,pants,sk}
 import {NEUTRAL, PAL} from './lowpoly/palette.js';
 import {box, panel, type Geo} from './lowpoly/prim.js';
 import {keep, lowMat, mergeGeometries} from './lowpoly/merge.js';
 import {dress} from './characters-look.js';
+import {CHARACTER_GAZE} from './characters-gaze.js';
 
 export {applyLook} from './characters-look.js';
 
@@ -17,6 +18,7 @@ interface Shapes {
   arm: Geo;
   head: Geo;
   face: Geo;
+  eyes: Geo;
 }
 let shapes: Shapes | null = null;
 
@@ -34,17 +36,20 @@ function getShapes(): Shapes {
     sleeve: box(0.94, 1.0, 0.94, W, 0, -0.8, 0),
     arm: mergeGeometries([box(0.84, 0.7, 0.86, W, 0, -1.5, 0), box(0.9, 0.3, 0.94, W, 0, -1.82, 0.03)]),
     head: box(1.6, 1.6, 1.6, W, 0, -0.8, 0),
-    // 얼굴: 네모 눈 둘 + 입
+    // 흰 사각 눈 + 입. 머리카락은 기본 모델에 넣지 않는다.
     face: mergeGeometries([
-      box(1.66, 0.22, 1.66, PAL.wood, 0, 0.61, 0),
-      box(1.66, 0.6, 0.18, PAL.wood, 0, 0.1, -0.77),
-      box(0.2, 0.34, 0.06, NEUTRAL.ink, -0.33, -0.1, 0.8),
-      box(0.2, 0.34, 0.06, NEUTRAL.ink, 0.33, -0.1, 0.8),
-      panel(0.07, 0.08, PAL.white, -0.35, 0.1, 0.84),
-      panel(0.07, 0.08, PAL.white, 0.31, 0.1, 0.84),
+      box(0.32, 0.44, 0.04, W, -0.33, -0.14, 0.81),
+      box(0.32, 0.44, 0.04, W, 0.33, -0.14, 0.81),
       box(0.5, 0.08, 0.06, NEUTRAL.ink, 0, -0.5, 0.8),
       box(0.1, 0.1, 0.06, NEUTRAL.ink, -0.3, -0.42, 0.8),
       box(0.1, 0.1, 0.06, NEUTRAL.ink, 0.3, -0.42, 0.8),
+    ]),
+    // 두 동공/하이라이트를 한 메시로 공유한다. 그룹 하나를 옮겨도 추가 draw는 1회뿐.
+    eyes: mergeGeometries([
+      box(0.18, 0.28, 0.035, NEUTRAL.ink, -0.33, -0.06, 0.85),
+      box(0.18, 0.28, 0.035, NEUTRAL.ink, 0.33, -0.06, 0.85),
+      panel(0.055, 0.065, W, -0.355, 0.135, 0.872),
+      panel(0.055, 0.065, W, 0.305, 0.135, 0.872),
     ]),
   };
   Object.values(shapes).forEach(keep);
@@ -72,8 +77,16 @@ export function blocky(shirt: number | string, pants: number | string, skin: str
   parts.armR = joint(1.45, 3.8, mesh(sh.sleeve, mat.shirt), mesh(sh.arm, mat.sk));
   g.add(mesh(sh.torso, mat.shirt));
   parts.head = new THREE.Group();
+  parts.head.name = 'character-head';
   parts.head.position.set(0, 5, 0);
-  parts.head.add(mesh(sh.head, mat.sk), mesh(sh.face, lowMat()));
+  const face = mesh(sh.face, lowMat()), pupils = mesh(sh.eyes, lowMat());
+  face.name = 'character-eye-whites-and-mouth'; pupils.name = 'character-pupils';
+  parts.eyeWhites = face;
+  parts.eyes = parts.gazeEyes = new THREE.Group();
+  parts.eyes.name = 'character-eyes';
+  parts.eyes.userData.gazeLimits = CHARACTER_GAZE;
+  parts.eyes.add(pupils);
+  parts.head.add(mesh(sh.head, mat.sk), face, parts.eyes);
   g.add(parts.head);
   parts.headG = new THREE.Group();
   parts.headG.position.set(0, 5, 0);

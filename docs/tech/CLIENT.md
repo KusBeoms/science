@@ -59,6 +59,7 @@ python3 -m http.server -d public        # 정적 서빙만으로 동작 (서버 
 | `game/missions.ts` | `missionTick` |
 | `render/textures.ts` | `planetTex planetR makePlanet freePlanet freeTree label checkerTex` |
 | `render/characters.ts` | `blocky animateWalk applyLook` |
+| `render/characters-gaze.ts` | `updateCharacterGaze(character, camera, dt)` — 플레이어 눈동자가 최종 카메라를 따라 부드럽게 움직임. 머리·몸 회전 및 꾸미기와 독립 |
 | `render/guardian.ts` | `makeGuardian(glow)` |
 | `render/gear.ts` | `buildSpringOnHand buildBag syncCarry` |
 | `render/deco.ts` | `applyDeco` |
