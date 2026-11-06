@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1793779603682,
+  "lastScanned": 1793874839300,
   "projectRoot": "/Users/dalgsiki/Developer/science",
   "techStack": {
     "languages": [],
@@ -9,7 +9,7 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "cd /Users/dalgsiki/Developer/science/docs && cat > W6_BRIDGE.md <<'EOF'\n# W6 BRIDGE — 금문교급 현수교 · 끊김 없는 도로\n\n사용자 원문: \"이 부분 안 이어져있잖아 … 길이 안 이어진 것도 있고 울타리가 막고 있기도 하고. 저 다리 좀 거창하게 지어줘 금문교마냥.\"\n\n## 구성 (남쪽 +z 방향, 중심선 x = BRIDGE_ENDS.x = 74)\n`harbor-s` 끝 (0,333) → S자 진입로(베지어, 차도 8→14·보도 포함 11→23.5 로 넓어짐) → 오르막 램프 z 372~432 (높이 0→5.5) → 본 상판 z 432~701 (탑 2개 z 451.5 / 681.5) → 내리막 램프 701~761 → 야생지 접속부 761~790(폭 좁아짐) → 호숫가 길 connector(`data/wild-road.ts` 첫 점 (74,790)).\n- 상판 윗면 y = 5.5 (바다 −4.6 위 약 10), 걷는 폭 47(차도 2×2차선 28 + 보도 2×9.5), 길이 ≈ 420.\n- 해협 바닥(`SEABED` −12, 폭 ±34, `WILD_BRIDGE`): 땅이 아닌 곳의 다리 밑은 바다 바닥 → 상판 옆으로 걸어 나가면 바다에 빠진다(`waterAt` 깊이 ≈ 7). 띠 밖은 허공(respawn).\n\n## 파일\n| 파일 | 역할 |\n|---|---|\n| `data/bridge.ts` (신규) | 좌표·상수, `BRIDGE_DECKS`(데크 3, id `br-*`), `deckY(z)`, `cityApproach()`/`wildFlare()`(폭 있는 중심선), `approachNear()`(지형 평탄화용) |\n| `core/heightmap.ts` | 해협 바닥(−12) 규칙 · 도시 띠 지형을 진입로 둘레에서 0 으로 평탄화(`beltH`) |\n| `data/wild.ts`·`data/wild-road.ts` | `WILD_BRIDGE` = 해협 바닥 띠, connector 시작점 (74,790) |\n| `systems/vehicle-damage.ts` | `waterStep`: 차가 수면 +1.5 보다 높으면(상판 위) 침수 아님 |\n| `render/bridge.ts`·`bridge-parts.ts` (신규) | 상판·트러스·난간·가로등·교각·진입로 도로, 탑 2·주케이블 2·행어·앵커리지, 밤 조명(`bridgeSystem`). 데크·충돌 등록도 여기서 |\n| `render/city/tradeline.ts` | 도시 남쪽 금빛 레일/기둥에 harbor-s 개구(±16) — 길을 막던 울타리 제거 |\n| `render/world.ts`, `systems/index.ts` | `buildBridge()`·`bridgeSystem` 연결 (city 그룹 밖) |\n| `data/places.ts`·`game/phone-apps.ts` | 장소 bridge (74,366), 폰 지도에 다리(주황선) · 도시 지도 범위 z −350~430 |\n| 테스트 | `tests/e2e/bridge.spec.ts`(신규) · `terrain`·`wild-jail`(상판 5.5 / 바닥 −12)·`overpass`(br- 데크 제외) 갱신 |\n\n## 지면·충돌 규칙\n- 상판은 `core/deck.ts` 데크(발 높이 y ≥ 상판−1.4 이면 상판). y 없는 `groundH` 는 바다 바닥(−12)을 본다.\n- 충돌체: 탑 다리(전 높이)·탑 기초(상판 밑 hi 2.5)·앵커리지·램프 교각(상판 밑)·육지 램프 둑(상판 밑). **난간·케이블·행어·가로등은 충돌 없음**(난간 밖으로 걸어 나가면 낙하). 진입로·상판 차도에는 충돌체가 전혀 없다.\n- 경찰: 층이 다르면 곁 28u 순간이동(기존). 직선 추격이라 해협 쪽으로 몰리면 바다에 빠질 수 있다(해안과 같은 거동).\n\n## 모델 (로우폴리, 병합, 칸 128u 단위 메시)\n국제 오렌지 탑(높이 상판+98, 3단 테이퍼·리브·가로보 4단·아치 2), 주케이블(포물선, 육각 막대) + 행어 9u 간격, 측면 트러스(지그재그 대각), 앵커리지 블록, 물 속 기초. 밤: 케이블 구슬·탑 투광띠·가로등(MeshBasicMaterial, 낮엔 `visible=false`), 항공 장애등(빨강, 0.7초 점멸). 삼각형 ≈ 11k (상한 12k, E2E 단언).\n\n## 검증\ntsc 무오류. `bridge.spec`(7): 지면 계층·충돌체, 대로→다리→순환로 걷기(0.25u 걸음, 충돌 0)·차 주행(충돌 0·침수 0), 실제 입력 루프로 램프 오르기, 난간 밖 낙하, 삼각형·낮 Basic 숨김, 밤 토글, 스크린샷 `tests/out/bridge-*.png`.\n\n## 한계\n- 난간이 충돌 없는 장식이라 차가 가장자리를 넘으면 바다에 빠진다. 진입로 S자는 5u 격자 지형 위 평탄화(반경 안 0).\n- 야생지 접속부는 지형 높이를 따라 깔린 데칼 도로(폭 좁아지는 깔때기). 해협 바닥 띠 밖은 허공.\n- 시민·야생동물 경로는 다리를 모른다(지상만).\nEOF\npython3 - <<'EOF'\np='COORDINATION.md'\ns=open(p).read()\ns=s.replace(\"| BRIDGE 다리 로직(도로 연결·울타리 제거·충돌·지도/장소) | 진행 중 |\",\"| BRIDGE 다리 로직(도로 연결·울타리 제거·충돌·지도/장소) | 완료 — `W6_BRIDGE.md`(추가 수정: `systems/vehicle-damage.ts` 침수 y 판정, `render/city/tradeline.ts` 남쪽 개구, `render/world.ts` 한 줄) |\")\ns=s.replace(\"| BRIDGE 다리 **모델**(임시, 렌더 신규 파일만) | 진행 중 — **옆 AI와 조율 필요** |\",\"| BRIDGE 다리 **모델**(렌더 신규 파일만) | 완료(삼각형 ≈11k ≤ 12k) — 옆 AI 교체 가능 |\")\nopen(p,'w').write(s)\nEOF\ngrep -n \"W5_STADIUM\" README.md | head -2",
+    "buildCommand": "cd /Users/dalgsiki/Developer/science/client && python3 - <<'EOF'\np='src/render/wild-mountain.ts'\ns=open(p).read()\ns=s.replace(\"WATER = mix(PAL.blue, PAL.teal, 0.3);\",\"WATER = mix(mix(PAL.blue, PAL.teal, 0.3), PAL.slate, 0.3);\")\nopen(p,'w').write(s)\nEOF\nnpx tsc | head -3; npx playwright test tests/e2e/terrain.spec.ts tests/e2e/world.spec.ts tests/e2e/bridge.spec.ts tests/e2e/bridge-approach.spec.ts tests/e2e/extras.spec.ts tests/e2e/modeling.spec.ts tests/e2e/phone.spec.ts tests/e2e/landscape.spec.ts tests/e2e/wild-jail.spec.ts tests/e2e/water.spec.ts tests/e2e/smoke.spec.ts > /private/tmp/claude-501/-Users-dalgsiki-Developer-science/a799b9c1-db46-4df8-879f-18d9955b8a17/scratchpad/suite.txt 2>&1; grep -E \"✓|✘|passed|failed|Error|Expected|Received\" /private/tmp/claude-501/-Users-dalgsiki-Developer-science/a799b9c1-db46-4df8-879f-18d9955b8a17/scratchpad/suite.txt | head -80",
     "testCommand": null,
     "lintCommand": null,
     "devCommand": null,
@@ -24,7 +24,9 @@
   "structure": {
     "isMonorepo": false,
     "workspaces": [],
-    "mainDirectories": [],
+    "mainDirectories": [
+      "docs"
+    ],
     "gitBranches": {
       "defaultBranch": "master",
       "branchingStrategy": null
@@ -32,43 +34,97 @@
   },
   "customNotes": [],
   "directoryMap": {
-    "previous": {
-      "path": "previous",
+    "client": {
+      "path": "client",
       "purpose": null,
-      "fileCount": 5,
-      "lastAccessed": 1793779603676,
+      "fileCount": 7,
+      "lastAccessed": 1793874839294,
       "keyFiles": [
-        "index.html",
+        "package-lock.json",
         "package.json",
-        "server.js",
+        "playwright.config.ts",
         "tsconfig.json"
       ]
     },
-    "previous/data": {
-      "path": "previous/data",
-      "purpose": "Data files",
-      "fileCount": 1,
-      "lastAccessed": 1793779603676,
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 7,
+      "lastAccessed": 1793874839294,
       "keyFiles": [
-        "best.json"
+        "BRIDGE_APPROACH.md",
+        "COORDINATION.md",
+        "HANDOFF.md",
+        "MODELING_HANDOFF.md",
+        "MODELING_LOG.md"
       ]
     },
-    "previous/dist": {
-      "path": "previous/dist",
-      "purpose": "Distribution/build output",
-      "fileCount": 1,
-      "lastAccessed": 1793779603677,
+    "server": {
+      "path": "server",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1793874839294,
       "keyFiles": [
-        "types.js"
+        "CMakeLists.txt",
+        "Dockerfile",
+        "Dockerfile.dockerignore"
       ]
     },
-    "previous/src": {
-      "path": "previous/src",
+    "web": {
+      "path": "web",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1793874839295,
+      "keyFiles": [
+        "Dockerfile",
+        "Dockerfile.dockerignore",
+        "nginx.conf"
+      ]
+    },
+    "client/node_modules": {
+      "path": "client/node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1793874839295,
+      "keyFiles": []
+    },
+    "client/public": {
+      "path": "client/public",
+      "purpose": "Public files",
+      "fileCount": 1,
+      "lastAccessed": 1793874839295,
+      "keyFiles": [
+        "index.html"
+      ]
+    },
+    "client/src": {
+      "path": "client/src",
       "purpose": "Source code",
       "fileCount": 2,
-      "lastAccessed": 1793779603677,
+      "lastAccessed": 1793874839296,
       "keyFiles": [
-        "types.ts"
+        "debug.ts",
+        "main.ts"
+      ]
+    },
+    "docs/assets": {
+      "path": "docs/assets",
+      "purpose": "Static assets",
+      "fileCount": 1,
+      "lastAccessed": 1793874839296,
+      "keyFiles": [
+        "world-map.jpg"
+      ]
+    },
+    "server/src": {
+      "path": "server/src",
+      "purpose": "Source code",
+      "fileCount": 12,
+      "lastAccessed": 1793874839296,
+      "keyFiles": [
+        "config.cpp",
+        "config.h",
+        "handlers.cpp"
       ]
     }
   },
@@ -81,14 +137,20 @@
     },
     {
       "path": "docs/README.md",
-      "accessCount": 5,
-      "lastAccessed": 1793866897702,
+      "accessCount": 6,
+      "lastAccessed": 1793874724622,
       "type": "file"
     },
     {
       "path": "docs/ROADMAP.md",
       "accessCount": 3,
       "lastAccessed": 1793781454041,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 3,
+      "lastAccessed": 1793874724110,
       "type": "file"
     },
     {
@@ -119,12 +181,6 @@
       "path": "docs/HANDOFF.md",
       "accessCount": 2,
       "lastAccessed": 1793834080333,
-      "type": "file"
-    },
-    {
-      "path": "CLAUDE.md",
-      "accessCount": 2,
-      "lastAccessed": 1793867522358,
       "type": "file"
     },
     {
