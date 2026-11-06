@@ -96,6 +96,21 @@ export interface CompiledHeader {
   sourceHash: string;
   chunkSize: number;
 }
+/** [추가·선택] 교차로 요약: 신호/그래프/횡단보도 배치가 같은 노드를 쓰도록 citygen 이 채운다 (ribbons 에는 이미 메시로 구워져 있다) */
+export interface CompiledJunction {
+  id: string;
+  kind: string;
+  layer: Layer;
+  x: number; y: number; z: number;
+  /** 포장 외곽선 */
+  polygon: Pt[];
+  /** 연결 팔: 도로 ID, dir(+1/-1 = 도로 s 증가/감소 쪽으로 노드에서 멀어짐), 노드의 도로 s, 트림 거리(m) */
+  arms: {road: string; dir: 1 | -1; s: number; trim: number}[];
+  /** 회전교차로 중앙섬 */
+  island?: {x: number; z: number; r: number};
+  crosswalks: number;
+  stopLines: number;
+}
 export interface CityCompiled {
   header: CompiledHeader;
   bounds: Pt[];
@@ -106,6 +121,8 @@ export interface CityCompiled {
   colliders: Collider[];
   graph: CompiledGraph;
   parking: ParkingSlotOut[];
+  /** [추가·선택] citygen 도로 단계가 채운다 */
+  junctions?: CompiledJunction[];
   /** 빌더가 배치하지 못한 항목과 사유(에디터 표시용) */
   rejected: {owner: string; code: string; msg: string}[];
 }

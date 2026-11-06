@@ -14,6 +14,15 @@ const ARGS = [
   '--enable-webgl',
 ];
 
+/** index.html 응답의 module 진입점을 boot.js 로 치환한다 (index.html 실제 변경과 동일한 한 줄) */
+export async function bootRoute(page: Page): Promise<void> {
+  await page.route(/\/(index\.html)?(\?.*)?$/, async route => {
+    const res = await route.fetch(),
+      body = (await res.text()).replace('src="js/main.js"', 'src="js/boot.js"');
+    await route.fulfill({response: res, body});
+  });
+}
+
 export interface Problems {
   console: string[];
   pageerrors: string[];
@@ -48,11 +57,15 @@ export const test = base.extend<{game: Game}, {server: {url: string}}>({
     await page.route(/cdnjs\.cloudflare\.com\/.*three(\.min)?\.js/, r =>
       r.fulfill({path: THREE_LOCAL, contentType: 'text/javascript'}),
     );
+    // BOOT_JS=1: index.html 의 진입점을 js/main.js → js/boot.js 로 바꿔 서빙한다(root 가 index.html 을 바꾸기 전에, 높이 JSON 구동 경로로 기존 spec 을 돌려 보는 용도)
+    if (process.env.BOOT_JS === '1') await bootRoute(page);
     const open = async (query = '') => {
       // C01 자동 재생(20s, 입력 잠금)이 다른 E2E 를 막지 않도록 기본은 ?cine=0 — 컷신 테스트는 ?cine=1 을 직접 준다
       const q = /cine=/.test(query) ? query : query ? `${query}&cine=0` : '?cine=0';
       await page.goto(`${server.url}/${q}`);
       await page.waitForSelector('#menu.on');
+      // boot.js 경로는 main 을 동적 import 하므로 메뉴가 먼저 보일 수 있다 — initWorld 가 끝나(G.renderer) 디버그 훅을 쓸 수 있을 때까지 기다린다
+      if (process.env.BOOT_JS === '1' && /debug=1/.test(q)) await page.waitForFunction(() => !!(window as any).__game?.G?.renderer, undefined, {timeout: 20000});
     };
     await use({page, base: server.url, problems, open});
     await browser.close();

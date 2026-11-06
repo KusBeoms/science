@@ -13,6 +13,7 @@ import {WILD_BRIDGE} from '../data/wild.js';
 import {SEABED} from '../data/bridge.js';
 import {wildH} from './wild-height.js';
 import {roadNear} from '../data/wild-road.js';
+import {cityHeightAt, ensureCityHeight} from './city-height.js';
 
 /** 격자: 샘플 간격 · 원점 · 개수 (x −1300~1500, z −1300~2050: 북쪽 섬 줄 · 도시 · 야생지 · 동서 섬 줄을 모두 덮는다) */
 export const STEP = 5,
@@ -59,6 +60,9 @@ let SEC: Sec[] = [],
   RG: Uint8Array | null = null;
 /** 마지막 굽기에 걸린 시간 (ms) */
 export let bakeMs = 0;
+/** 도시 섬 높이 공급원: 'json' = data/city-terrain.json(city-height.ts), 'procedural' = 옛 공식(boot 미연결 테스트·개발용 내부 경로) */
+export let citySource: 'json' | 'procedural' | 'unbaked' = 'unbaked';
+let cityJson = false;
 
 function setup() {
   SEC = SECTORS.map((s, idx) => {
@@ -147,6 +151,10 @@ function evalAt(x: number, z: number): number {
   if (d < 0) return d > -7.5 ? CLIFF1 : d > -12.5 ? CLIFF2 : CLIFF3;
   let h = 0;
   if (reg === REG_CITY) {
+    if (cityJson) {
+      const v = cityHeightAt(x, z); // 5u 격자 노드는 JSON 값 그대로, 사이는 쌍3차. 마스크 밖이면 NaN → 아래 절차 값
+      if (v === v) return v;
+    }
     const hl = CITY_HILL;
     h = hl.h * (1 - smooth(hl.flat, hl.foot, Math.hypot(x - hl.x, z - hl.z)));
     if (cm > CITY_HALF) h = beltH(x, z, d);
@@ -165,6 +173,8 @@ function evalAt(x: number, z: number): number {
 export function bakeContinent(): Float32Array {
   if (HM) return HM;
   const t0 = performance.now();
+  cityJson = ensureCityHeight(); // 이 순간부터 setCityHeight 불가 — 굽기 도중 공급원이 바뀌지 않게
+  citySource = cityJson ? 'json' : 'procedural';
   setup();
   HM = new Float32Array(NX * NZ);
   RG = new Uint8Array(NX * NZ);
@@ -175,6 +185,14 @@ export function bakeContinent(): Float32Array {
     }
   bakeMs = performance.now() - t0;
   return HM;
+}
+/** 테스트 전용: 굽기·2.5u 표본 캐시를 비운다 (city-height 의 reset 과 함께 쓴다) */
+export function resetHeightmapForTest(): void {
+  HM = null;
+  RG = null;
+  detail = null;
+  cityJson = false;
+  citySource = 'unbaked';
 }
 /** 굽기 결과: 높이와 소속 코드 격자 (행 우선, 인덱스 = j*NX + i) */
 export const gridOf = () => ({h: bakeContinent(), reg: RG!});

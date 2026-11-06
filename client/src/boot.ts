@@ -4,6 +4,11 @@
 import {CITY_SOURCE_PATH, type CitySource} from './data/city-schema.js';
 import {validateCitySource, type ValidationError} from './data/city-validate.js';
 import {setCitySource} from './data/city-source.js';
+import {decodeTerrain, type CityTerrain, type CityTerrainFile} from './data/city-terrain-codec.js';
+import {setCityHeight} from './core/city-height.js';
+
+/** 도시 섬 높이 JSON 경로(문서 base 기준 상대). index.html 의 진입점이 boot.js 가 되는 순간부터 항상 읽는다 */
+export const CITY_TERRAIN_PATH = 'data/city-terrain.json';
 
 /** true 가 되면 city.source.json 이 없을 때 오류 화면. 새 도심이 게임에 연결되기 전까지 false(로딩 생략, main 만 실행) */
 export const REQUIRE_CITY_SOURCE = false;
@@ -27,11 +32,13 @@ export interface BootOptions {
   storage?: Pick<Storage, 'getItem'> | null;
   /** 게임 entry 로더(기본 import('./main.js')). 테스트에서 대체 */
   importMain?: () => Promise<unknown>;
+  /** 도시 섬 높이 JSON 을 읽을지(기본 true). 도시 원본 분류만 보는 단위 테스트에서 false */
+  terrain?: boolean;
   /** 오류 표시(기본 DOM 오류 화면) */
   showError?: (r: Extract<LoadResult, {ok: false}>) => void;
 }
 
-const fail = (kind: BootFailKind, message: string, detail?: string, errors?: ValidationError[]): LoadResult => ({ok: false, kind, message, detail, errors});
+const fail = (kind: BootFailKind, message: string, detail?: string, errors?: ValidationError[]): Extract<LoadResult, {ok: false}> => ({ok: false, kind, message, detail, errors});
 
 /** 문서 base 기준 배포 JSON URL. 앞 슬래시 없는 상대 경로 → 하위 경로에서도 정상 */
 export function citySourceUrl(baseURI?: string): string {
@@ -65,24 +72,41 @@ export async function loadCitySource(opt: BootOptions = {}): Promise<LoadResult>
   }
   let url: string;
   try { url = citySourceUrl(opt.baseURI); } catch (e) { return fail('network', '도시 데이터 주소를 만들 수 없습니다', String(e)); }
+  const j = await fetchJson(url, '도시 데이터', opt);
+  return j.ok ? verifySource(j.raw, 'deployed') : j;
+}
+
+/** 공통 내려받기: 404 / HTTP / 네트워크 / 시간 초과 / JSON 형식을 분류한다. 폴백 없음 */
+async function fetchJson(url: string, label: string, opt: BootOptions): Promise<{ok: true; raw: unknown} | Extract<LoadResult, {ok: false}>> {
   const ctl = new AbortController();
   let timedOut = false;
   const timer = setTimeout(() => { timedOut = true; ctl.abort(); }, opt.timeoutMs ?? LOAD_TIMEOUT_MS);
   try {
     const res = await (opt.fetchImpl ?? fetch)(url, {cache: 'no-cache', signal: ctl.signal});
-    if (res.status === 404) return fail('not-found', '도시 데이터 파일을 찾을 수 없습니다 (404)', url);
-    if (!res.ok) return fail('http', `도시 데이터를 받지 못했습니다 (HTTP ${res.status})`, url);
-    let raw: unknown;
-    try { raw = JSON.parse(await res.text()); } catch (e) {
+    if (res.status === 404) return fail('not-found', `${label} 파일을 찾을 수 없습니다 (404)`, url);
+    if (!res.ok) return fail('http', `${label}를 받지 못했습니다 (HTTP ${res.status})`, url);
+    try { return {ok: true, raw: JSON.parse(await res.text())}; } catch (e) {
       if (timedOut) throw e;
-      return fail('invalid-json', '도시 데이터가 올바른 JSON 이 아닙니다', `${url} — ${String(e)}`);
+      return fail('invalid-json', `${label}가 올바른 JSON 이 아닙니다`, `${url} — ${String(e)}`);
     }
-    return verifySource(raw, 'deployed');
   } catch (e) {
-    if (timedOut) return fail('timeout', `도시 데이터를 ${(opt.timeoutMs ?? LOAD_TIMEOUT_MS) / 1000}초 안에 받지 못했습니다`, url);
-    return fail('network', '도시 데이터를 받는 중 네트워크 오류가 발생했습니다', `${url} — ${String(e)}`);
+    if (timedOut) return fail('timeout', `${label}를 ${(opt.timeoutMs ?? LOAD_TIMEOUT_MS) / 1000}초 안에 받지 못했습니다`, url);
+    return fail('network', `${label}를 받는 중 네트워크 오류가 발생했습니다`, `${url} — ${String(e)}`);
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/** 도시 섬 높이 JSON 을 읽어 디코딩한다(스키마·크기·체크섬 검증). 저장은 하지 않는다 — 저장은 bootGame 이 성공 시 */
+export async function loadCityHeight(opt: BootOptions = {}): Promise<{ok: true; terrain: CityTerrain} | Extract<LoadResult, {ok: false}>> {
+  let url: string;
+  try { url = new URL(CITY_TERRAIN_PATH, opt.baseURI ?? document.baseURI).href; } catch (e) { return fail('network', '도시 지형 주소를 만들 수 없습니다', String(e)); }
+  const j = await fetchJson(url, '도시 지형 데이터', opt);
+  if (!j.ok) return j;
+  try {
+    return {ok: true, terrain: decodeTerrain(j.raw as CityTerrainFile)};
+  } catch (e) {
+    return fail('invalid', '도시 지형 데이터 검증 실패', `${url} — ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 
@@ -108,6 +132,14 @@ export type BootOutcome = {ok: true; origin: 'deployed' | 'local' | 'skipped'} |
 /** 전체 부팅. 성공해야만 source 를 설정하고 main 을 불러온다 */
 export async function bootGame(opt: BootOptions = {}): Promise<BootOutcome> {
   const load = opt.importMain ?? (() => import('./main.js'));
+  if (opt.terrain !== false) {
+    const t = await loadCityHeight(opt); // 도시 섬 높이는 항상 필수(폴백 없음). main(→ heightmap 굽기) 이전에 넣는다
+    if (!t.ok) {
+      (opt.showError ?? showBootError)(t);
+      return t;
+    }
+    setCityHeight(t.terrain);
+  }
   const search = opt.search ?? (typeof location !== 'undefined' ? location.search : '');
   const wantsLocal = new URLSearchParams(search).get('city') === 'local';
   if (!(opt.require ?? REQUIRE_CITY_SOURCE) && !wantsLocal) {

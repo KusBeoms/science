@@ -41,7 +41,7 @@ function zebra(b: Buf, cx: number, cz: number, horizontal: boolean, sign: number
   }
 }
 /** 신호등: 어두운 기둥 + 빨강·노랑·초록 세 칸 머리(어느 쪽에서도 보이게 정육면체), 머리는 밝은 원색 */
-function signal(pole: Buf, head: Buf, x: number, z: number) {
+export function signal(pole: Buf, head: Buf, x: number, z: number) {
   pole.box(x - 0.12, 0, z - 0.12, x + 0.12, 4.6, z + 0.12, NEUTRAL.steel);
   pole.box(x - 0.33, 4.0, z - 0.33, x + 0.33, 5.6, z + 0.33, NEUTRAL.coal);
   head.box(x - 0.36, 5.05, z - 0.36, x + 0.36, 5.5, z + 0.36, PAL.red);

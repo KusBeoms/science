@@ -61,6 +61,7 @@ python3 -m http.server -d public        # 정적 서빙만으로 동작 (서버 
 | `render/characters.ts` | `blocky animateWalk applyLook` |
 | `render/characters-gaze.ts` | `updateCharacterGaze(character, camera, dt)` — 플레이어 눈동자가 최종 카메라를 따라 부드럽게 움직임. 머리·몸 회전 및 꾸미기와 독립 |
 | `systems/camera.ts` | 수동 카메라 입력 추적·차량 yaw만2초 후 복귀·최대75° 상향 시야. [PLAYER_CONTROLS](PLAYER_CONTROLS.md) |
+| `systems/vehicle-store.ts` · `vehicle-stream.ts` · `vehicle-safety.ts` · `parking-slots.ts` | 논리 차량 레코드·슬롯 공급자 / 거리 스트리밍 / 세이브 위치 보정 / 기본 길가 슬롯 (아래 "논리 차량/렌더 분리") |
 | `systems/vehicle-transition.ts` | E 승하차 모션·중복 입력 차단·강제 이동 취소. 기본 차량 API는 동기 유지 |
 | `data/rural-entries.ts`, `render/rural-entry.ts` | 실제 배치 집의 문·접근 데크·동적 실내 등록. [RURAL_INTERIORS](RURAL_INTERIORS.md) |
 | `render/guardian.ts` | `makeGuardian(glow)` |
@@ -95,6 +96,23 @@ python3 -m http.server -d public        # 정적 서빙만으로 동작 (서버 
 | 데크 | `addDeck(d, ownerId?)`, `removeDecksByOwner`, `replaceDecks`, `decksOwnedBy`, `deckCount`, `clearDecks` |
 
 소유자 없이 등록하면 기존처럼 영구. 새 도심은 `ownerId`(예: `'city-v2'`)로 등록하고 구 도심은 `removeSolidsByOwner`/`replaceSolids` 로 한 번에 교체한다.
+
+## 논리 차량/렌더 분리 (W8 P2-b)
+상세·한계: `work-logs/W8_VEH.md`. 차의 "존재와 상태"(논리 레코드)를 mesh·충돌체(렌더)와 분리해, 길가 차를 거리로 켜고 꺼도 상태가 사라지지 않는다.
+
+| 개념 | API (파일) |
+|---|---|
+| 논리 레코드 | `Veh`(id·slot·t·c·own·x,y,z,h·`d` 파손·vacatedAt). `recordList/recordById/recordCount` (`vehicle-store.ts`). 상태는 `stateOf(v, G.drive)` = parked·driven·stolen·owned·police |
+| 렌더 목록 | `VEH` = 렌더가 켜진 차만. mesh·충돌체를 가진 차 (기존 `VEH` 소비자는 그대로) |
+| 생성/삭제 | `createVehicle`(레코드만), `spawnVeh`(레코드+렌더), `logicalRemove` = `removeVeh`(레코드+렌더 삭제), `renderRelease`(렌더만 해제, 레코드 유지) |
+| 켜기/끄기 | `activateVehicle(id)`, `deactivateVehicle(id)` (운전·승하차·내 차·시승·경찰이면 false), `streamable(v)` (`vehicle.ts`). 해제 때 지오메트리 dispose, 충돌체 `dropDynSolid`. 소유자 표식 `veh:<id>`(`vehOwnerId`, dyn 충돌체에 `owner` 필드) |
+| 스트리밍 | `STREAM{rOn:90,rOff:120,cap:40,interval:0.2,enabled}`, `streamTick()`, `vehicleStreamSystem` (`vehicle-stream.ts`). 길가 남의 차(`own===-1`)만 대상. 켜기 ≤rOn, 끄기 >rOff(히스테리시스), 활성 상세 주차 차 상한 cap. 실내(`G.inside`)는 정지 |
+| 먼 차 경량 표현 | `setFarRepresentation({show,hide})` 연결점만 있다(미구현). 해제 때 show, 다시 켤 때 hide |
+| 주차 슬롯 | `ParkingSlot{id,x,z,h,y,kind}`, `setSlotProvider(fn)`, `parkingSlots()`, `slotById`. 기본 공급자 `roadSideSlots`(`parking-slots.ts`) — 나중에 `city.compiled.json` 주차칸이 같은 모양으로 들어온다 |
+| 시드 배정 | `slotLook(slotId, gen)`: 같은 슬롯(+세대)은 항상 같은 차종·색. 비워졌다가 60초 뒤 채워질 때 `gen+1` (`vacateSlot`/`tickRespawn`) |
+| 세이브 보호 | `sanitizeOwnedCars`(`vehicle-safety.ts`): 벽·물·땅 밖·NaN·겹침이면 차고 앞→가까운 슬롯→차고 둘레 순으로 재배치. `estate.pruneUnknownProps`(`onLoad`)로 모르는 건물 ID 제거, `buyProp/sellProp(undefined)` 무시 |
+
+기존 `spot`(숫자) 필드는 `slot`(문자열 ID)로 바뀌었다. 길가 차를 `VEH.find` 로 전역 조회하던 코드는 먼 차가 렌더되지 않으므로 `recordList()` + `activateVehicle` 을 써야 한다.
 
 ## 섹터 시스템 (`data/sectors.ts`, `core/geometry.ts`, `core/progress.ts`)
 - 좌표: x = 동(+)/서(−), z = 남(+)/북(−). 허브(기지)는 (0,0) 한 변 44. 섹터는 `center{x,z}` + 한 변 `size` 정사각형.
@@ -253,7 +271,7 @@ registerInteractable<T extends Target>({
 | render/interior.ts | 방 생성(가구·벽·문), 용도별 가구 |
 | game/interior.ts | 입장/퇴장·방 상호작용(계산대·딜러·침대·의자) |
 | data/cars.ts · render/vehicle.ts | 차 15종 데이터·모델 |
-| systems/vehicle.ts | 길가 차·운전 물리·내리기 |
+| systems/vehicle.ts | 렌더 활성/해제·운전 물리·내리기 (논리 상태는 vehicle-store.ts) |
 | game/cars.ts · game/car-shop.ts | 구매·튜닝·등록·차고·판매 규칙과 UI |
 
 ### W3 확장 (추가)

@@ -1,6 +1,6 @@
 # 도시 섬 높이 JSON (city-terrain/1)
 
-W8 P3-a. 현재 도시 섬 높이(`core/heightmap.ts` + `belt-height.ts`)를 오프라인으로 굽고 다듬어 JSON 으로 저장한다. **게임은 아직 이 파일을 읽지 않는다**(P3-b에서 높이 공급원 교체). 계획: `design/CITY_REDESIGN_PLAN.md` 13-2.
+W8 P3-a. 현재 도시 섬 높이(`core/heightmap.ts` + `belt-height.ts`)를 오프라인으로 굽고 다듬어 JSON 으로 저장한다. **P3-b 부터 게임이 이 파일을 읽는다**(아래 "게임 로딩"). 계획: `design/CITY_REDESIGN_PLAN.md` 13-2.
 
 ## 파일 `client/public/data/city-terrain.json` (≈173 KB, gzip 전)
 | 필드 | 뜻 |
@@ -59,7 +59,13 @@ node --no-warnings tools/terrain-bake.mjs [--out 파일] [--report 폴더|--no-r
 
 ## 한계
 - 도시 섬 윤곽 bbox 만 담는다(야생지·섹터 섬 제외). 다리 상판 아래 해협 바닥은 bbox 밖이다.
-- 5u 격자: 게임의 2.5u 지상 메시는 이 격자를 보간하면 원 공식의 절반 격자 세부를 잃는다(P3-b 에서 보간 방식 결정).
+- 5u 격자: 게임의 2.5u 지상 메시는 이 격자를 쌍3차 보간해 쓴다(P3-b 결정) → 원 공식의 절반 격자 세부는 사라진다(평탄 구역은 ≤0.1u, 가파른 해안 비탈은 최대 ~2u).
 - 비교 이미지는 단색 정점색 메시이며 게임 재질·LOD·안개와 다르다.
 - 시가지 사각형은 평지 그대로: 건물 경사 한도(12%)·도로 회랑·필지 대지는 후속 단계(편집 레이어)에서.
 - 검증: `terrain-bake.spec.ts`(코덱 왕복, 라이브 높이맵 편차, 보존 0). 기존 `terrain.spec.ts` 의 `bakeMs<400` 는 기기 부하에 따라 간헐 초과(357~425ms 관찰) — 이 작업과 무관.
+
+## 게임 로딩 (W8 P3-b)
+- 진입점이 `js/boot.js` 가 되면(index.html 한 줄: `js/main.js` → `js/boot.js`, root 적용 예정) `boot.ts` 의 `bootGame` 이 main 을 불러오기 전에 `data/city-terrain.json` 을 받아(`document.baseURI` 기준 상대 경로) `decodeTerrain` 으로 검증·디코딩하고 `core/city-height.ts` 의 `setCityHeight` 에 넣는다. 404/HTTP/네트워크/시간 초과/JSON 형식/체크섬·스키마 오류는 오류 화면(`#boot-error`)이며 폴백은 없다.
+- `core/city-height.ts`: `cityHeightAt(x,z)`(5u 노드 = JSON 정확값, 사이 = Catmull-Rom 쌍3차, 마스크 밖 칸은 섞지 않음), `cityLandAt`, `cityHeightSlope`. `core/heightmap.ts` 의 도시 영역(`REG_CITY`)이 이를 읽고 `citySource` 로 공급원('json'/'procedural')을 노출한다. 5u 격자·2.5u 지상 표본·충돌·렌더가 모두 같은 값을 공유한다. 야생지·섹터 섬은 절차 그대로.
+- 높이가 주어지지 않으면(테스트가 모듈 직접 import, boot 미연결) 옛 절차 계산으로 돈다 — 내부 개발/테스트용 경로. `setCityHeight` 는 굽기 전에만 호출 가능(이후 던짐).
+- 실측: 노드 일치 7e-6u, 도시 밖 격자 불변, bake 235~262ms(절차 292~319ms), 2.5u 반노드 편차는 평탄·도로 구역 ≤0.1u / 가파른 해안 비탈 최대 ~2u(5u 원천 한계). 자세한 수치·사진·남은 일: `work-logs/W8_HEIGHT.md`. 테스트: `tests/e2e/city-height.spec.ts`, 기존 spec 은 `BOOT_JS=1` 로 JSON 경로 실행 가능.

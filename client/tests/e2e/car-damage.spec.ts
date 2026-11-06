@@ -15,7 +15,10 @@ test('crash dents the car, a hard front hit breaks the engine, light touch ignor
       D = await import('/js/systems/vehicle-damage.js'),
       T = await import('/js/core/terrain.js'),
       g = (window as any).__game;
-    const target = V.VEH.find((x: any) => x.own === -1)!;
+    const Z = await import('/js/systems/vehicle-store.js');
+    const target = Z.recordList().find((x: any) => x.own === -1)!; // 길가 차는 거리 스트리밍이라 먼 차는 논리 레코드뿐 → 켜 둔다
+    V.activateVehicle(target.id);
+    (window as any).__t = target;
     g.teleport(target.x, target.z);
     const fx = Math.sin(target.h), fz = Math.cos(target.h);
     const run = (speed: number, fw = 1) => {
@@ -46,7 +49,7 @@ test('crash dents the car, a hard front hit breaks the engine, light touch ignor
     const V = await import('/js/systems/vehicle.js'), D = await import('/js/systems/vehicle-damage.js');
     const a = (window as any).__a;
     // 같은 차로 한 번 더 세게
-    const t = V.VEH.find((x: any) => x.own === -1)!;
+    const t = (window as any).__t;
     for (let k = 0; k < 4 && !D.dmgOf(a).broken; k++) {
       a.x = t.x - Math.sin(t.h) * 8; a.z = t.z - Math.cos(t.h) * 8; a.h = t.h; a.v = 30;
       D.dmgOf(a).cd = 0;

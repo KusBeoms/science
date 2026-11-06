@@ -4,6 +4,7 @@ import {G} from '../core/runtime.js';
 import {dist2} from '../core/util.js';
 import {CARS, GARAGE_LV, GARAGE_NEAR, GARAGE_OUT, OWN_COST, PAINTS, REG_COST, SELL_BACK, TUNE, carOf, tuneCost, type TuneKey} from '../data/cars.js';
 import {VEH, enterVeh, exitVeh, refreshOwned, removeVeh, spawnOwned, vacateSpot, vehOfOwn, type Veh} from '../systems/vehicle.js';
+import {recordList} from '../systems/vehicle-store.js';
 import {sfx} from '../audio/index.js';
 import {canStart, repairCost, repairOwned, repairSaved} from '../systems/vehicle-damage.js';
 import {crowdApi} from '../systems/crowd.js';
@@ -33,7 +34,7 @@ function pay(cost: number): boolean {
 function outSpot() {
   for (let k = 0; k < 8; k++) {
     const x = GARAGE_OUT.x - k * 5.5;
-    if (!VEH.some(v => Math.hypot(v.x - x, v.z - GARAGE_OUT.z) < 5)) return {x, z: GARAGE_OUT.z, h: GARAGE_OUT.h};
+    if (!recordList().some(v => Math.hypot(v.x - x, v.z - GARAGE_OUT.z) < 5)) return {x, z: GARAGE_OUT.z, h: GARAGE_OUT.h};
   }
   return {...GARAGE_OUT};
 }
@@ -136,7 +137,7 @@ export function sellCar(i: number): boolean {
   S.cr += Math.round(carOf(o.t).price * SELL_BACK * (o.stolen ? 0.5 : 1) * (1 + 0.2 * (o.eng + o.tire)));
   S.cars.list.splice(i, 1);
   // 삭제로 밀린 인덱스를 월드 차에 반영
-  VEH.forEach(w => w.own > i && w.own--);
+  recordList().forEach(w => w.own > i && w.own--);
   sfx('buy');
   save();
   return true;

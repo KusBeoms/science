@@ -3,108 +3,106 @@ import {walkingExit, type ExitPoint} from '../core/exit-position.js';
 import {toast} from '../game/hud.js';
 import {S, save, saveHooks} from '../core/state.js';
 import {G} from '../core/runtime.js';
-import {addDynSolid, dropDynSolid, groundH, solidAt, walkable, type Solid} from '../core/terrain.js';
-import {approachNear, CITY_APPROACH_START, Z_UP0} from '../data/bridge.js';
-import {CITY_ROADS} from '../data/city.js';
-import {CARS, PAINTS, carOf} from '../data/cars.js';
+import {addDynSolid, dropDynSolid, groundH, solidAt, walkable} from '../core/terrain.js';
+import {PAINTS, carOf} from '../data/cars.js';
 import {buildCar} from '../render/vehicle.js';
-import {mulberry32} from '../render/lowpoly/rng.js';
 import type {GameSystem, OwnedCar} from '../core/types.js';
-import type {CarDmg} from './vehicle-damage.js';
+import {addRecord, dropRecord, hasSlotProvider, initialOccupied, newVehicleId, parkingSlots, recordById, recordList, setSlotProvider, slotById, slotGen, slotLook, slotOccupied, tickRespawn, vacateSlot, type Veh} from './vehicle-store.js';
+import {roadSideSlots} from './parking-slots.js';
+import {sanitizeOwnedCars} from './vehicle-safety.js';
 import {beginVehicleEntry, beginVehicleExit, cancelVehicleTransition, cancelVehicleTransitionFor, updateVehicleTransition, vehicleTransitionActive} from './vehicle-transition.js';
 
-export interface Veh {
-  t: string;
-  c: number;
-  eng: number;
-  tire: number;
-  neon: number;
-  x: number;
-  y: number;
-  z: number;
-  h: number;
-  v: number;
-  grp: any;
-  /** S.cars.list 의 인덱스, −1 = 길가의 남의 차, −2 = 훔쳐 타고 있는 임시 차(자리 없음) */
-  own: number;
-  spot: number;
-  solid: Solid | null;
-  age: number;
-  /** 파손 상태 (systems/vehicle-damage.ts 가 처음 볼 때 채운다) */
-  d?: CarDmg;
-}
+export type {Veh, VehState, ParkingSlot} from './vehicle-store.js';
+/** 렌더 활성(mesh+충돌체가 있는) 차량만 들어 있다. 논리 레코드 전체는 vehicle-store.ts 의 recordList() */
 export const VEH: Veh[] = [];
-const PARK: {x: number; z: number; h: number}[] = [];
-const respawn: {spot: number; t: number}[] = [];
 let ready = false;
-
-/** 길가 주차 자리: 차도(car=true) 양쪽 가장자리, 일정 간격으로 */
-function planSpots() {
-  const rnd = mulberry32(2026);
-  for (const r of CITY_ROADS) {
-    if (!r.car) continue;
-    const horiz = r.z0 === r.z1,
-      a0 = Math.min(horiz ? r.x0 : r.z0, horiz ? r.x1 : r.z1) + 14,
-      a1 = Math.max(horiz ? r.x0 : r.z0, horiz ? r.x1 : r.z1) - 14,
-      off = r.w / 2 - 1.7;
-    let k = 0;
-    for (let a = a0; a <= a1; a += 19 + rnd() * 5, k++) {
-      const side = k % 2 ? 1 : -1,
-        c = horiz ? r.z0 : r.x0;
-      const p = horiz ? {x: a, z: c + side * off, h: Math.PI / 2 * (side > 0 ? 1 : -1)} : {x: c + side * off, z: a, h: side > 0 ? Math.PI : 0};
-      const ap = approachNear(p.x, p.z);
-      if (p.z > CITY_APPROACH_START - 8 && p.z < Z_UP0 + 8 && ap.d < ap.w + 5) continue; // 다리 진입·확폭 구간에는 주차하지 않는다
-      PARK.push(p);
-    }
-  }
-}
-const pickType = (rnd: () => number) => {
-  const tot = CARS.reduce((a, c) => a + c.spawn, 0);
-  let x = rnd() * tot;
-  for (const c of CARS) if ((x -= c.spawn) < 0) return c;
-  return CARS[2];
-};
-const rndSeed = mulberry32(77);
+/** 렌더 객체를 가진 차의 충돌체 소유자 표식 (dyn 충돌체는 핸들로 해제한다) */
+export const vehOwnerId = (v: Veh) => `veh:${v.id}`;
 
 export function syncSolid(v: Veh) {
   dropDynSolid(v.solid);
   v.solid = null;
-  if (G.drive === v) return;
+  if (G.drive === v || !v.grp) return; // 운전 중이거나 렌더 해제된 차는 충돌체가 없다
   const t = carOf(v.t),
     c = Math.abs(Math.cos(v.h)),
     s = Math.abs(Math.sin(v.h)),
     hx = (t.wid * c + t.len * s) / 2,
     hz = (t.wid * s + t.len * c) / 2;
   v.solid = addDynSolid(v.x - hx, v.z - hz, v.x + hx, v.z + hz);
-  Object.assign(v.solid, {lo: v.y - 1.4, hi: v.y + 3}); // 고가 층 구분(입체교차로): 위·아래 차는 서로 막지 않는다
+  Object.assign(v.solid, {lo: v.y - 1.4, hi: v.y + 3, owner: vehOwnerId(v)}); // 고가 층 구분(입체교차로): 위·아래 차는 서로 막지 않는다
 }
 export function placeMesh(v: Veh) {
+  if (!v.grp) return;
   v.grp.position.set(v.x, v.y, v.z);
   v.grp.rotation.y = v.h;
 }
+/** 메시를 장면에서 빼고 지오메트리를 해제한다 (재질은 공유 keep 재질이라 건드리지 않는다) */
+function disposeGrp(grp: any) {
+  if (!grp) return;
+  G.scene.remove(grp);
+  grp.traverse?.((o: any) => o.geometry?.dispose());
+}
 function mkMesh(v: Veh) {
-  if (v.grp) G.scene.remove(v.grp);
+  disposeGrp(v.grp);
   v.grp = buildCar({t: v.t, c: v.c, eng: v.eng, tire: v.tire, neon: v.neon});
   G.scene.add(v.grp);
   placeMesh(v);
 }
-export function spawnVeh(o: Partial<Veh> & {t: string; x: number; z: number}): Veh {
-  const v: Veh = {c: PAINTS[0], eng: 0, tire: 0, neon: 0, y: 0, h: 0, v: 0, grp: null, own: -1, spot: -1, solid: null, age: 0, ...o};
-  v.y = groundH(v.x, v.z);
-  if (v.y === -Infinity) v.y = 0;
-  mkMesh(v);
-  syncSolid(v);
-  VEH.push(v);
-  return v;
+
+// ---------- 논리 레코드 생성/삭제 ----------
+/** 논리 차량만 만든다 (렌더 객체 없음). activateVehicle 로 화면에 올린다 */
+export function createVehicle(o: Partial<Veh> & {t: string; x: number; z: number}): Veh {
+  const v: Veh = {id: o.id ?? newVehicleId(), c: PAINTS[0], eng: 0, tire: 0, neon: 0, y: 0, h: 0, v: 0, grp: null, own: -1, slot: '', vacatedAt: 0, solid: null, age: 0, ...o};
+  if (o.y === undefined) {
+    v.y = groundH(v.x, v.z);
+    if (v.y === -Infinity) v.y = 0;
+  }
+  return addRecord(v);
 }
-export function removeVeh(v: Veh) {
+/** 논리 삭제 + 렌더 해제 (예전 removeVeh 의 의미). 레코드가 사라진다 */
+export function logicalRemove(v: Veh) {
+  cancelVehicleTransitionFor(v);
+  renderRelease(v);
+  dropRecord(v);
+}
+/** 렌더만 해제: 메시·충돌체를 지우고 레코드(위치·파손·타이머)는 남긴다. 거리 정책 가드 없음 */
+export function renderRelease(v: Veh) {
   cancelVehicleTransitionFor(v);
   dropDynSolid(v.solid);
-  if (v.grp) G.scene.remove(v.grp);
+  v.solid = null;
+  disposeGrp(v.grp);
+  v.grp = null;
+  if (v.d) v.d.grp = null; // 다시 켜질 때 찌그러짐을 새 메시에 다시 입힌다
   const i = VEH.indexOf(v);
   if (i >= 0) VEH.splice(i, 1);
 }
-export const vehOfOwn = (i: number) => VEH.find(v => v.own === i);
+export const isActive = (v: Veh) => v.grp !== null;
+/** 거리 정책으로 렌더를 해제해도 되는 차: 길가의 남의 차만. 운전·승하차·내 차·임시 시승·경찰은 제외 */
+export const streamable = (v: Veh) => v.own === -1 && G.drive !== v && !vehicleTransitionActive();
+/** 렌더 객체(mesh+충돌체)를 만든다. 이미 켜져 있거나 레코드가 없으면 false */
+export function activateVehicle(id: string): boolean {
+  const v = recordById(id);
+  if (!v || v.grp || !G.scene) return false;
+  mkMesh(v);
+  syncSolid(v);
+  VEH.push(v);
+  return true;
+}
+/** 렌더 객체를 해제한다 (레코드 유지). 운전·승하차 중이거나 스트리밍 대상이 아니면 false */
+export function deactivateVehicle(id: string): boolean {
+  const v = recordById(id);
+  if (!v || !v.grp || !streamable(v)) return false;
+  renderRelease(v);
+  return true;
+}
+export function spawnVeh(o: Partial<Veh> & {t: string; x: number; z: number}): Veh {
+  const v = createVehicle(o);
+  activateVehicle(v.id);
+  return v;
+}
+/** 호환: 논리 삭제와 렌더 해제를 함께 한다 */
+export const removeVeh = logicalRemove;
+export const vehOfOwn = (i: number) => recordList().find(v => v.own === i);
 /** 내 차 i 를 길에 꺼내 놓는다 (위치를 주면 거기, 아니면 저장된 자리) */
 export function spawnOwned(i: number, at?: {x: number; z: number; h: number}) {
   const o: OwnedCar = S.cars.list[i];
@@ -118,21 +116,22 @@ export function refreshOwned(i: number) {
     o = S.cars.list[i];
   if (!v || !o) return;
   Object.assign(v, {t: o.t, c: o.c, eng: o.eng, tire: o.tire, neon: o.neon});
-  mkMesh(v);
+  if (v.grp) mkMesh(v);
 }
-function parkNpc(spot: number) {
-  const p = PARK[spot],
-    t = pickType(rndSeed);
-  spawnVeh({t: t.id, c: PAINTS[Math.floor(rndSeed() * PAINTS.length)] ^ 0 || t.color, x: p.x, z: p.z, h: p.h, spot});
+/** 슬롯에 NPC 주차 차를 논리적으로 세운다 (화면에는 stream 이 가까울 때 올린다) */
+function parkNpc(slotId: string) {
+  const p = slotById(slotId);
+  if (!p || slotOccupied(slotId)) return;
+  const look = slotLook(slotId);
+  createVehicle({id: `p:${slotId}:${slotGen(slotId)}`, ...look, x: p.x, z: p.z, y: p.y, h: p.h, slot: slotId});
 }
 function ensure() {
   if (ready || !G.scene || !G.started) return;
   ready = true;
-  planSpots();
-  const keep = Math.min(PARK.length, 26),
-    rnd = mulberry32(5),
-    order = PARK.map((_, i) => i).sort(() => rnd() - 0.5).slice(0, keep);
-  order.forEach(parkNpc);
+  if (!hasSlotProvider()) setSlotProvider(roadSideSlots);
+  initialOccupied(parkingSlots(), 26).forEach(s => parkNpc(s.id));
+  // 저장된 내 차: 벽·물·땅 밖이면 안전한 자리로 옮긴 뒤 꺼낸다
+  sanitizeOwnedCars(S.cars.list, (x, z) => recordList().some(v => Math.hypot(v.x - x, v.z - z) < 5));
   S.cars.list.forEach((o, i) => !o.stored && spawnOwned(i));
 }
 
@@ -259,7 +258,7 @@ export const vehicleHooks: ((v: Veh, dt: number) => void)[] = [];
 export const vehicleSystem: GameSystem = {
   id: 'vehicle',
   onSave() {
-    VEH.forEach(v => v.own >= 0 && S.cars.list[v.own] && Object.assign(S.cars.list[v.own], {x: v.x, z: v.z, h: v.h}));
+    recordList().forEach(v => v.own >= 0 && S.cars.list[v.own] && Object.assign(S.cars.list[v.own], {x: v.x, z: v.z, h: v.h}));
   },
   update(dt) {
     ensure();
@@ -275,16 +274,9 @@ export const vehicleSystem: GameSystem = {
       if (v.own === -2 && (v.age += dt) > 90) removeVeh(v);
       if (v.own === -4 && (v.age += dt) > 12) removeVeh(v);
     }
-    for (const r of respawn.slice())
-      if ((r.t -= dt) <= 0) {
-        respawn.splice(respawn.indexOf(r), 1);
-        if (!VEH.some(v => v.spot === r.spot && v.own === -1)) parkNpc(r.spot);
-      }
+    tickRespawn(dt, parkNpc); // 비운 슬롯은 60초 뒤 새 차(다음 세대)로 채운다
   },
 };
 /** 길가의 남의 차를 가져갈 때 자리를 비운다 → 잠시 뒤 새 차가 선다 */
-export function vacateSpot(v: Veh) {
-  if (v.spot >= 0) respawn.push({spot: v.spot, t: 60});
-  v.spot = -1;
-}
+export const vacateSpot = vacateSlot;
 void saveHooks;

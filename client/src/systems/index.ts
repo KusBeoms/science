@@ -25,6 +25,7 @@ import '../game/phone.js';
 import {summitIt, wildSystem} from './wild.js';
 import {soccerIt, soccerSystem} from './soccer.js';
 import {vehicleSystem} from './vehicle.js';
+import {vehicleStreamSystem} from './vehicle-stream.js';
 import {vehicleDamageSystem} from './vehicle-damage.js';
 import '../game/car-hud.js';
 import {addHudLine} from '../game/hud.js';
@@ -66,6 +67,7 @@ registerSystem(bridgeSystem);
 registerSystem(weatherSystem);
 registerSystem(interiorSystem);
 registerSystem(vehicleSystem);
+registerSystem(vehicleStreamSystem); // W8 VEH: 길가 차 거리 스트리밍
 registerSystem(vehicleDamageSystem);
 addHudLine(() => (G.drive ? `🚗 ${Math.round(Math.abs(G.drive.v) * 3.6)} km/h` : null));
 registerSystem(soccerSystem);

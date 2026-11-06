@@ -69,7 +69,9 @@ test('15 car types build; take a parked car, drive, exit; buy, make mine, regist
     const V = await import('/js/systems/vehicle.js'),
       g = (window as any).__game;
     await new Promise(r => setTimeout(r, 600));
-    const v = V.VEH.find((x: any) => x.own === -1);
+    const Z = await import('/js/systems/vehicle-store.js');
+    const v = Z.recordList().find((x: any) => x.own === -1); // 거리 스트리밍: 논리 레코드에서 고르고 켠다
+    V.activateVehicle(v.id);
     g.teleport(v.x + 3, v.z);
   });
   await page.waitForTimeout(400);

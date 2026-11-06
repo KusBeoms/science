@@ -127,3 +127,17 @@ export function makeBuilding(b: CityBuilding): Built {
   const parts = (list: Geo[]): Placed[] => list.map(g => ({g}));
   return {solid: mergePlaced([...parts(solid), ...extra]), lit: mergePlaced(parts(lit))};
 }
+
+// ───── W8 CITY_RENDER: 회전 배치 ─────
+/** 도(°) → three rotation.y 라디안. 양의 방향은 로컬 +z(정면)가 +x(동쪽)로 도는 쪽 — data/city-schema.ts BuildingSource.rot 와 같은 규약 */
+export const rotRad = (rotDeg: number): number => (rotDeg * Math.PI) / 180;
+/** 로컬(발자국 중심 원점, 정면 +z)에서 만든 Built 를 발자국 중심 둘레로 rotDeg 만큼 돌려 (x,y,z) 에 굽는다. rotDeg=0, y=0 이면 기존 index.ts 의 face 's' 배치와 정점이 같다 */
+export function placeBuilt(built: Built, x: number, y: number, z: number, rotDeg = 0): Built {
+  const at = {x, y, z, ry: rotRad(rotDeg)};
+  return {solid: mergePlaced([{g: built.solid, ...at}]), lit: mergePlaced([{g: built.lit, ...at}])};
+}
+/** 회전한 건물 문 앞 1u 지점(정면 +z 기준 doorOf 의 회전판): 로컬 (0, d/2+1) 을 돌려 중심에 더한다 */
+export function rotatedDoor(x: number, z: number, d: number, rotDeg: number): {x: number; z: number} {
+  const a = rotRad(rotDeg), L = d / 2 + 1;
+  return {x: x + L * Math.sin(a), z: z + L * Math.cos(a)};
+}

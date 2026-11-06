@@ -79,7 +79,7 @@ const boot = (page: Page, opt: Record<string, unknown> = {}) =>
     const T = (window as any).T;
     const w = window as any;
     w.__main = 0; w.__err = null;
-    const out = await T.B.bootGame({require: true, importMain: async () => { w.__main++; }, showError: (r: any) => { w.__err = r.kind; }, ...o});
+    const out = await T.B.bootGame({require: true, terrain: false, importMain: async () => { w.__main++; }, showError: (r: any) => { w.__err = r.kind; }, ...o});
     return {kind: out.ok ? 'ok:' + out.origin : out.kind, main: w.__main, err: w.__err, has: T.S.hasCitySource()};
   }, opt);
 
@@ -142,7 +142,7 @@ for (const [name, handler, kind, extra] of CASES) {
 
 test('boot: 기본 오류 화면에 원인이 한국어로 표시된다', async () => {
   const page = await open('/', r => r.fulfill({status: 404, body: ''}));
-  await page.evaluate(async () => { await (window as any).T.B.bootGame({require: true, importMain: async () => {}}); });
+  await page.evaluate(async () => { await (window as any).T.B.bootGame({require: true, terrain: false, importMain: async () => {}}); });
   const text = await page.locator('#boot-error').innerText();
   expect(text).toContain('게임을 시작하지 못했습니다');
   expect(text).toContain('404');
