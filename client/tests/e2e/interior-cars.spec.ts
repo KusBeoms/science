@@ -11,15 +11,17 @@ test('every building is enterable: walk in, furniture blocks, leave through the 
       T = await import('/js/core/terrain.js'),
       g = (window as any).__game;
     const kinds = new Set(I.ENTERABLES.map((e: any) => e.purpose));
-    const out: any = {n: I.ENTERABLES.length, kinds: [...kinds].sort(), fails: [] as string[]};
+    const out: any = {n: I.ENTERABLES.length, kinds: [...kinds].sort(), fails: [] as any[]};
     for (let i = 0; i < I.ENTERABLES.length; i++) {
       const e = I.ENTERABLES[i];
+      const blockedDoor = T.solidAt(e.door.x,e.door.z,.5,e.door.y ?? T.groundH(e.door.x,e.door.z));
       B.enterBuilding(i);
       const ok = g.G.inside && Math.abs(g.G.me.pos.x - 1500) < e.w && T.groundH(g.G.me.pos.x, g.G.me.pos.z) === 0;
       const wall = T.solidAt(1500 + e.w / 2 + 0.1, 1500, 0.4); // 벽 밖은 막힘
       B.leaveBuilding();
-      const back = Math.hypot(g.G.me.pos.x - e.door.x, g.G.me.pos.z - e.door.z) < 0.5 && !g.G.inside;
-      if (!ok || !wall || !back) out.fails.push(e.id);
+      const distance = Math.hypot(g.G.me.pos.x - e.door.x, g.G.me.pos.z - e.door.z);
+      const back = !g.G.inside && (distance < .5 || (blockedDoor && distance <= 7.1 && !T.solidAt(g.G.me.pos.x,g.G.me.pos.z,.42,g.G.me.pos.y)));
+      if (!ok || !wall || !back) out.fails.push({id:e.id,ok,wall,back,door:e.door,position:g.G.me.pos.toArray(),blocked:T.solidAt(e.door.x,e.door.z,.5,g.G.me.pos.y)});
     }
     return out;
   });

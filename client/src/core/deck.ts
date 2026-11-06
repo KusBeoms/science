@@ -20,6 +20,8 @@ interface Cooked extends Deck {
 }
 /** 발이 데크 윗면보다 이만큼 아래까지는 데크를 밟는 것으로 본다 (램프 진입·저프레임 오차 여유) */
 export const DECK_TOL = 1.4;
+// Projection of an exact rotated endpoint can differ by a few ulps. No visible footprint expansion.
+const EDGE_EPS = 1e-7;
 const decks: Cooked[] = [];
 
 export function addDeck(d: Deck): Deck {
@@ -43,12 +45,13 @@ export const deckList = (): readonly Deck[] => decks;
 
 /** 한 데크의 (x,z) 위 상판 높이. 띠 밖이면 undefined */
 function heightOn(d: Cooked, x: number, z: number): number | undefined {
-  if (x < d.min[0] || x > d.max[0] || z < d.min[1] || z > d.max[1]) return undefined;
+  if (x < d.min[0] - EDGE_EPS || x > d.max[0] + EDGE_EPS || z < d.min[1] - EDGE_EPS || z > d.max[1] + EDGE_EPS) return undefined;
   const rx = x - d.ax,
     rz = z - d.az,
     t = rx * d.ux + rz * d.uz;
-  if (t < 0 || t > d.len || Math.abs(-rx * d.uz + rz * d.ux) > d.hw) return undefined;
-  return d.h0 + ((d.h1 - d.h0) * t) / d.len;
+  if (t < -EDGE_EPS || t > d.len + EDGE_EPS || Math.abs(-rx * d.uz + rz * d.ux) > d.hw + EDGE_EPS) return undefined;
+  const along = Math.max(0, Math.min(d.len, t));
+  return d.h0 + ((d.h1 - d.h0) * along) / d.len;
 }
 /** 발 높이 y 인 몸이 (x,z) 에서 밟을 데크 높이 (없으면 undefined). 여러 개면 y 에 가장 가까운(아래쪽) 것 */
 export function deckAt(x: number, z: number, y: number): number | undefined {

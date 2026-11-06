@@ -1,5 +1,6 @@
 // 들어갈 수 있는 건물: 모든 도시 건물 + 큰 랜드마크 5곳. 용도(purpose)는 구역·양식으로 정하고, 방 크기는 건물 발자국을 따른다.
 import {CITY_BUILDINGS, CITY_LANDMARKS, doorOf, type CityBuilding} from './city.js';
+import {rememberRuralEntry, type RuralEntry} from './rural-entries.js';
 import {PAL, type PalName} from '../render/lowpoly/palette.js';
 
 export type Purpose =
@@ -68,7 +69,9 @@ export interface Enterable {
   id: string;
   purpose: Purpose;
   /** 문 앞(건물 밖) 좌표 */
-  door: {x: number; z: number};
+  door: {x: number; y?: number; z: number};
+  /** Accepted rural/fringe model and its actual entry deck. */
+  rural?: RuralEntry;
   /** 방 크기 */
   w: number;
   d: number;
@@ -102,7 +105,7 @@ const LM: Record<string, {purpose: Purpose; w: number; d: number; dz: number}> =
   lighthouse: {purpose: 'lighthouse', w: 11, d: 11, dz: 1},
   tvtower: {purpose: 'tvtower', w: 14, d: 14, dz: 1},
 };
-export const ENTERABLES: readonly Enterable[] = [
+export const ENTERABLES: Enterable[] = [
   ...CITY_BUILDINGS.map((b): Enterable => ({
     id: b.id, purpose: purposeOf(b), door: doorOf(b), w: Math.max(9, Math.min(b.w, 30)), d: Math.max(9, Math.min(b.d, 26)),
     wallH: b.hr ? 11 : 5 + 2 * (b.floors - 1), seed: hashId(b.id),
@@ -114,3 +117,16 @@ export const ENTERABLES: readonly Enterable[] = [
   }),
 ];
 export type {PalName};
+
+/** Preserve the complete city prefix; rural/fringe additions are appended after rendering accepts them. */
+export const CITY_ENTERABLE_COUNT = ENTERABLES.length;
+export function registerRuralInterior(site: RuralEntry): number {
+  site = rememberRuralEntry(site);
+  const e: Enterable = {id: site.id, purpose: 'house', door: {...site.door},
+    w: Math.max(9, Math.min(24, site.w)), d: Math.max(9, Math.min(22, site.d)),
+    wallH: site.group === 'mountain-lodge' ? 8 : 5, seed: hashId(site.id), rural: site};
+  const i = ENTERABLES.findIndex(old => old.id === site.id);
+  if (i >= 0) { Object.assign(ENTERABLES[i], e); return i; }
+  ENTERABLES.push(e);
+  return ENTERABLES.length - 1;
+}

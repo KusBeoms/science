@@ -10,6 +10,7 @@ import {dots} from '../render/plaza.js';
 import {flash, toast} from './hud.js';
 import {closeModal, openModal} from './modal.js';
 import {openGate} from './actions.js';
+import {exitVeh} from '../systems/vehicle.js';
 
 const el = (cls: string, html = '', tag = 'div') => {
   const e = document.createElement(tag);
@@ -24,6 +25,7 @@ const iconOf = (id: string) => (id === 'hub' ? '🏙️' : SECTORS.find(s => s.i
 export function warpTo(id: string) {
   const p = G.pads[id];
   if (!p) return;
+  exitVeh(true); // 운전/승하차 연출을 즉시 정리한 뒤 목적지로 이동한다.
   if (id !== 'hub') S.portals[id] = 1; // 도착한 섹터는 영구히 포탈이 열린다
   G.me.pos.set(p.x, groundH(p.x, p.z), p.z + 3);
   G.me.vy = 0;

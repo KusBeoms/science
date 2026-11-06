@@ -60,6 +60,9 @@ python3 -m http.server -d public        # 정적 서빙만으로 동작 (서버 
 | `render/textures.ts` | `planetTex planetR makePlanet freePlanet freeTree label checkerTex` |
 | `render/characters.ts` | `blocky animateWalk applyLook` |
 | `render/characters-gaze.ts` | `updateCharacterGaze(character, camera, dt)` — 플레이어 눈동자가 최종 카메라를 따라 부드럽게 움직임. 머리·몸 회전 및 꾸미기와 독립 |
+| `systems/camera.ts` | 수동 카메라 입력 추적·차량 yaw만2초 후 복귀·최대75° 상향 시야. [PLAYER_CONTROLS](PLAYER_CONTROLS.md) |
+| `systems/vehicle-transition.ts` | E 승하차 모션·중복 입력 차단·강제 이동 취소. 기본 차량 API는 동기 유지 |
+| `data/rural-entries.ts`, `render/rural-entry.ts` | 실제 배치 집의 문·접근 데크·동적 실내 등록. [RURAL_INTERIORS](RURAL_INTERIORS.md) |
 | `render/guardian.ts` | `makeGuardian(glow)` |
 | `render/gear.ts` | `buildSpringOnHand buildBag syncCarry` |
 | `render/deco.ts` | `applyDeco` |

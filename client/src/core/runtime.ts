@@ -7,7 +7,7 @@ export const G = {
   /** 앉아 있는 자리(벤치 등). null 이면 서 있음. 이동 입력이 들어오면 일어난다 */
   sit: null as null | {x: number; y: number; z: number; ry: number},
   /** 들어가 있는 건물 방 (game/interior.ts). null 이면 야외 */
-  inside: null as null | {i: number; grp: any; spots: {kind: string; x: number; z: number; ry?: number; fx?: string; icon?: string}[]; ret: {x: number; z: number}},
+  inside: null as null | {i: number; grp: any; spots: {kind: string; x: number; z: number; ry?: number; fx?: string; icon?: string}[]; ret: {x: number; y: number; z: number}},
   /** 운전 중인 차 (systems/vehicle.ts) */
   drive: null as any,
   /** 축구 경기 중 (systems/soccer.ts): 점프 대신 슛 */

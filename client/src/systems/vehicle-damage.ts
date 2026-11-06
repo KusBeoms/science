@@ -195,7 +195,7 @@ export function canStart(v: Veh): boolean {
 
 // ---------- 매 프레임 ----------
 function escapeWater(v: Veh) {
-  exitVeh();
+  exitVeh(true);
   for (let r = 3; r <= 64; r += 3)
     for (let k = 0; k < 16; k++) {
       const a = (k / 16) * Math.PI * 2,

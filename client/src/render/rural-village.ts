@@ -16,6 +16,7 @@ import {type Placed, type Inst} from './lowpoly/merge.js';
 import {terrainRibbon, type PathPoint} from './landscape-surface.js';
 import {greenhouse} from './rural-art.js';
 import {barn, boat, cottage, dockPost, haystack, silo, smallHouse, warehouse, well, walkway} from './rural-models.js';
+import {ruralBodySolid, ruralEntry} from './rural-entry.js';
 import {worldPart} from './rural-fields.js';
 
 const ROOFS = [PAL.tileRed, PAL.tileRed, PAL.brick, PAL.tileBlue, PAL.slate];
@@ -51,16 +52,22 @@ export function buildVillages(): VillageBuild {
     return !STREAMS.some(s => s.pts.some((p, i) => i < s.pts.length - 1 && segDist(x, z, p[0], p[1], s.pts[i + 1][0], s.pts[i + 1][1]) < STREAM_W + r + 1));
   };
   /** 건물 한 동: 모서리 4곳이 열린 땅이고 높이 차 ≤ 1.9 이면 기단 + 모델 + 충돌체 */
-  const building = (g: any, x: number, z: number, w: number, d: number, ry = 0, kind: 'house' | 'farm' = 'house') => {
+  const building = (g: any, x: number, z: number, w: number, d: number, ry = 0, kind: 'house' | 'farm' = 'house', doorU = 0, model = 'cottage') => {
     const c = Math.abs(Math.cos(ry)), s = Math.abs(Math.sin(ry)), hw = (w * c + d * s) / 2, hd = (w * s + d * c) / 2;
     const corner = [[-hw, -hd], [hw, -hd], [-hw, hd], [hw, hd]];
     if (!open(x, z, Math.max(hw, hd) * 0.8) || corner.some(([dx, dz]) => !open(x + dx, z + dz, 0.8))) return false;
     const hs = corner.map(([dx, dz]) => groundH(x + dx, z + dz)), y0 = Math.min(...hs), y1 = Math.max(...hs);
     if (y1 - y0 > 1.9) return false;
     const y = y1 + 0.06;
-    village.push({g: box(hw * 2 + 0.5, y - y0 + 0.15, hd * 2 + 0.5, PAL.stone), x, y: y0 - 0.1, z});
+    village.push(kind === 'house'
+      ? {g: box(w - 0.5, y - y0 + 0.15, d - 0.5, PAL.stone), x, y: y0 - 0.1, z, ry}
+      : {g: box(hw * 2 + 0.5, y - y0 + 0.15, hd * 2 + 0.5, PAL.stone), x, y: y0 - 0.1, z});
     village.push({g, x, y, z, ry});
-    addSolid(x - hw, z - hd, x + hw, z + hd);
+    if (kind === 'house') {
+      const body = {id: `rural-house-${Math.round(x * 100)}-${Math.round(z * 100)}`, x, y, z, w: w - 1, d: d - 1, ry, doorU, model};
+      ruralBodySolid(body);
+      ruralEntry(village, body);
+    } else addSolid(x - hw, z - hd, x + hw, z + hd);
     kind === 'house' ? counts.cottages++ : counts.farmBuildings++;
     return true;
   };
@@ -81,7 +88,7 @@ export function buildVillages(): VillageBuild {
   };
   const house = (x: number, z: number, ry: number, k: number, target?: PathPoint) => {
     const roof = ROOFS[Math.floor(hash2(Math.round(x), Math.round(z), 11 + k) * ROOFS.length)];
-    const placed = hash2(Math.round(x), Math.round(z), 12) < 0.45 ? building(smallHouse(roof), x, z, 8, 7, ry) : building(cottage(roof), x, z, 10, 8, ry);
+    const placed = hash2(Math.round(x), Math.round(z), 12) < 0.45 ? building(smallHouse(roof), x, z, 8, 7, ry, 'house', 0.8, 'small-house') : building(cottage(roof), x, z, 10, 8, ry);
     if (placed) access(x, z, ry, target ?? roadPoint(x, z));
     return placed;
   };

@@ -9,6 +9,7 @@ import {wildUpdate} from '../render/wild.js';
 import {toast} from '../game/hud.js';
 import {sfx} from '../audio/index.js';
 import type {GameSystem, Interactable, Target} from '../core/types.js';
+import {vehicleTransitionActive} from './vehicle-transition.js';
 
 /** 물 상태: 0 = 뭍, 1 = 걸어서 건넘(수심 0.4~1.3), 2 = 헤엄(수심 1.3+) — 빠져 죽지 않는다 */
 let wet = 0,
@@ -18,6 +19,7 @@ const WADE = 0.4,
   SWIM = 1.3;
 function swim(dt: number) {
   const me = G.me;
+  if (vehicleTransitionActive()) { wet = swimK = 0; return; }
   if (!me || G.drive || G.inside) {
     if (swimK && me) me.rotation.x = swimK = 0;
     wet = 0;

@@ -1,4 +1,6 @@
 // 차량 월드: 길가에 세워 둔 차(훔칠 수 있음)·내 차 생성/보관, 운전 물리, 내리기. 모델은 render/vehicle.ts, 데이터 data/cars.ts, 구매·튜닝·등록은 game/cars.ts.
+import {walkingExit, type ExitPoint} from '../core/exit-position.js';
+import {toast} from '../game/hud.js';
 import {S, save, saveHooks} from '../core/state.js';
 import {G} from '../core/runtime.js';
 import {addDynSolid, dropDynSolid, groundH, solidAt, walkable, type Solid} from '../core/terrain.js';
@@ -9,6 +11,7 @@ import {buildCar} from '../render/vehicle.js';
 import {mulberry32} from '../render/lowpoly/rng.js';
 import type {GameSystem, OwnedCar} from '../core/types.js';
 import type {CarDmg} from './vehicle-damage.js';
+import {beginVehicleEntry, beginVehicleExit, cancelVehicleTransition, cancelVehicleTransitionFor, updateVehicleTransition, vehicleTransitionActive} from './vehicle-transition.js';
 
 export interface Veh {
   t: string;
@@ -95,6 +98,7 @@ export function spawnVeh(o: Partial<Veh> & {t: string; x: number; z: number}): V
   return v;
 }
 export function removeVeh(v: Veh) {
+  cancelVehicleTransitionFor(v);
   dropDynSolid(v.solid);
   if (v.grp) G.scene.remove(v.grp);
   const i = VEH.indexOf(v);
@@ -132,35 +136,70 @@ function ensure() {
   S.cars.list.forEach((o, i) => !o.stored && spawnOwned(i));
 }
 
-export function enterVeh(v: Veh) {
+export function enterVeh(v: Veh, animate = false): boolean {
+  if (animate) {
+    if (vehicleTransitionActive()) return false;
+    const ok = beginVehicleEntry(v, () => {enterVeh(v);}, () => VEH.includes(v) && !v.d?.broken && !G.drive && !G.inside && !G.jail);
+    if (!ok) toast('차 옆으로 가까이 이동해 주세요');
+    return ok;
+  }
+  cancelVehicleTransition();
   G.drive = v;
   G.sit = null;
   syncSolid(v);
   G.me.visible = false;
   G.me.pos.set(v.x, v.y, v.z);
-  G.yaw = v.h + Math.PI;
+  G.me.vy = 0;
+  G.target = null;
+  return true; // 카메라는 수동 시야를 유지하며 camera.ts가 별도 복귀시킨다.
 }
-export function exitVeh() {
+/** Normal exits commit only after a free walking location exists. Force callers immediately relocate. */
+export function exitVeh(force = false, animate = false): boolean {
+  if (force) cancelVehicleTransition();
+  else if (vehicleTransitionActive()) return false;
   const v: Veh | null = G.drive;
-  if (!v) return;
-  const t = carOf(v.t),
-    rx = Math.cos(v.h),
-    rz = -Math.sin(v.h);
+  if (!v) return false;
+  const t = carOf(v.t), rx = Math.cos(v.h), rz = -Math.sin(v.h), fx = Math.sin(v.h), fz = Math.cos(v.h);
+  const hx = (t.wid * Math.abs(rx) + t.len * Math.abs(fx)) / 2,
+    hz = (t.wid * Math.abs(rz) + t.len * Math.abs(fz)) / 2;
   v.v = 0;
   G.drive = null;
-  G.me.visible = true;
-  for (const s of [1, -1, 2.4, -2.4]) {
-    const x = v.x + rx * s * (t.wid / 2 + 1.1) * Math.sign(s) * (Math.abs(s) > 1 ? -1 : 1),
-      z = v.z + rz * s * (t.wid / 2 + 1.1) * Math.sign(s) * (Math.abs(s) > 1 ? -1 : 1);
-    if (groundH(x, z, v.y) > -Infinity && !solidAt(x, z, 0.5, v.y)) {
-      G.me.pos.set(x, groundH(x, z, v.y), z);
-      break;
-    }
-  }
+  // Include the parked car's final AABB, especially when it is diagonal, in every candidate check.
   syncSolid(v);
-  if (v.own >= 0) Object.assign(S.cars.list[v.own], {x: v.x, z: v.z, h: v.h});
+  let exit: ExitPoint | null = null;
+  const side = Math.min((hx + 0.8) / (Math.abs(rx) || 1e-9), (hz + 0.8) / (Math.abs(rz) || 1e-9));
+  const front = Math.min((hx + 0.8) / (Math.abs(fx) || 1e-9), (hz + 0.8) / (Math.abs(fz) || 1e-9));
+  for (const extra of [0, 0.8, 1.6]) {
+    sides: for (const sign of [1, -1]) for (const along of [0, t.len * 0.3, -t.len * 0.3]) {
+      const x = v.x + rx * sign * (side + extra) + fx * along,
+        z = v.z + rz * sign * (side + extra) + fz * along;
+      exit = walkingExit(x, z, v.y);
+      if (exit) break sides;
+    }
+    if (exit) break;
+  }
+  if (!exit) for (const sign of [1, -1]) {
+    exit = walkingExit(v.x + fx * sign * front, v.z + fz * sign * front, v.y);
+    if (exit) break;
+  }
+  if (!exit && !force) {
+    G.drive = v;
+    syncSolid(v); // rollback: a driven car never blocks its own driver
+    toast('내릴 공간이 없습니다. 차를 조금 옮겨 주세요');
+    return false;
+  }
+  G.me.visible = true;
+  G.sit = null;
+  G.target = null;
+  G.pickOv = null;
+  const out = exit || {x: v.x, y: v.y, z: v.z};
+  G.me.pos.set(out.x, out.y, out.z);
+  G.me.vy = 0;
+  if (v.own >= 0 && S.cars.list[v.own]) Object.assign(S.cars.list[v.own], {x: v.x, z: v.z, h: v.h});
   v.age = 0;
   save();
+  if (animate && !force) beginVehicleExit(v, out, () => VEH.includes(v) && !G.drive && !G.inside && !G.jail);
+  return true;
 }
 
 /** 차 물리 한 걸음: fw −1~1(가속/후진), st −1~1(왼쪽+), brake 제동. 운전과 경찰 AI 가 같이 쓴다. 부딪히면 true */
@@ -207,12 +246,6 @@ function drive(v: Veh, dt: number) {
   stepVehicle(v, fw, st, !!k.Space, dt);
   G.me.pos.set(v.x, v.y, v.z);
   G.me.vy = 0;
-  // 카메라가 천천히 차 뒤로 따라온다
-  if (Math.abs(v.v) > 4) {
-    const want = v.h + Math.PI + (v.v < 0 ? Math.PI : 0);
-    const d = ((want - G.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
-    G.yaw += d * Math.min(1, dt * 1.4);
-  }
   vehicleHooks.forEach(f => f(v, dt));
 }
 /** 가속 입력·최고속도 보정 훅 (파손·침수가 엔진 고장 시 fw=0 으로 만든다) */
@@ -230,7 +263,9 @@ export const vehicleSystem: GameSystem = {
   },
   update(dt) {
     ensure();
-    if (G.drive && !G.inside) {
+    const transitioning = vehicleTransitionActive();
+    updateVehicleTransition(dt);
+    if (G.drive && !G.inside && !transitioning && !vehicleTransitionActive()) {
       const paused = G.modal !== null || G.shopOpen || G.quizOpen || G.dexOpen || (G.cine && G.cine.lock);
       if (!paused) drive(G.drive, dt);
     }

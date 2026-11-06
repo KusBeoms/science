@@ -9,6 +9,7 @@ import {closeModal} from '../game/modal.js';
 import {closeShop} from '../game/shop-ui.js';
 import {toggleDex} from '../game/dex.js';
 import {startGame} from './ui.js';
+import {CAMERA_PITCH_MIN, CAMERA_PITCH_MAX, noteCameraInput, beginCameraInput, endCameraInput, cancelCameraInput} from './camera.js';
 
 export const TOUCH =
   matchMedia('(hover:none) and (pointer:coarse)').matches ||
@@ -39,6 +40,7 @@ function clickAt(cx: number, cy: number) {
   clickPick(o.userData.pick, pk => (G.pickOv = {pk, t: 4}));
 }
 export function setLock(on: boolean) {
+  if (G.lockMode !== on) noteCameraInput();
   G.lockMode = on;
   $('#lockBtn').classList.toggle('on', on);
   if (!TOUCH) {
@@ -60,13 +62,16 @@ document.addEventListener('pointerlockchange', () => {
 });
 document.addEventListener('pointerlockerror', () => setLock(false));
 const rot = (dx: number, dy: number) => {
+  if (!Number.isFinite(dx) || !Number.isFinite(dy) || (!dx && !dy)) return;
+  noteCameraInput();
   G.yaw -= dx * 0.006;
-  G.pitch = clamp(G.pitch + dy * 0.005, 0.05, 1.35);
+  G.pitch = clamp(G.pitch + dy * 0.005, CAMERA_PITCH_MIN, CAMERA_PITCH_MAX);
 };
 document.addEventListener('mousemove', e => {
-  if (document.pointerLockElement) {
+  if (document.pointerLockElement && (e.movementX || e.movementY)) {
+    noteCameraInput();
     G.yaw -= e.movementX * 0.003;
-    G.pitch = clamp(G.pitch + e.movementY * 0.003, 0.05, 1.35);
+    G.pitch = clamp(G.pitch + e.movementY * 0.003, CAMERA_PITCH_MIN, CAMERA_PITCH_MAX);
   }
 });
 export function setupPointers() {
@@ -85,6 +90,7 @@ export function setupPointers() {
     return {d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) || 1, mx: (a[0].x + a[1].x) / 2, my: (a[0].y + a[1].y) / 2};
   };
   cv.addEventListener('pointerdown', (e: PointerEvent) => {
+    beginCameraInput(e.pointerId);
     if (e.pointerType === 'mouse') {
       if (document.pointerLockElement) {
         clickAt(innerWidth / 2, innerHeight / 2);
@@ -123,6 +129,7 @@ export function setupPointers() {
     if (ptrs.size === 2) {
       // 두 손가락: 핀치 줌 + 회전
       const m = meas();
+      if (m.d !== pinch!.d) noteCameraInput();
       G.camDist = clamp((G.camDist * pinch!.d) / m.d, 4, 36);
       rot(m.mx - pinch!.mx, m.my - pinch!.my);
       pinch = m;
@@ -133,25 +140,40 @@ export function setupPointers() {
     } // 터치: 한 손가락 드래그로 시점 회전
   });
   const end = (e: PointerEvent) => {
+    endCameraInput(e.pointerId);
     if (e.pointerType === 'mouse') {
-      if (mdrag && mdrag.moved < 5) clickAt(e.clientX, e.clientY);
+      if (e.type === 'pointerup' && mdrag && mdrag.moved < 5) clickAt(e.clientX, e.clientY);
       mdrag = null;
       return;
     }
     const p = ptrs.get(e.pointerId);
     ptrs.delete(e.pointerId);
-    if (p && tap && ptrs.size === 0 && performance.now() - p.t < 450) clickAt(p.x, p.y);
+    if (e.type === 'pointerup' && p && tap && ptrs.size === 0 && performance.now() - p.t < 450) clickAt(p.x, p.y);
     if (ptrs.size < 2) pinch = null;
     if (ptrs.size === 0) tap = false;
   };
   cv.addEventListener('pointerup', end);
   cv.addEventListener('pointercancel', end);
+  // A release outside the canvas must not leave a camera gesture or drag stuck forever.
+  const release = (e: PointerEvent) => {
+    endCameraInput(e.pointerId);
+    if (e.pointerType === 'mouse') mdrag = null;
+    else {
+      ptrs.delete(e.pointerId);
+      if (ptrs.size < 2) pinch = null;
+      if (!ptrs.size) tap = false;
+    }
+  };
+  addEventListener('pointerup', release);
+  addEventListener('pointercancel', release);
+  addEventListener('blur', () => {cancelCameraInput(); mdrag = null; ptrs.clear(); pinch = null; tap = false;});
   // 트랙패드: 두 손가락 스크롤 = 화면 회전, 핀치(ctrl+휠) = 줌, 마우스 휠 = 줌
   addEventListener(
     'wheel',
     e => {
       if (paused()) return;
       e.preventDefault();
+      if (e.deltaX || e.deltaY) noteCameraInput();
       if (e.ctrlKey) {
         G.camDist = clamp(G.camDist + e.deltaY * 0.06, 4, 36);
         return;
@@ -164,7 +186,7 @@ export function setupPointers() {
         return;
       }
       G.yaw += e.deltaX * 0.006;
-      G.pitch = clamp(G.pitch - e.deltaY * 0.005, 0.05, 1.35);
+      G.pitch = clamp(G.pitch - e.deltaY * 0.005, CAMERA_PITCH_MIN, CAMERA_PITCH_MAX);
     },
     {passive: false}
   );
@@ -172,14 +194,17 @@ export function setupPointers() {
   // Safari 제스처 이벤트: 데스크탑 트랙패드 핀치에서만 줌에 쓴다. 터치 기기에서는 조이스틱 손가락 + 화면 손가락이 핀치로 오인되므로 줌에 쓰지 않는다(기본 동작만 막음).
   addEventListener('gesturestart', (e: any) => {
     e.preventDefault();
+    if (!TOUCH) beginCameraInput('gesture');
     gsc = e.scale || 1;
   });
   addEventListener('gesturechange', (e: any) => {
     e.preventDefault();
     if (TOUCH) return;
+    if (gsc !== (e.scale || 1)) noteCameraInput();
     G.camDist = clamp((G.camDist * gsc) / (e.scale || 1), 4, 36);
     gsc = e.scale || 1;
   });
+  addEventListener('gestureend', () => endCameraInput('gesture'));
   addEventListener('contextmenu', e => e.preventDefault());
   // 터치 컨트롤
   const joyEl = $('#joy'),
@@ -275,8 +300,8 @@ export function setupKeys() {
       return;
     } // 퀴즈를 닫은 키의 반복 입력이 점프로 새지 않게
     G.keys[e.code] = true;
-    if (e.code === 'KeyE') act('e');
-    if (e.code === 'KeyF') act('f');
+    if (e.code === 'KeyE' && !e.repeat) act('e');
+    if (e.code === 'KeyF' && !e.repeat) act('f');
     if (e.code === 'KeyB') toggleDex(true);
     if (e.code === 'KeyP') openPhone();
     if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();

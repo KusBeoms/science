@@ -1,11 +1,9 @@
 // 매 프레임: 시간/성장/밤낮 → 이동 → 섹터 스트리밍·시간 진행 → 문/수호자 → 입고 → 등록 시스템 → 메시 동기화 → 대상 → 카메라/렌더 → HUD
-import {EYE_Y} from '../core/scale.js';
 import {S, income, dexN} from '../core/state.js';
 import {G, paused} from '../core/runtime.js';
 import {$, fmt, setTxt} from '../core/util.js';
 import {advance, forEachNest, poolOf} from '../core/layout.js';
 import {inBase, zoneAt} from '../core/geometry.js';
-import {heightAt} from '../core/heightmap.js';
 import {P, pickFrom} from '../data/planets.js';
 import {streamSectors, syncNests} from '../render/sectors.js';
 import {updateSky} from '../render/sky.js';
@@ -21,6 +19,8 @@ import {updateGuardians} from './guardians.js';
 import {sectorChanged, updateSystems} from './registry.js';
 import {updateTarget} from './target.js';
 import {updateCharacterGaze} from '../render/characters-gaze.js';
+import {vehicleTransitionActive} from './vehicle-transition.js';
+import {updateFollowCamera} from './camera.js';
 
 function dayNight(dt: number) {
   G.cycT += dt;
@@ -62,7 +62,7 @@ export function frame() {
   S.base.forEach(o => {
     if (o && o.left > 0) o.left -= dt * tdil * (G.night > 0 ? NIGHT_GROW : 1);
   });
-  movePlayer(dt, t);
+  if (!vehicleTransitionActive()) movePlayer(dt, t);
   // 스프링 장식 애니메이션
   if (G.springGrp) {
     const a = G.springGrp.userData;
@@ -84,16 +84,7 @@ export function frame() {
   G.npc.position.y = Math.abs(Math.sin(t * 2)) * 0.12;
   G.npc.rotation.y = Math.sin(t * 0.7) * 0.3;
   updateTarget(raw);
-  // 카메라
-  if (!G.started) G.yaw += raw * 0.12;
-  const cp = Math.cos(G.pitch);
-  G.camera.position.set(
-    G.me.pos.x + Math.sin(G.yaw) * cp * G.camDist,
-    G.me.pos.y + EYE_Y + Math.sin(G.pitch) * G.camDist,
-    G.me.pos.z + Math.cos(G.yaw) * cp * G.camDist
-  );
-  G.camera.position.y = Math.max(G.camera.position.y, heightAt(G.camera.position.x, G.camera.position.z) + 0.8); // 언덕·능선 속으로 파고들지 않게
-  G.camera.lookAt(G.me.pos.x, G.me.pos.y + EYE_Y, G.me.pos.z);
+  updateFollowCamera(raw);
   cineCamera(); // 컷신 중이면 카메라 덮어쓰기
   updateCharacterGaze(G.me, G.camera, raw);
   updateSky(dt, t); // 천구를 카메라에 붙이고 낮밤 틴트·조명·안개 갱신

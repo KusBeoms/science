@@ -1,5 +1,6 @@
 // 도시→교외→산림 전이 생활권. 위치/진입로는 data/city-fringe.ts, 실제 지면은 terrainY를 공유한다.
 // 부지 경사에 맞춘 기초·진입 데크·회전 건물 충돌을 등록하고 120u 블록마다 두 단계 LOD로 병합한다.
+import {registerRuralInterior} from '../data/interiors.js';
 import {G} from '../core/runtime.js';
 import {surfaceMaterial} from './surface-detail.js';
 import {tagStructure} from './surface-tags.js';
@@ -73,6 +74,8 @@ function livingParts(s:Site,parts:Placed[]) {
   // 실제 걸을 수 있는 진입 판과 문 앞 높이를 동일한 데이터로 연결한다.
   parts.push(placedWorld(beam([road[0],ry-0.1,road[1]],[front[0],s.y-0.1,front[1]],2,PAL.bone,0.18),p.x,p.z));
   addDeck({id:`${p.id}-entry`,ax:road[0],az:road[1],bx:front[0],bz:front[1],hw:1,h0:ry,h1:s.y});
+  registerRuralInterior({id: p.id, group: 'fringe', model: p.kind, x: p.x, y: s.y, z: p.z,
+    w: p.w, d: p.d, ry: p.ry, door: {x: front[0], y: s.y, z: front[1]}, landing: {x: road[0], y: ry, z: road[1]}});
   if(s.y-s.low>1.1) {
     for(const side of[-1,1]) {
       const a=frame(p,side*(p.w/2+1.2),-p.d/2-1),b=frame(p,side*(p.w/2+1.2),p.d/2-0.5),ha=groundH(...a),hb=groundH(...b);

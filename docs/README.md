@@ -52,6 +52,8 @@ docs/
 | [SERVER.md](tech/SERVER.md) | API 엔드포인트, 환경변수, 로컬/도커 실행 |
 | [TESTING.md](tech/TESTING.md) | 헤드리스 E2E 하네스 사용법, 마일스톤 QA 체크리스트 |
 | [TEXTURES.md](tech/TEXTURES.md) | 사용자 텍스처25종 카탈로그·경량16종 팩·성능/실패 대응 |
+| [PLAYER_CONTROLS.md](tech/PLAYER_CONTROLS.md) | 눈동자 시선·자유 카메라/2초 복귀·하늘 시야·차량 승하차 |
+| [RURAL_INTERIORS.md](tech/RURAL_INTERIORS.md) | 농촌·교외 주택136채의 문/보행판·실내·안전한 퇴장 |
 | [AUDIO.md](tech/AUDIO.md) | 사운드 시스템 구조, `sfx` 이름표, BGM, 접근성 |
 | [WEB_ROOT_README.md](tech/WEB_ROOT_README.md) | 상위 `../README.md` 초안 — 프로젝트 소개·서비스 구성·환경변수·공개 경로 |
 

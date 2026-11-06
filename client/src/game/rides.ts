@@ -8,6 +8,7 @@ import {animateWalk} from '../render/characters.js';
 import {toast} from './hud.js';
 import type {GameSystem} from '../core/types.js';
 import {eul} from '../core/util.js';
+import {vehicleTransitionActive} from '../systems/vehicle-transition.js';
 
 let cur: Ride | null = null,
   model: RideModel | null = null,
@@ -19,7 +20,7 @@ export const ownsRide = (id: string) => !!S.vehicles['r:' + id];
 export const ownedRides = () => RIDES.filter(r => ownsRide(r.id));
 export const currentRide = () => cur;
 export const selectedRide = (): Ride | undefined => RIDES[(S.vehicles.sel || 0) - 1] && ownsRide(RIDES[S.vehicles.sel - 1].id) ? RIDES[S.vehicles.sel - 1] : ownedRides().sort((a, b) => b.mul - a.mul)[0];
-const blocked = () => !!(G.inside || G.drive || G.match || G.sit || G.modal || G.cine);
+const blocked = () => !!(G.inside || G.drive || G.match || G.sit || G.modal || G.cine || vehicleTransitionActive());
 
 export function mountRide(id: string): boolean {
   const r = rideOf(id);

@@ -2,10 +2,11 @@
 import {G, paused} from '../core/runtime.js';
 import {$} from '../core/util.js';
 import {findTarget, interactableOf} from '../game/interactables.js';
+import {vehicleTransitionActive} from './vehicle-transition.js';
 
 export function updateTarget(raw: number) {
   if (G.pickOv && (G.pickOv.t -= raw) <= 0) G.pickOv = null;
-  const target = findTarget(G.me);
+  const target = vehicleTransitionActive() ? null : findTarget(G.me);
   G.target = target;
   const inf = $('#info'),
     pr = $('#prompt'),

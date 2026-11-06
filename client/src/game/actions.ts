@@ -15,6 +15,8 @@ import {flash, toast} from './hud.js';
 import {interactableOf} from './interactables.js';
 import {openQuiz} from './quiz.js';
 import {sfx} from '../audio/index.js';
+import {vehicleTransitionActive} from '../systems/vehicle-transition.js';
+import {exitVeh} from '../systems/vehicle.js';
 
 export function tryGrab(zi: number, k: number) {
   if (paused() || locked(zi)) return;
@@ -85,6 +87,7 @@ export function loseCarry() {
   syncCarry();
 }
 export function caught() {
+  exitVeh(true);
   const had = G.carry.length,
     lost = Math.min(CAUGHT_LOSS_MAX, Math.floor(S.cr * (had ? 0.15 : 0.05)));
   S.cr -= lost;
@@ -96,6 +99,7 @@ export function caught() {
   flash('#f33', 0.5);
 }
 export function respawn() {
+  exitVeh(true);
   const had = G.carry.length;
   if (had) loseCarry();
   G.me.pos.set(SPAWN.x, 0, SPAWN.z);
@@ -151,7 +155,7 @@ export function sell(i: number) {
 /** E/F 키·프롬프트 터치: 현재 대상의 종류에 등록된 act 로 보낸다 */
 export function act(k: 'e' | 'f') {
   const target = G.target;
-  if (!target || paused()) return;
+  if (!target || paused() || vehicleTransitionActive()) return;
   const it = interactableOf(target.kind);
   if (it) it.act(target, k);
 }

@@ -12,6 +12,7 @@ import {mergeGeometries, type Placed, type Inst} from './lowpoly/merge.js';
 import {terrainRibbon, type PathPoint} from './landscape-surface.js';
 import {gazebo, coastalRock} from './rural-art.js';
 import {lodge, shelter, signpost, trailGate, walkway} from './rural-models.js';
+import {ruralBodySolid, ruralEntry} from './rural-entry.js';
 import {worldPart} from './rural-fields.js';
 
 const TRAIL_C = mix(PAL.bone, PAL.clay, 0.3),
@@ -67,9 +68,14 @@ export function buildMountain(): MountainBuild {
   });
   for (const [lx, lz] of [[-20, -11], [20, -11], [-20, 11], [20, 11]]) lamps.push({x: LOT.x + lx, y: LOT.y, z: LOT.z + lz});
   // 산장
-  const ly = groundH(LODGE.x, LODGE.z);
-  parts.push({g: box(16, 3, 11, PAL.stone), x: LODGE.x, y: ly - 3, z: LODGE.z, ry: LODGE.ry}, {g: lodge(), x: LODGE.x, y: ly, z: LODGE.z, ry: LODGE.ry});
-  addSolid(LODGE.x - 8.5, LODGE.z - 6, LODGE.x + 8.5, LODGE.z + 6.5);
+  const foundationHeights = [[-7.25, -4.75], [7.25, -4.75], [-7.25, 4.75], [7.25, 4.75]].map(([u, v]) =>
+    groundH(LODGE.x + u * Math.cos(LODGE.ry) + v * Math.sin(LODGE.ry), LODGE.z - u * Math.sin(LODGE.ry) + v * Math.cos(LODGE.ry)));
+  const ly = Math.max(groundH(LODGE.x, LODGE.z), ...foundationHeights) + 0.06, baseY = Math.min(...foundationHeights) - 0.2;
+  parts.push({g: box(14.5, ly - baseY, 9.5, PAL.stone), x: LODGE.x, y: baseY, z: LODGE.z, ry: LODGE.ry}, {g: lodge(), x: LODGE.x, y: ly, z: LODGE.z, ry: LODGE.ry});
+  const cabin = {id: 'rural-mountain-lodge', group: 'mountain-lodge' as const, model: 'lodge',
+    x: LODGE.x, y: ly, z: LODGE.z, w: 14, d: 9, ry: LODGE.ry, front: 8.1, porchHeight: 0.4};
+  ruralBodySolid(cabin);
+  ruralEntry(parts, cabin);
   lamps.push({x: LODGE.x + 5, y: ly, z: LODGE.z + 8});
   // 길에서 짧은 연결 데크로 진입하는 중간 전망 쉼터. 기초·널판·보행 높이를 공유한다.
   for (const f of [0.34, 0.68]) {

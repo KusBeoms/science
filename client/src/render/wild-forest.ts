@@ -10,6 +10,7 @@ import {WILD_POLY} from '../data/outline.js';
 import {LOT, STREAMS, STREAM_W} from '../data/wild-mountain.js';
 import {roadNear} from '../data/wild-road.js';
 import {inParcel, SITES} from '../data/wild-fields.js';
+import {ruralEntryKeepOut} from '../data/rural-entries.js';
 import {PAL, mix} from './lowpoly/palette.js';
 import {cone} from './lowpoly/prim.js';
 import {fbm, hash2} from './lowpoly/rng.js';
@@ -40,7 +41,7 @@ export function buildForest(): Forest {
       if (mb <= 4 && dc < 46) dens = Math.max(dens, 0.55 * (1 - smooth(14, 50, dc)));
       dens *= 1 - 0.92 * beach;
       if (hash2(gx, gz, 7) > dens) continue;
-      if (inParcel(x, z, 3) || solidAt(x, z, 2) || roadNear(x, z).d < roadNear(x, z).hw + 3.5 || trailNear(x, z).d < 4.5) continue;
+      if (ruralEntryKeepOut(x, z, 2.5) || inParcel(x, z, 3) || solidAt(x, z, 2) || roadNear(x, z).d < roadNear(x, z).hw + 3.5 || trailNear(x, z).d < 4.5) continue;
       if (LAKES.some(L => y < L.level + 1.6 && lakeT(L, x, z) < 1.2)) continue;
       if (Math.hypot(x - LOT.x, z - LOT.z) < 34 || (x > JAIL.flat[0] - 4 && x < JAIL.flat[2] + 4 && z > JAIL.flat[1] - 4 && z < JAIL.flat[3] + 4)) continue;
       if (x > COUNTRY[0] - 4 && x < COUNTRY[2] + 4 && z > COUNTRY[1] - 4 && z < COUNTRY[3] + 4) continue;

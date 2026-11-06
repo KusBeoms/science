@@ -1,5 +1,6 @@
 // 건물 안으로 들어가기/나오기와 방 안 상호작용(상점 계산대·딜러·튜닝·차고·침대·의자). 방 생성은 render/interior.ts, 충돌은 core/terrain.ts setRoom.
 import {G} from '../core/runtime.js';
+import {nearbyExit} from '../core/exit-position.js';
 import {groundH, setRoom} from '../core/terrain.js';
 import {dist2} from '../core/util.js';
 import {ENTERABLES, PURPOSE_INFO} from '../data/interiors.js';
@@ -15,7 +16,18 @@ import {S} from '../core/state.js';
 import type {GameSystem, Interactable, Target} from '../core/types.js';
 
 let prevCam = 11;
+let roomCollision: {rect: Room['rect']; solids: Room['solids']} | null = null;
+let roomWallMaterial: any = null;
 let flashEl: HTMLElement | null = null;
+function disposeRoom(grp: any) {
+  G.scene.remove(grp);
+  const geometry = new Set<any>();
+  grp.traverse((o: any) => o.geometry && geometry.add(o.geometry));
+  geometry.forEach(g => g.dispose());
+  // render/interior creates one private BackSide wall material; the other materials are shared.
+  roomWallMaterial?.dispose();
+  roomWallMaterial = null;
+}
 function flash() {
   if (!flashEl) {
     flashEl = document.createElement('div');
@@ -32,12 +44,14 @@ function flash() {
 }
 
 export function enterBuilding(i: number) {
-  if (G.inside) return;
+  if (G.inside || G.drive || !ENTERABLES[i]) return;
   const e = ENTERABLES[i],
+    ret = {x: e.door.x, y: e.door.y ?? groundH(e.door.x, e.door.z, G.me.pos.y), z: e.door.z},
     room: Room = buildRoom(e);
+  roomWallMaterial = room.grp.children.find((o: any) => o.material?.side === THREE.BackSide)?.material;
   G.scene.add(room.grp);
-  setRoom({rect: room.rect, solids: room.solids});
-  G.inside = {i, grp: room.grp, spots: room.spots, ret: {x: e.door.x, z: e.door.z}};
+  setRoom(roomCollision = {rect: room.rect, solids: room.solids});
+  G.inside = {i, grp: room.grp, spots: room.spots, ret};
   G.sit = null;
   G.me.pos.set(room.spawn.x, 0, room.spawn.z);
   G.me.vy = 0;
@@ -48,19 +62,33 @@ export function enterBuilding(i: number) {
   flash();
   if (S.props[e.id]) toast('내 건물입니다');
 }
-export function leaveBuilding() {
+/** force is reserved for callers that immediately relocate the player (taxi/rescue). */
+export function leaveBuilding(force = false): boolean {
   const ins = G.inside;
-  if (!ins) return;
-  G.scene.remove(ins.grp);
-  ins.grp.traverse((o: any) => o.geometry && o.geometry.dispose());
+  if (!ins) return false;
+  // Inspect outdoor collisions before destroying the room. A parked vehicle may now occupy its door.
+  setRoom(null);
+  const exit = nearbyExit(ins.ret);
+  if (!exit && !force) {
+    setRoom(roomCollision);
+    toast('문 앞이 막혀 있습니다. 잠시 후 다시 나가세요');
+    return false;
+  }
+  disposeRoom(ins.grp);
   setRoom(null);
   G.inside = null;
+  roomCollision = null;
+  G.target = null;
+  G.pickOv = null;
   G.camDist = prevCam;
   G.pitch = 0.45;
   G.sit = null;
-  G.me.pos.set(ins.ret.x, groundH(ins.ret.x, ins.ret.z), ins.ret.z);
+  const out = exit || ins.ret;
+  G.me.pos.set(out.x, out.y, out.z);
+  G.me.visible = true;
   G.me.vy = 0;
   flash();
+  return true;
 }
 
 interface EnterT extends Target {
@@ -75,6 +103,7 @@ export const enterIt: Interactable<EnterT> = {
     let best = -1,
       bd = 3.4;
     ENTERABLES.forEach((e, i) => {
+      if (e.door.y !== undefined && Math.abs(me.pos.y - e.door.y) > 1.6) return;
       const d = dist2(me.pos, e.door);
       if (d < bd) [best, bd] = [i, d];
     });
@@ -165,9 +194,13 @@ export const interiorSystem: GameSystem = {
     const ins = G.inside;
     if (!ins) return;
     if (Math.abs(G.me.pos.x - 1500) > 40 || Math.abs(G.me.pos.z - 1500) > 40) {
-      G.scene.remove(ins.grp);
+      disposeRoom(ins.grp);
       setRoom(null);
       G.inside = null;
+      roomCollision = null;
+      G.sit = null;
+      G.target = null;
+      G.camDist = prevCam;
     }
   },
 };

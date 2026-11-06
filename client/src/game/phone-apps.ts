@@ -38,8 +38,8 @@ const dist = (p: {x: number; z: number}) => Math.round(Math.hypot(p.x - G.me.pos
 export function warpTo(x: number, z: number) {
   if (G.jail || G.match) return toast('지금은 이동할 수 없습니다');
   closeModal();
-  if (G.drive) exitVeh();
-  if (G.inside) leaveBuilding();
+  exitVeh(true); // 탑승 모션 중에도 먼저 취소한다.
+  if (G.inside) leaveBuilding(true);
   G.sit = null;
   G.me.pos.set(x, Math.max(0, groundH(x, z)), z);
   G.me.vy = 0;

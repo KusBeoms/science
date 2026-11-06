@@ -9,6 +9,7 @@ import {canStart, repairCost, repairOwned, repairSaved} from '../systems/vehicle
 import {crowdApi} from '../systems/crowd.js';
 import {addStars} from '../systems/police.js';
 import {toast} from './hud.js';
+import {vehicleTransitionActive} from '../systems/vehicle-transition.js';
 import {pushMsg} from './messenger.js';
 import type {Interactable, OwnedCar, Target} from '../core/types.js';
 
@@ -146,10 +147,11 @@ interface CarT extends Target {
   kind: 'car';
   v: Veh;
 }
-export function takeCar(v: Veh) {
-  if (!canStart(v)) return;
+export function takeCar(v: Veh, animate = false) {
+  if (vehicleTransitionActive() || !canStart(v)) return;
+  if (animate && !enterVeh(v, true)) return;
   if (v.own >= 0) {
-    if (v.v === 0) enterVeh(v);
+    if (!animate && v.v === 0) enterVeh(v);
     return;
   }
   // 길가 차량 시승: 튜닝샵에서 개조하면 내 차가 된다 (내부 플래그 stolen=1 = 개조 대기)
@@ -169,13 +171,13 @@ export function takeCar(v: Veh) {
     toast('보관 공간이 없어 시승만 가능합니다. 내리면 반납됩니다');
   }
   save();
-  enterVeh(v);
+  if (!animate) enterVeh(v);
 }
 export const carIt: Interactable<CarT> = {
   kind: 'car',
   tier: 0,
   find(me) {
-    if (G.inside || G.drive) return null;
+    if (G.inside || G.drive || vehicleTransitionActive()) return null;
     let best: Veh | null = null,
       bd = 1e9;
     for (const v of VEH) {
@@ -189,17 +191,17 @@ export const carIt: Interactable<CarT> = {
   info: t => `<b>${carOf(t.v.t).icon} ${carOf(t.v.t).name}</b>` + (t.v.own >= 0 ? (S.cars.list[t.v.own]?.stolen ? '<br>개조할 수 있는 차량' : '<br>내 차량') : '<br>튜닝샵에서 내 차로 개조할 수 있습니다'),
   prompt: t => (t.v.own >= 0 ? 'E 탑승' : 'E 시승하기'),
   act(t, key) {
-    if (key === 'e') takeCar(t.v);
+    if (key === 'e') takeCar(t.v, true);
   },
 };
 export const carExitIt: Interactable<Target & {kind: 'carexit'}> = {
   kind: 'carexit',
   tier: 0,
-  find: () => (G.drive ? {kind: 'carexit', d: 0} : null),
+  find: () => (G.drive && !vehicleTransitionActive() ? {kind: 'carexit', d: 0} : null),
   info: () => (G.drive ? `<b>${carOf(G.drive.t).icon} ${carOf(G.drive.t).name}</b><br>W/S 가속 · A/D 조향 · Space 제동` : ''),
   prompt: () => 'E 하차',
   act(_t, key) {
-    if (key === 'e') exitVeh();
+    if (key === 'e') exitVeh(false, true);
   },
 };
 void CARS;

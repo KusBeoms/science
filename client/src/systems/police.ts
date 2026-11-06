@@ -142,7 +142,7 @@ export const policeSystem: GameSystem = {
     if (list.some(v => Math.hypot(v.x - G.me.pos.x, v.z - G.me.pos.z) < (G.drive ? 4.6 : 3.4)) === false) bustT = Math.max(0, bustT - dt * 2);
     if (bustT > 0.7) {
       bustT = 0;
-      if (G.drive) exitVeh();
+      exitVeh(true); // 탑승 모션 중에도 즉시 검거 상태로 전환한다.
       list.forEach(removeVeh);
       goJail(S.wanted);
     }
