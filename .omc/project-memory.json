@@ -1,6 +1,10 @@
 {
   "version": "1.0.0",
+<<<<<<< HEAD
   "lastScanned": 1793963050596,
+=======
+  "lastScanned": 1793874839300,
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
   "projectRoot": "/Users/dalgsiki/Developer/science",
   "techStack": {
     "languages": [],
@@ -9,7 +13,11 @@
     "runtime": null
   },
   "build": {
+<<<<<<< HEAD
     "buildCommand": "cd /Users/dalgsiki/Developer/science/client/src/citygen && python3 - <<'EOF'\ns=open('parking.ts').read()\ns=s.replace(\"rot: Math.atan2(-p.tz, p.tx) / RAD * 0 + rotAlong(p.tx, p.tz)};\\n      // 주차대 박스의 로컬 z 가 도로 방향이 되도록: hw=폭(가로), hd=길이(도로 방향)\\n\",\"rot: rotAlong(p.tx, p.tz)};\\n      // 주차대 박스의 로컬 z 가 도로 방향: hw=폭(가로), hd=길이(도로 방향)\\n\")\ns=s.replace(\", ...(road ? {} : {}), ...(occ\",\", ...(occ\").replace(\"layer: number, road?: string): ParkingSlotOut\",\"layer: number): ParkingSlotOut\")\ns=s.replace(\"rotCar + (rng.chance(0.25) ? 180 : 0), 0, lot.road)\",\"rotCar + (rng.chance(0.25) ? 180 : 0), 0)\").replace(\"yaw(fx, fz), 0, r.id)\",\"yaw(fx, fz), 0)\")\nopen('parking.ts','w').write(s)\nEOF\ncat > props-profiles.ts <<'EOF'\n// 소품 프로필 기본값(source.props 가 비었을 때 쓴다)과 단면에서 가로 위치를 구하는 함수.\n// 'stagger' 의 spacing 은 양쪽을 번갈아 놓은 \"합친 열\"의 간격이다(한쪽만 보면 2배). 그 밖의 side 는 한쪽 열의 간격이다.\n// band: 소품이 서는 가로 띠 — plant(식재대 가운데) / walk(보도 가운데) / curb(연석에서 offset) / median(중앙분리대 위, 돌출형만).\nimport type {PropProfile, RoadClass} from '../data/city-schema.js';\nimport {SEC, sideEdges} from './roads.js';\n\nexport interface PropRule extends PropProfile {\n  band?: 'plant' | 'walk' | 'curb' | 'median';\n  species?: string[];\n  /** 같은 종류가 겹칠 때 낮은 숫자 먼저 */\n  prio?: number;\n}\nexport const PRIO: Record<string, number> = {signal: 0, sign: 0, lamp: 1, tree: 2, bench: 3, bin: 4, bollard: 5};\n\nconst P = (id: string, kind: PropProfile['kind'], roadClass: RoadClass, side: PropProfile['side'], min: number, target: number, max: number, band: PropRule['band'], clearance: number, offset = 0): PropRule =>\n  ({id, kind, roadClass, side, spacing: {min, target, max}, offset, clearance, band});\n/** 등급별 기본 프로필: 가로등·가로수·벤치·휴지통·볼라드 (신호기·표지판은 교차로에서 따로 만든다) */\nexport const DEFAULT_PROPS: readonly PropRule[] = [\n  P('lamp.expressway', 'lamp', 'expressway', 'median', 30, 40, 50, 'median', 4),\n  P('lamp.arterial1', 'lamp', 'arterial1', 'median', 28, 35, 42, 'median', 3),\n  P('lamp.arterial2', 'lamp', 'arterial2', 'stagger', 22, 30, 36, 'plant', 3),\n  P('lamp.collector', 'lamp', 'collector', 'stagger', 20, 26, 32, 'plant', 3),\n  P('lamp.local', 'lamp', 'local', 'stagger', 20, 28, 36, 'plant', 3),\n  {...P('tree.arterial1', 'tree', 'arterial1', 'both', 9, 12, 16, 'plant', 4), species: ['round', 'round', 'pine']},\n  {...P('tree.arterial2', 'tree', 'arterial2', 'both', 8, 10, 14, 'plant', 4), species: ['round', 'round', 'pine']},\n  {...P('tree.collector', 'tree', 'collector', 'both', 7, 9, 12, 'plant', 3.5), species: ['round', 'round', 'pine']},\n  {...P('tree.local', 'tree', 'local', 'both', 6, 8, 11, 'plant', 3), species: ['round', 'round', 'pine']},\n  P('bench.arterial1', 'bench', 'arterial1', 'both', 40, 60, 90, 'plant', 4),\n  P('bench.arterial2', 'bench', 'arterial2', 'both', 40, 55, 80, 'plant', 4),\n  P('bench.collector', 'bench', 'collector', 'stagger', 50, 70, 100, 'plant', 4),\n  P('bin.arterial1', 'bin', 'arterial1', 'both', 50, 70, 100, 'plant', 3),\n  P('bin.arterial2', 'bin', 'arterial2', 'both', 50, 70, 100, 'plant', 3),\n  P('bollard.arterial1', 'bollard', 'arterial1', 'both', 6, 8, 12, 'curb', 2, 0.35),\n  P('bollard.arterial2', 'bollard', 'arterial2', 'both', 6, 8, 12, 'curb', 2, 0.35),\n];\n\n/** 소품(반경 rad)이 서는 가로 위치 lat(양수 = 도로 오른쪽 기준 바깥 거리, 중앙분리대는 0). 들어갈 공간이 없으면 null */\nexport function latFor(rule: PropRule, sec: ArrayLike<number>, right: boolean, rad: number): number | null {\n  if (rule.band === 'median') return sec[SEC.oneWay] < 0.5 && sec[SEC.med] >= 1.0 && sec[SEC.med] / 2 >= rad + 0.15 ? 0 : null;\n  const e = sideEdges(sec, 0, right);\n  switch (rule.band) {\n    case 'plant': { const w = e.e5 - e.e4; return w >= 2 * rad + 0.2 ? e.e4 + w / 2 : null; }\n    case 'walk': { const w = e.e4 - e.e3; return w >= 2 * rad + 1.2 ? e.e3 + w / 2 : null; }\n    case 'curb': { const w = e.e4 - e.e3; return w >= rule.offset + rad + 1.4 ? e.e3 + Math.max(rule.offset, 0.3) : null; }\n    default: { const l = e.e3 + rule.offset; return l + rad <= e.e5 && e.e5 > e.e3 ? l : null; }\n  }\n}\nEOF\ncd ../.. && npx tsc --noEmit 2>&1 | head",
+=======
+    "buildCommand": "cd /Users/dalgsiki/Developer/science/client && python3 - <<'EOF'\np='src/render/wild-mountain.ts'\ns=open(p).read()\ns=s.replace(\"WATER = mix(PAL.blue, PAL.teal, 0.3);\",\"WATER = mix(mix(PAL.blue, PAL.teal, 0.3), PAL.slate, 0.3);\")\nopen(p,'w').write(s)\nEOF\nnpx tsc | head -3; npx playwright test tests/e2e/terrain.spec.ts tests/e2e/world.spec.ts tests/e2e/bridge.spec.ts tests/e2e/bridge-approach.spec.ts tests/e2e/extras.spec.ts tests/e2e/modeling.spec.ts tests/e2e/phone.spec.ts tests/e2e/landscape.spec.ts tests/e2e/wild-jail.spec.ts tests/e2e/water.spec.ts tests/e2e/smoke.spec.ts > /private/tmp/claude-501/-Users-dalgsiki-Developer-science/a799b9c1-db46-4df8-879f-18d9955b8a17/scratchpad/suite.txt 2>&1; grep -E \"✓|✘|passed|failed|Error|Expected|Received\" /private/tmp/claude-501/-Users-dalgsiki-Developer-science/a799b9c1-db46-4df8-879f-18d9955b8a17/scratchpad/suite.txt | head -80",
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
     "testCommand": null,
     "lintCommand": null,
     "devCommand": null,
@@ -38,7 +46,11 @@
       "path": "client",
       "purpose": null,
       "fileCount": 7,
+<<<<<<< HEAD
       "lastAccessed": 1793963050591,
+=======
+      "lastAccessed": 1793874839294,
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
       "keyFiles": [
         "package-lock.json",
         "package.json",
@@ -50,7 +62,11 @@
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 7,
+<<<<<<< HEAD
       "lastAccessed": 1793963050593,
+=======
+      "lastAccessed": 1793874839294,
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
       "keyFiles": [
         "BRIDGE_APPROACH.md",
         "COORDINATION.md",
@@ -63,7 +79,11 @@
       "path": "server",
       "purpose": null,
       "fileCount": 3,
+<<<<<<< HEAD
       "lastAccessed": 1793963050593,
+=======
+      "lastAccessed": 1793874839294,
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
       "keyFiles": [
         "CMakeLists.txt",
         "Dockerfile",
@@ -74,7 +94,11 @@
       "path": "web",
       "purpose": null,
       "fileCount": 3,
+<<<<<<< HEAD
       "lastAccessed": 1793963050593,
+=======
+      "lastAccessed": 1793874839295,
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
       "keyFiles": [
         "Dockerfile",
         "Dockerfile.dockerignore",
@@ -85,14 +109,22 @@
       "path": "client/node_modules",
       "purpose": "Dependencies",
       "fileCount": 1,
+<<<<<<< HEAD
       "lastAccessed": 1793963050593,
+=======
+      "lastAccessed": 1793874839295,
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
       "keyFiles": []
     },
     "client/public": {
       "path": "client/public",
       "purpose": "Public files",
       "fileCount": 1,
+<<<<<<< HEAD
       "lastAccessed": 1793963050594,
+=======
+      "lastAccessed": 1793874839295,
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
       "keyFiles": [
         "index.html"
       ]
@@ -101,7 +133,11 @@
       "path": "client/src",
       "purpose": "Source code",
       "fileCount": 2,
+<<<<<<< HEAD
       "lastAccessed": 1793963050594,
+=======
+      "lastAccessed": 1793874839296,
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
       "keyFiles": [
         "debug.ts",
         "main.ts"
@@ -111,11 +147,16 @@
       "path": "docs/assets",
       "purpose": "Static assets",
       "fileCount": 1,
+<<<<<<< HEAD
       "lastAccessed": 1793963050594,
+=======
+      "lastAccessed": 1793874839296,
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
       "keyFiles": [
         "world-map.jpg"
       ]
     },
+<<<<<<< HEAD
     "server/build": {
       "path": "server/build",
       "purpose": "Build output",
@@ -125,11 +166,17 @@
         "CMakeCache.txt"
       ]
     },
+=======
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
     "server/src": {
       "path": "server/src",
       "purpose": "Source code",
       "fileCount": 12,
+<<<<<<< HEAD
       "lastAccessed": 1793963050594,
+=======
+      "lastAccessed": 1793874839296,
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
       "keyFiles": [
         "config.cpp",
         "config.h",
@@ -145,7 +192,29 @@
       "type": "file"
     },
     {
+<<<<<<< HEAD
       "path": "client/tests/e2e/collision-api.spec.ts",
+=======
+      "path": "docs/README.md",
+      "accessCount": 6,
+      "lastAccessed": 1793874724622,
+      "type": "file"
+    },
+    {
+      "path": "docs/ROADMAP.md",
+      "accessCount": 3,
+      "lastAccessed": 1793781454041,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 3,
+      "lastAccessed": 1793874724110,
+      "type": "file"
+    },
+    {
+      "path": "docs/CURRICULUM.md",
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
       "accessCount": 2,
       "lastAccessed": 1793966264980,
       "type": "file"
@@ -163,7 +232,23 @@
       "type": "file"
     },
     {
+<<<<<<< HEAD
       "path": "docs/design/CITY_REDESIGN_PLAN.md",
+=======
+      "path": "client/tests/out/smoke-played.png",
+      "accessCount": 2,
+      "lastAccessed": 1793794136943,
+      "type": "file"
+    },
+    {
+      "path": "docs/HANDOFF.md",
+      "accessCount": 2,
+      "lastAccessed": 1793834080333,
+      "type": "file"
+    },
+    {
+      "path": "client/src/data/zones.ts",
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
       "accessCount": 1,
       "lastAccessed": 1793963051890,
       "type": "file"

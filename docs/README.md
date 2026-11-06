@@ -67,7 +67,11 @@ docs/
 | [STORY.md](design/STORY.md) | **스토리 v2** — 사과 행성에 반한 도둑 이야기, 연출 원칙, 비트 시트, 엔딩 후 자유 플레이 |
 | [CONTENT_PLAN.md](design/CONTENT_PLAN.md) | 콘텐츠 기획서 — 12개 구역·행성 80종·이동 수단·하이스트·NPC |
 | [CITY_REDESIGN_PLAN.md](design/CITY_REDESIGN_PLAN.md) | 도심 재설계 계획(초안) — 도로 5등급·JSON 스키마·에디터·실내 연결·충돌·녹지. Codex 리뷰 대기 |
+<<<<<<< HEAD
 | [GRAPHICS_PLAN.md](design/GRAPHICS_PLAN.md) | 그래픽 향상 계획(미착수) — PC/모바일 2단계 품질, 구름·그림자·반사·밤 불빛·날씨. Codex 검토 병합 완료 |
+=======
+| [GRAPHICS_PLAN.md](design/GRAPHICS_PLAN.md) | 그래픽 향상 계획(초안) — PC/모바일 2단계 품질, 구름·그림자·반사·밤 불빛·날씨. Codex 리뷰 대기 |
+>>>>>>> 0d9875d53e5cd187e293d12ce1f52d2ced991206
 | [WORLD.md](design/WORLD.md) | 월드 설계 — 도시 허브 + 대륙, 로우폴리 아트 규칙, 마일스톤 W0~W7 |
 | [GAMEPLAY_SYSTEMS.md](design/GAMEPLAY_SYSTEMS.md) | 이동 수단·수배·하이스트 — 단계 스펙, 상태 머신 |
 | [PLANET_CATALOG.md](design/PLANET_CATALOG.md) | 행성 80종 도감 — 등급·외형·단원, 특수 행성 |
