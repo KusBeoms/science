@@ -6,6 +6,7 @@ import {CITY_POLY, WILD_POLY} from '../data/outline.js';
 import {WILD_BRIDGE} from '../data/wild.js';
 import {inSector} from './geometry.js';
 import {deckAt} from './deck.js';
+import {hitAny} from './solids.js';
 import {heightAt} from './heightmap.js';
 import {locked} from './progress.js';
 
@@ -47,47 +48,13 @@ const MAX_SLOPE = 0.9,
 export const walkable = (x0: number, z0: number, y0: number, x1: number, z1: number) =>
   groundH(x1, z1, y0) - y0 <= SLACK + MAX_SLOPE * Math.hypot(x1 - x0, z1 - z0);
 
-// 건물·큰 소품 충돌체: 16u 해시 격자의 AABB
-const CELL = 16;
-export interface Solid {
-  x0: number;
-  z0: number;
-  x1: number;
-  z1: number;
-  /** 높이 층(선택): y(발 높이)가 주어진 질의는 y ∈ [lo − 허용치, hi) 일 때만 막는다. up=true 는 고가 층 전용(난간 등) — y 없는 질의는 무시 */
-  lo?: number;
-  hi?: number;
-  up?: boolean;
-}
-const grid = new Map<string, Solid[]>();
-export function addSolid(x0: number, z0: number, x1: number, z1: number, lo?: number, hi?: number, up?: boolean) {
-  const s: Solid = {x0, z0, x1, z1};
-  if (up) s.up = true;
-  if (lo !== undefined) s.lo = lo;
-  if (hi !== undefined) s.hi = hi;
-  for (let i = Math.floor(x0 / CELL); i <= Math.floor(x1 / CELL); i++)
-    for (let j = Math.floor(z0 / CELL); j <= Math.floor(z1 / CELL); j++) {
-      const k = i + ',' + j;
-      (grid.get(k) || grid.set(k, []).get(k)!).push(s);
-    }
-}
-/** 움직이는 충돌체(세워 둔 차): 등록·제거할 수 있는 AABB 집합 */
-const dyn = new Set<Solid>();
-export const addDynSolid = (x0: number, z0: number, x1: number, z1: number): Solid => {
-  const s = {x0, z0, x1, z1};
-  dyn.add(s);
-  return s;
-};
-export const dropDynSolid = (s: Solid | null) => s && dyn.delete(s);
-/** 높이 층 판정: y 없으면 지상(lo 없는 것)만, y 있으면 [lo−허용치, hi) */
-const layerOk = (s: Solid, y?: number) =>
-  y === undefined ? !s.up : y >= (s.lo ?? -Infinity) - 1.4 && y < (s.hi ?? Infinity);
-const hitBox = (s: Solid, x: number, z: number, r: number, y?: number) => {
-  if (!layerOk(s, y)) return false;
-  const dx = x - Math.max(s.x0, Math.min(x, s.x1)),
-    dz = z - Math.max(s.z0, Math.min(z, s.z1));
-  return dx * dx + dz * dz < r * r;
-};
+// 건물·큰 소품 충돌체: 저장·해시 격자·소유자 API 는 core/solids.ts (W8 P2-a). 기존 이름은 그대로 re-export 한다.
+export {
+  addSolid, addSolidOBB, removeSolid, removeSolidsByOwner, replaceSolids, solidsOwnedBy, solidOwners, solidCount, solidCellEntries, solidCellCount,
+  addDynSolid, dropDynSolid, dynSolidCount, dynCellEntries, dynHitLinear,
+} from './solids.js';
+export type {Solid, SolidSpec} from './solids.js';
+
 /** 반지름 r 인 원이 등록된 충돌체와 겹치는가 */
 export function solidAt(x: number, z: number, r: number, y?: number) {
   if (room) {
@@ -95,14 +62,5 @@ export function solidAt(x: number, z: number, r: number, y?: number) {
     if (x - r < a || x + r > c || z - r < b || z + r > d) return true;
     return room.solids.some(s => x + r > s[0] && x - r < s[2] && z + r > s[1] && z - r < s[3]);
   }
-  for (const d of dyn) if (hitBox(d, x, z, r, y)) return true;
-  for (let i = Math.floor((x - r) / CELL); i <= Math.floor((x + r) / CELL); i++)
-    for (let j = Math.floor((z - r) / CELL); j <= Math.floor((z + r) / CELL); j++)
-      for (const s of grid.get(i + ',' + j) || []) {
-        if (!layerOk(s, y)) continue;
-        const dx = x - Math.max(s.x0, Math.min(x, s.x1)),
-          dz = z - Math.max(s.z0, Math.min(z, s.z1));
-        if (dx * dx + dz * dz < r * r) return true;
-      }
-  return false;
+  return hitAny(x, z, r, y);
 }

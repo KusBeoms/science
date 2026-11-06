@@ -82,6 +82,20 @@ python3 -m http.server -d public        # 정적 서빙만으로 동작 (서버 
 | `systems/loop.ts` | `frame`: 시간·밤낮 → 이동 → 스트리밍·섹터 시간 → 문/수호자 → 입고 → 등록 시스템 → 메시 동기화 → 대상 → 카메라/렌더 → HUD |
 | `net/api.ts` | `getPid fetchRemoteSave queueRemoteSave markFresh submitScore fetchLeaderboard` |
 
+## 충돌체·데크 소유자 API (W8 P2-a)
+`core/solids.ts`(terrain.ts 가 re-export)와 `core/deck.ts`. 상세: `work-logs/W8_COLLISION.md`.
+
+| 대상 | API |
+|---|---|
+| 정적 AABB | `addSolid(x0,z0,x1,z1,lo?,hi?,up?,ownerId?) → Solid`, `removeSolid(handle)` |
+| 정적 회전 박스 | `addSolidOBB(cx,cz,hx,hz,rotDeg,lo?,hi?,up?,ownerId?)` (광역 AABB + 정밀 회전 사각형 대 원) |
+| 소유자 일괄 | `removeSolidsByOwner(id)`, `replaceSolids(id, [SolidSpec])` (새것 먼저 등록 후 옛것 제거), `solidsOwnedBy`, `solidOwners` |
+| 진단 | `solidCount`, `solidCellEntries`, `solidCellCount`, `dynSolidCount`, `dynCellEntries`, `dynHitLinear`(기준 구현) |
+| 동적 AABB | `addDynSolid`, `dropDynSolid` (16u 해시, 등록 후 좌표 변경 금지) |
+| 데크 | `addDeck(d, ownerId?)`, `removeDecksByOwner`, `replaceDecks`, `decksOwnedBy`, `deckCount`, `clearDecks` |
+
+소유자 없이 등록하면 기존처럼 영구. 새 도심은 `ownerId`(예: `'city-v2'`)로 등록하고 구 도심은 `removeSolidsByOwner`/`replaceSolids` 로 한 번에 교체한다.
+
 ## 섹터 시스템 (`data/sectors.ts`, `core/geometry.ts`, `core/progress.ts`)
 - 좌표: x = 동(+)/서(−), z = 남(+)/북(−). 허브(기지)는 (0,0) 한 변 44. 섹터는 `center{x,z}` + 한 변 `size` 정사각형.
 - 배열 순서 = 단계 번호(1부터) = 기본 해금 순서. **`id` 는 세이브 키**(`S.unlocked`, `S.portals`, `S.notes`) 이므로 바꾸지 않는다. 새 섹터는 **끝에 추가**.

@@ -12,6 +12,8 @@ export interface Deck {
   h1: number;
 }
 interface Cooked extends Deck {
+  /** 소유자 ID (선택): removeDecksByOwner / replaceDecks 의 키 */
+  owner?: string;
   ux: number;
   uz: number;
   len: number;
@@ -24,22 +26,44 @@ export const DECK_TOL = 1.4;
 const EDGE_EPS = 1e-7;
 const decks: Cooked[] = [];
 
-export function addDeck(d: Deck): Deck {
+const cook = (d: Deck, owner?: string): Cooked => {
   const len = Math.hypot(d.bx - d.ax, d.bz - d.az) || 1,
     ux = (d.bx - d.ax) / len,
     uz = (d.bz - d.az) / len,
     ex = Math.abs(uz) * d.hw,
     ez = Math.abs(ux) * d.hw;
-  decks.push({
+  const c: Cooked = {
     ...d,
     ux,
     uz,
     len,
     min: [Math.min(d.ax, d.bx) - ex, Math.min(d.az, d.bz) - ez],
     max: [Math.max(d.ax, d.bx) + ex, Math.max(d.az, d.bz) + ez],
-  });
+  };
+  if (owner !== undefined) c.owner = owner;
+  return c;
+};
+/** 데크 등록. ownerId 를 주면 removeDecksByOwner / replaceDecks 로 일괄 관리할 수 있다 (생략하면 기존과 동일) */
+export function addDeck(d: Deck, ownerId?: string): Deck {
+  decks.push(cook(d, ownerId));
   return d;
 }
+/** 소유자의 데크를 모두 제거하고 제거 개수를 반환 */
+export function removeDecksByOwner(ownerId: string): number {
+  let n = 0;
+  for (let i = decks.length - 1; i >= 0; i--) if (decks[i].owner === ownerId) (decks.splice(i, 1), n++);
+  return n;
+}
+/** 소유자의 데크를 통째로 교체: 새것을 먼저 넣고 옛것을 뺀다 (동기 호출이라 중간 상태가 보이지 않는다) */
+export function replaceDecks(ownerId: string, list: readonly Deck[]): void {
+  const fresh = list.map(d => cook(d, ownerId)),
+    keep = decks.filter(d => d.owner !== ownerId);
+  decks.length = 0;
+  decks.push(...keep, ...fresh);
+}
+/** 테스트·진단용: 소유자별 데크 id 목록 / 데크 총수 */
+export const decksOwnedBy = (ownerId: string): string[] => decks.filter(d => d.owner === ownerId).map(d => d.id);
+export const deckCount = () => decks.length;
 export const clearDecks = () => (decks.length = 0);
 export const deckList = (): readonly Deck[] => decks;
 
