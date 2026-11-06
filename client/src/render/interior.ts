@@ -20,6 +20,8 @@ export interface Spot {
   x: number;
   z: number;
   ry?: number;
+  /** 온사이트 실내: 바닥 월드 높이(앉을 때 사용). 가상 방은 0 */
+  y?: number;
   /** kind='use': 효과(rest·snack·coin·look·sing·train·bowl·read·swim·heal) 와 표시 이모지 */
   fx?: string;
   icon?: string;
@@ -46,7 +48,7 @@ export interface Item {
 const rnd = (seed: number, k: number) => ((Math.sin(seed * 12.9898 + k * 78.233) * 43758.5453) % 1 + 1) % 1;
 
 /** 용도별 가구 (방 중심 기준 로컬 좌표, 문은 +z 쪽 벽 가운데) */
-function furnish(p: Purpose, w: number, d: number, seed: number, spots: Spot[]): Item[] {
+export function furnish(p: Purpose, w: number, d: number, seed: number, spots: Spot[]): Item[] {
   const hx = w / 2,
     hz = d / 2,
     it: Item[] = [],

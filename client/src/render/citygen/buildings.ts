@@ -15,6 +15,9 @@ import {makeHighrise} from '../city/highrise.js';
 import {makeHouse, makeLite} from '../city/residential.js';
 import {distantBuilding} from '../city/detail-lod.js';
 import {LodSet, cellKey} from './lod.js';
+import {planShell, type ShellPlan} from './shell-plan.js';
+import {buildShell} from './shell.js';
+import {makePart, offsetsOf, vertexCount, type PlugRef} from './onsite-plug.js';
 
 const pal = (n: string | undefined, fallback: PalName): PalName => (n && Object.prototype.hasOwnProperty.call(PAL, n) ? (n as PalName) : fallback);
 
@@ -56,12 +59,24 @@ export interface BuiltBuilding {
   height: number;
   style: BuildingSource['style'];
 }
+/** 온사이트 실내를 가진 건물(셸 + 그림 문/창 판). 실내 스트리머(onsite-stream.ts)가 쓴다 */
+export interface OnsiteBuilding {
+  id: string;
+  owner: string;
+  src: BuildingSource;
+  plan: ShellPlan;
+  x: number; y: number; z: number; rot: number;
+  plug: PlugRef;
+}
+/** 온사이트 셸을 쓰는 건물인가(고층·랜드마크는 구 모델 유지) */
+export const isOnsite = (s: BuildingSource): boolean => s.interior?.mode === 'onsite' && s.style !== 'highrise' && s.style !== 'landmark';
 export interface BuildingBuild {
   group: any;
   lod: LodSet;
   geometries: any[];
   nightMeshes: any[];
   built: BuiltBuilding[];
+  onsite: OnsiteBuilding[];
   stats: {input: number; buildings: number; meshes: number; tris: number; unresolved: string[]; byStyle: Record<string, number>};
 }
 export interface BuildingOptions {
@@ -69,14 +84,15 @@ export interface BuildingOptions {
   /** 근거리 모델 반경(m). 기본 120 */
   range?: number;
 }
+const vertexLen = vertexCount;
 const trisOf = (g: any) => (g.index ? g.index.count : g.attributes.position.count) / 3;
 
 export function buildBuildings(list: readonly Placement[], resolve: (p: Placement) => BuildingSource | undefined, opt: BuildingOptions = {}): BuildingBuild {
   const cell = opt.cell ?? 70, range = opt.range ?? 120;
-  const group = new THREE.Group(), lod = new LodSet(), geometries: any[] = [], nightMeshes: any[] = [], built: BuiltBuilding[] = [];
+  const group = new THREE.Group(), lod = new LodSet(), geometries: any[] = [], nightMeshes: any[] = [], built: BuiltBuilding[] = [], onsite: OnsiteBuilding[] = [];
   group.name = 'citygen-buildings';
   const stats: BuildingBuild['stats'] = {input: 0, buildings: 0, meshes: 0, tris: 0, unresolved: [], byStyle: {}};
-  type Cell = {solid: Placed[]; far: Placed[]; lit: Placed[]; hrSolid: Placed[]; hrLit: Placed[]; sx: number; sz: number; n: number};
+  type Cell = {solid: Placed[]; far: Placed[]; lit: Placed[]; hrSolid: Placed[]; hrLit: Placed[]; sx: number; sz: number; n: number; plugs: {rec: OnsiteBuilding; si: number; li: number}[]};
   const by = new Map<string, Cell>();
   for (const p of list) {
     if (p.kind !== 'building') continue;
@@ -87,10 +103,25 @@ export function buildBuildings(list: readonly Placement[], resolve: (p: Placemen
       continue;
     }
     const b = toCityBuilding({...src, x: p.x, z: p.z, rot: p.rot}),
-      m = model(b),
       at = {x: p.x, y: p.y, z: p.z, ry: rotRad(p.rot)},
       k = cellKey(p.x, p.z, cell),
-      c = by.get(k) || by.set(k, {solid: [], far: [], lit: [], hrSolid: [], hrLit: [], sx: 0, sz: 0, n: 0}).get(k)!;
+      c = by.get(k) || by.set(k, {solid: [], far: [], lit: [], hrSolid: [], hrLit: [], sx: 0, sz: 0, n: 0, plugs: []}).get(k)!;
+    if (isOnsite(src)) {
+      // W8 INTERIOR: 문·창 개구가 있는 셸. 그림 문/창 판은 같은 병합 메시 안의 별도 정점 구간이라 실내가 올라오면 접어 숨긴다
+      const plan = planShell(src, p.y), sh = buildShell(src, plan, PAL[b.wall], PAL[b.roof]);
+      c.solid.push({g: sh.solid, ...at}, {g: sh.plug, ...at});
+      c.far.push({g: sh.far, ...at});
+      c.lit.push({g: sh.lit, ...at}, {g: sh.plugLit, ...at});
+      const rec: OnsiteBuilding = {id: p.id, owner: p.owner, src, plan, x: p.x, y: p.y, z: p.z, rot: p.rot, plug: {solid: null, lit: null, hidden: false}};
+      onsite.push(rec);
+      c.plugs.push({rec, si: c.solid.length - 1, li: c.lit.length - 1});
+      c.sx += p.x; c.sz += p.z; c.n++;
+      built.push({id: p.id, owner: p.owner, x: p.x, y: p.y, z: p.z, rot: p.rot, w: plan.w, d: plan.d, height: plan.H + (plan.house ? 2.2 : 0.35), style: src.style});
+      stats.byStyle[src.style] = (stats.byStyle[src.style] ?? 0) + 1;
+      stats.buildings++;
+      continue;
+    }
+    const m = model(b);
     tagStructure(m.solid, b);
     if (b.hr) {
       c.hrSolid.push({g: m.solid, ...at});
@@ -122,7 +153,12 @@ export function buildBuildings(list: readonly Placement[], resolve: (p: Placemen
   by.forEach((c, k) => {
     const cx = c.sx / c.n, cz = c.sz / c.n;
     if (c.solid.length) {
+      const so = offsetsOf(c.solid), lo = offsetsOf(c.lit);
       const near = add(c.solid, false, `bld:${k}`), far = add(c.far, false, `bld-far:${k}`), lit = add(c.lit, true, `bld-lit:${k}`);
+      for (const q of c.plugs) {
+        q.rec.plug.solid = makePart(near, so[q.si], vertexLen(c.solid[q.si].g));
+        q.rec.plug.lit = makePart(lit, lo[q.li], vertexLen(c.lit[q.li].g));
+      }
       lod.add({cx, cz, near, far, lit, range, cull: Infinity});
     }
     if (c.hrSolid.length) {
@@ -130,5 +166,5 @@ export function buildBuildings(list: readonly Placement[], resolve: (p: Placemen
       lod.add({cx, cz, near, lit, range: Infinity, cull: Infinity}); // 고층은 실루엣 유지: 항상 근거리 모델
     }
   });
-  return {group, lod, geometries, nightMeshes, built, stats};
+  return {group, lod, geometries, nightMeshes, built, onsite, stats};
 }

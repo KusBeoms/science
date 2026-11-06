@@ -4,7 +4,8 @@ import {G, paused} from '../core/runtime.js';
 import {$, fmt} from '../core/util.js';
 import {LISTINGS, listingName} from '../data/places.js';
 import {buyProp, incomePerMin, ownedListings, sellProp} from './estate.js';
-import {flipMap, resetMap, renderAssets, renderCars, renderFood, renderMap, renderTaxi, callCar, orderFood, setWaypoint, taxiTo, warpTo} from './phone-apps.js';
+import {renderAssets, renderCars, renderFood, renderTaxi, callCar, orderFood, setWaypoint, taxiTo, warpTo} from './phone-apps.js';
+import {openWorldMap} from './world-map.js';
 import {closeModal, openModal} from './modal.js';
 import {openShop} from './shop-ui.js';
 import {sfx} from '../audio/index.js';
@@ -56,12 +57,12 @@ export function openPhone() {
   dom();
   hist = [];
   view = 'home';
-  resetMap();
   openModal('phone');
   sfx('jump'); // 삐릭
   render();
 }
 function go(v: View, reset: boolean) {
+  if (v === 'map') {closeModal(); openWorldMap(); return;}
   if (reset) hist = [];
   else if (v !== view) hist.push(view);
   view = v;
@@ -80,7 +81,6 @@ function render() {
   } else if (view === 'web') {
     body.innerHTML = `<div class="phgrid">${SITES.map(([k, i, n]) => `<button class="phapp" data-act="app:web:${k}"><span>${i}</span><em>${n}.web</em></button>`).join('')}</div>`;
   } else if (view === 'clock') renderClock(body);
-  else if (view === 'map') renderMap(body);
   else if (view === 'taxi') renderTaxi(body);
   else if (view === 'cars') renderCars(body);
   else if (view === 'food') renderFood(body);
@@ -136,7 +136,6 @@ function act(a: string) {
   else if (k === 'taxi') return taxiTo(v);
   else if (k === 'call') return callCar(+v);
   else if (k === 'food') orderFood(v);
-  else if (k === 'mapmode') flipMap();
   render();
 }
 void warpTo;

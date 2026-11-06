@@ -9,6 +9,7 @@ import {closeModal} from '../game/modal.js';
 import {closeShop} from '../game/shop-ui.js';
 import {toggleDex} from '../game/dex.js';
 import {startGame} from './ui.js';
+import {toggleWorldMap, closeWorldMap} from '../game/world-map.js';
 import {CAMERA_PITCH_MIN, CAMERA_PITCH_MAX, noteCameraInput, beginCameraInput, endCameraInput, cancelCameraInput} from './camera.js';
 
 export const TOUCH =
@@ -62,13 +63,14 @@ document.addEventListener('pointerlockchange', () => {
 });
 document.addEventListener('pointerlockerror', () => setLock(false));
 const rot = (dx: number, dy: number) => {
+  if (paused()) return;
   if (!Number.isFinite(dx) || !Number.isFinite(dy) || (!dx && !dy)) return;
   noteCameraInput();
   G.yaw -= dx * 0.006;
   G.pitch = clamp(G.pitch + dy * 0.005, CAMERA_PITCH_MIN, CAMERA_PITCH_MAX);
 };
 document.addEventListener('mousemove', e => {
-  if (document.pointerLockElement && (e.movementX || e.movementY)) {
+  if (!paused() && document.pointerLockElement && (e.movementX || e.movementY)) {
     noteCameraInput();
     G.yaw -= e.movementX * 0.003;
     G.pitch = clamp(G.pitch + e.movementY * 0.003, CAMERA_PITCH_MIN, CAMERA_PITCH_MAX);
@@ -76,6 +78,7 @@ document.addEventListener('mousemove', e => {
 });
 export function setupPointers() {
   const cv = G.renderer.domElement,
+    captured = new Set<number>(),
     ptrs = new Map<number, {x: number; y: number; sx: number; sy: number; t: number}>(),
     cap_ = (el: HTMLElement, id: number) => {
       try {
@@ -90,6 +93,8 @@ export function setupPointers() {
     return {d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) || 1, mx: (a[0].x + a[1].x) / 2, my: (a[0].y + a[1].y) / 2};
   };
   cv.addEventListener('pointerdown', (e: PointerEvent) => {
+    if (paused()) return;
+    captured.add(e.pointerId);
     beginCameraInput(e.pointerId);
     if (e.pointerType === 'mouse') {
       if (document.pointerLockElement) {
@@ -110,6 +115,7 @@ export function setupPointers() {
     else tap = false;
   });
   cv.addEventListener('pointermove', (e: PointerEvent) => {
+    if (paused()) return;
     if (e.pointerType === 'mouse') {
       if (!mdrag || document.pointerLockElement) return;
       const dx = e.clientX - mdrag.x,
@@ -140,6 +146,7 @@ export function setupPointers() {
     } // 터치: 한 손가락 드래그로 시점 회전
   });
   const end = (e: PointerEvent) => {
+    captured.delete(e.pointerId);
     endCameraInput(e.pointerId);
     if (e.pointerType === 'mouse') {
       if (e.type === 'pointerup' && mdrag && mdrag.moved < 5) clickAt(e.clientX, e.clientY);
@@ -156,6 +163,7 @@ export function setupPointers() {
   cv.addEventListener('pointercancel', end);
   // A release outside the canvas must not leave a camera gesture or drag stuck forever.
   const release = (e: PointerEvent) => {
+    captured.delete(e.pointerId);
     endCameraInput(e.pointerId);
     if (e.pointerType === 'mouse') mdrag = null;
     else {
@@ -167,6 +175,10 @@ export function setupPointers() {
   addEventListener('pointerup', release);
   addEventListener('pointercancel', release);
   addEventListener('blur', () => {cancelCameraInput(); mdrag = null; ptrs.clear(); pinch = null; tap = false;});
+  document.addEventListener('game-input-reset', () => {
+    for (const id of captured) {try { if (cv.hasPointerCapture(id)) cv.releasePointerCapture(id); } catch {}}
+    captured.clear(); mdrag = null; ptrs.clear(); pinch = null; tap = false; cancelCameraInput();
+  });
   // 트랙패드: 두 손가락 스크롤 = 화면 회전, 핀치(ctrl+휠) = 줌, 마우스 휠 = 줌
   addEventListener(
     'wheel',
@@ -193,11 +205,13 @@ export function setupPointers() {
   let gsc = 1;
   // Safari 제스처 이벤트: 데스크탑 트랙패드 핀치에서만 줌에 쓴다. 터치 기기에서는 조이스틱 손가락 + 화면 손가락이 핀치로 오인되므로 줌에 쓰지 않는다(기본 동작만 막음).
   addEventListener('gesturestart', (e: any) => {
+    if (paused()) return;
     e.preventDefault();
     if (!TOUCH) beginCameraInput('gesture');
     gsc = e.scale || 1;
   });
   addEventListener('gesturechange', (e: any) => {
+    if (paused()) return;
     e.preventDefault();
     if (TOUCH) return;
     if (gsc !== (e.scale || 1)) noteCameraInput();
@@ -210,6 +224,10 @@ export function setupPointers() {
   const joyEl = $('#joy'),
     knob = $('#knob');
   let jp: number | null = null;
+  document.addEventListener('game-input-reset', () => {
+    jp = null; knob.style.transform = '';
+    $('#run').classList.remove('on'); $('#jump').classList.remove('on');
+  });
   const jmove = (e: PointerEvent) => {
     const r = joyEl.getBoundingClientRect(),
       cx = r.left + r.width / 2,
@@ -227,11 +245,13 @@ export function setupPointers() {
     G.joy.y = -dy / RR;
   };
   joyEl.addEventListener('pointerdown', e => {
+    if (paused()) return;
     jp = e.pointerId;
     cap_(joyEl, jp);
     jmove(e);
   });
   joyEl.addEventListener('pointermove', e => {
+    if (paused()) return;
     if (e.pointerId === jp) jmove(e);
   });
   const jend = (e: PointerEvent) => {
@@ -246,6 +266,7 @@ export function setupPointers() {
   const hold = (id: string, on: (v: boolean) => void) => {
     const el = $(id);
     el.addEventListener('pointerdown', e => {
+      if (paused()) return;
       e.preventDefault();
       cap_(el, e.pointerId);
       on(true);
@@ -264,11 +285,20 @@ export function setupPointers() {
 
 /** 키보드 / 창 이벤트 (원본 init() 의 리스너) */
 export function setupKeys() {
+  $('#mapBtn').onclick = () => toggleWorldMap();
   addEventListener('keydown', e => {
     if (!G.started) {
       if (e.code === 'Enter' || e.code === 'Space') {
         e.preventDefault();
         startGame();
+      }
+      return;
+    }
+    const editable = (e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable="true"]');
+    if (editable && e.code !== 'Escape') return;
+    if (e.code === 'KeyM' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (!e.repeat && (G.modal === 'world-map' || G.modal === 'phone' || !paused())) {
+        e.preventDefault(); toggleWorldMap();
       }
       return;
     }
@@ -292,7 +322,9 @@ export function setupKeys() {
       return;
     }
     if (G.modal) {
-      if (e.code === 'Escape') closeModal();
+      if (e.code === 'Escape') {
+        if (G.modal === 'world-map') closeWorldMap(); else closeModal();
+      }
       return;
     }
     if (e.repeat && performance.now() - G.quizClosedAt < 700) {

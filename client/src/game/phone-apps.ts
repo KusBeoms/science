@@ -17,9 +17,10 @@ import {addHudLine, toast} from './hud.js';
 import {closeModal} from './modal.js';
 import {sfx} from '../audio/index.js';
 
-export const waypoint: {x: number; z: number; name: string} | null = null;
+export let waypoint: {x: number; z: number; name: string} | null = null;
 let wp: {x: number; z: number; name: string} | null = null;
-export const setWaypoint = (p: {x: number; z: number; name: string} | null) => (wp = p);
+export const setWaypoint = (p: {x: number; z: number; name: string} | null) => (waypoint = wp = p);
+export const getWaypoint = () => wp;
 const ARROWS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'];
 addHudLine(() => {
   if (!wp) return null;

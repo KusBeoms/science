@@ -28,12 +28,20 @@ test('phone: P opens, estate.web buys a building (income), taxi warps, food deli
   // 지도 + 길안내
   await page.click('#phoneBtn');
   await page.click('[data-act="app:map"]');
-  await expect(page.locator('#phmap')).toHaveCount(1);
-  await page.locator('[data-act^="wp:"]').first().evaluate((b: HTMLElement) => b.click());
-  await page.waitForTimeout(300);
+  await expect.poll(() => page.evaluate(async () => (await import('/js/game/world-map.js')).worldMapState().phase)).toBe('open');
+  await expect(page.locator('#wm-canvas')).toBeVisible();
+  await page.locator('#wm-search').fill('경기장');
+  await page.locator('#wm-places button[data-place-id="stadium"]').click();
+  await expect(page.locator('#wm-detail')).toContainText('경기장');
   await page.screenshot({path: `${OUT}/phone-map.png`});
+  await page.locator('#wm-waypoint').click();
+  await expect(page.locator('#lines')).toContainText('경기장');
   // 택시: 경기장
-  await page.locator('#phhome').evaluate((b: HTMLElement) => b.click());
+  const mapOpen = await page.evaluate(async () => (await import('/js/game/world-map.js')).worldMapState().phase !== 'closed');
+  if (mapOpen) await page.keyboard.press('Escape');
+  await expect.poll(() => page.evaluate(async () => (await import('/js/game/world-map.js')).worldMapState().phase)).toBe('closed');
+  await page.keyboard.press('KeyP');
+  await expect(page.locator('#phone')).toHaveClass(/on/);
   await page.click('[data-act="app:taxi"]');
   await page.locator('[data-act="taxi:stadium"]').click();
   await expect(page.locator('#phone')).not.toHaveClass(/on/);

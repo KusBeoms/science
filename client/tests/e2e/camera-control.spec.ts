@@ -39,7 +39,7 @@ test('mouse, pointer lock, touch pinch and wheel record real camera input and re
     const pointer = (type: string, id: number, pointerType: string, x: number, y: number) =>
       cv.dispatchEvent(new PointerEvent(type, {bubbles: true, cancelable: true, pointerId: id, pointerType, clientX: x, clientY: y}));
     try {
-      G.started = false; G.pitch = 0.2; C.cancelCameraInput(0);
+      G.started = true; G.pitch = 0.2; C.cancelCameraInput(0);
       pointer('pointerdown', 41, 'mouse', 100, 200);
       pointer('pointermove', 41, 'mouse', 170, 40);
       const mouse = {held: C.cameraControlState().held, pitch: G.pitch, time: C.cameraControlState().lastInputAt};

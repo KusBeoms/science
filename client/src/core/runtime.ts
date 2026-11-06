@@ -81,4 +81,7 @@ export const paused = () => !G.started || G.quizOpen || G.dexOpen || G.shopOpen 
 export function releaseLock() {
   if (document.pointerLockElement) document.exitPointerLock();
   Object.keys(G.keys).forEach(k => (G.keys[k] = false));
+  G.joy.x = G.joy.y = 0;
+  G.runHeld = G.jumpHeld = false;
+  document.dispatchEvent(new Event('game-input-reset'));
 }

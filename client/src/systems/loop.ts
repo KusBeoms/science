@@ -21,6 +21,7 @@ import {updateTarget} from './target.js';
 import {updateCharacterGaze} from '../render/characters-gaze.js';
 import {vehicleTransitionActive} from './vehicle-transition.js';
 import {updateFollowCamera} from './camera.js';
+import {isWorldMapOpen} from '../game/world-map.js';
 
 function dayNight(dt: number) {
   G.cycT += dt;
@@ -88,7 +89,7 @@ export function frame() {
   cineCamera(); // 컷신 중이면 카메라 덮어쓰기
   updateCharacterGaze(G.me, G.camera, raw);
   updateSky(dt, t); // 천구를 카메라에 붙이고 낮밤 틴트·조명·안개 갱신
-  G.renderer.render(G.scene, G.camera);
+  if (!isWorldMapOpen()) G.renderer.render(G.scene, G.camera);
   setTxt('#cr', '✦ ' + fmt(S.cr));
   setTxt('#inc', '+' + fmt(inc) + '/s');
   setTxt('#dexBtn', `📖 ${dexN()}/${P.length}`);

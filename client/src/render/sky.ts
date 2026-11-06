@@ -6,6 +6,7 @@ import {buildApple, dimApple, pulseHalo, type Apple} from './apple.js';
 import {mulberry32} from './lowpoly/rng.js';
 import {ico} from './lowpoly/prim.js';
 import {TINT, rgb, mix, type Tint} from './lowpoly/palette.js';
+import {dimTint, stepInteriorDark} from './interior-dark.js';
 
 const DOME_R = 1000,
   STAR_R = 900,
@@ -155,8 +156,9 @@ export const setSkyApple = (on: boolean) => {
   if (apple) apple.group.visible = on;
 };
 export function updateSky(dt: number, time: number) {
-  const t = visualTint(dt),
-    dark = Math.min(1, Math.max(0, (0.75 - t.hemiK) / 0.2)),
+  const raw = visualTint(dt),
+    t = dimTint(raw, stepInteriorDark(dt)), // W8 INTERIOR: 건물 안이면 바깥을 어둡게(별·달 가시성은 원래 틴트 기준)
+    dark = Math.min(1, Math.max(0, (0.75 - raw.hemiK) / 0.2)),
     sd = sunDir(G.cycT),
     night = G.night > 0;
   paintDome(t);
