@@ -53,6 +53,7 @@ docs/
 | [TESTING.md](tech/TESTING.md) | 헤드리스 E2E 하네스 사용법, 마일스톤 QA 체크리스트 |
 | [SCALE.md](tech/SCALE.md) | 도심 재설계 실제 축척 계약(1u=1m): 사람·층고·문·차량·도로 5등급 단면, 현행 값과의 차이 |
 | [CITY_TERRAIN.md](tech/CITY_TERRAIN.md) | 도시 섬 높이 JSON(city-terrain/1) 포맷·굽기/다듬기 도구·보존 구역·전후 결과 (W8 P3-a) |
+| [CITYGEN.md](tech/CITYGEN.md) | citygen 순수 빌더(도로·교차로·리본·지형 편집): 파이프라인·API·결정성·한도·CLI (W8 P4/P6 코어) |
 | [CITY_RENDER.md](tech/CITY_RENDER.md) | CityCompiled → 장면(render/citygen): 리본·소품 인스턴싱·건물 회전·충돌/데크 등록·LOD·누수 계약, 비용 수치와 한계 (W8 P4-a) |
 | [TEXTURES.md](tech/TEXTURES.md) | 사용자 텍스처25종 카탈로그·경량16종 팩·성능/실패 대응 |
 | [PLAYER_CONTROLS.md](tech/PLAYER_CONTROLS.md) | 눈동자 시선·자유 카메라/2초 복귀·하늘 시야·차량 승하차 |
@@ -86,6 +87,7 @@ docs/
 | 문서 | 내용 |
 |---|---|
 | [W8_CONTRACT.md](work-logs/W8_CONTRACT.md) | W8 P1: 도시 스키마·검증·boot.ts 진입점·nginx JSON 규칙 |
+| [W8_CITYGEN_CORE.md](work-logs/W8_CITYGEN_CORE.md) | W8 CITYGEN-CORE: citygen 도로·교차로·리본·지형 편집 구현·시험·정직한 잔여 |
 | [W8_CITY_RENDER.md](work-logs/W8_CITY_RENDER.md) | W8 P4-a: citygen 렌더 소비 측 구현·시험·정직한 잔여 |
 | [W5_PLAN.md](work-logs/W5_PLAN.md) | W5·W6 병렬 작업 계획 — 에이전트별 파일 소유권 |
 | [W5_STADIUM.md](work-logs/W5_STADIUM.md) | 축구장 105×68·10분 경기·게임 시계(낮 12분/밤 4분)·조작 변경·전체 지도 사진 |
