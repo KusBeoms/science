@@ -150,6 +150,10 @@ function paintDome(t: Tint) {
 }
 
 /** 매 프레임 카메라 배치 이후 호출: 틴트 계산 → 돔 색·안개·조명·해/달/별/사과 갱신 후 천구를 카메라에 붙인다 */
+/** 컷신이 자기 사과 배우를 쓰는 동안 하늘의 원경 사과를 숨긴다(두 개로 겹쳐 보이는 것 방지) */
+export const setSkyApple = (on: boolean) => {
+  if (apple) apple.group.visible = on;
+};
 export function updateSky(dt: number, time: number) {
   const t = visualTint(dt),
     dark = Math.min(1, Math.max(0, (0.75 - t.hemiK) / 0.2)),

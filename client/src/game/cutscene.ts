@@ -9,6 +9,7 @@ import {disposeActors, driveActor, spawnActors, type Actor} from './cutscene-act
 import {addBubble, fadeTo, fxReset, fxTick, hudPos, placeBubbles, reduced, runFx, shakeNow, timeScale} from './cutscene-fx.js';
 import {EASE, lerp, num, sortKf, step, vec} from './cutscene-track.js';
 import {flushIconToasts} from './hud.js';
+import {setSkyApple} from '../render/sky.js';
 
 interface Run {
   def: CutDef;
@@ -86,6 +87,7 @@ export function playCut(id: CutId, opts: {replay?: boolean} = {}): boolean {
     ui: tr.flatMap(t => (t.type === 'ui' ? t.kf : [])),
     baseFov: G.camera.fov, skipT: 0, hold: 0, holding: false, yaw: G.yaw, pitch: G.pitch, softOff: false,
   };
+  if (def.setup?.actors.some(a => a.kind === 'apple')) setSkyApple(false);
   G.cine = {id, lock, t: 0, dur: def.durSec};
   fxReset();
   fxTick(0);
@@ -121,6 +123,7 @@ function finish(skipped: boolean) {
     applyEnd(r.def);
   }
   disposeActors(r.actors);
+  setSkyApple(true);
   G.cineHooks.hud?.(null);
   document.body.classList.remove('cine-nohud');
   fxReset(skipped);

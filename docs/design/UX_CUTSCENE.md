@@ -35,6 +35,8 @@
 | `systems/cutscene.ts` | 시스템: `tickCut` 구동 · C01 자동 재생(`S.story.seen.c01_love` 가 0 일 때, `?cine=0` 이면 끔) · 건너뛰기 입력 · `?debug=1` 시 `__game.cine.{play,skip,active,iconToast,addHudWidget}` |
 | `public/style/cine.css`, `index.html` `#cine #itoast #widgets` | 레이어(z 8)·레터박스·말풍선·`body.cine-nohud`·모션 감소 |
 
+**C01 수정 (2026-11-06)**: 폐기된 금화 고리(`ring` 배우·🙅 튕김·금화 더미 배우)를 데이터에서 제거하고 승인된 흐름(🔍❓ → 💰)으로 맞췄다. 컷신이 자기 사과 배우를 쓰는 동안 하늘의 원경 사과는 `setSkyApple(false)`로 숨겨 사과가 둘로 보이던 문제를 없앴다(`render/sky.ts`, `game/cutscene.ts`). 5–9초·11초 이후 카메라는 주인공이 프레임(레터박스 안)에 들어오도록 낮고 넓게 재배치, 0–5초는 능선에 사과가 가리지 않게 높임. 14초 컷 전까지 주인공 yaw 고정. 아이콘 `search 🔍`·`question ❓` 추가.
+
 **데이터 포맷 실제값 (2장과 다른 점)**
 - 모든 `Vec3` 는 **재생 시작 시 플레이어 위치 기준 상대 좌표**(회전 없음). 'player' 배우는 실제 `G.me` 를 빌려 구동하고 종료 시 위치·방향·포즈를 복구한다(입력 잠금 컷신에서만 위치·방향을 움직임).
 - 키 공통: `t`, `ease`, `cut:true`(직전 키에서 보간 없이 그 시각에 점프 — 컷 직전에 `t-0.01` 키를 하나 둬서 앞 컷을 끝낸다). 필드를 가진 키끼리만 보간하고 첫 키 이전은 첫 값 유지. 트랙은 로드 시 시각순 정렬.

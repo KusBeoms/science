@@ -4,7 +4,7 @@ import type {CutDef, CutId, Vec3} from './cutscene-types.js';
 const A: Vec3 = [40, 58, -230], // 먼 사과 행성
   UP = Math.PI; // 북쪽(-z) 보기
 
-/** C01 첫눈에 반함 (비트 1, 20s): 먼 사과 → 💗×3 → 금화 고리에 튕김 🙅/💰🤔 → 빈 주머니 💨 → 😤 → 조작 카메라 복귀 */
+/** C01 첫눈에 반함 (비트 1, 20s): 먼 사과 → 💗×3 → 사과 위 🔍❓(파는 곳을 못 찾음) → 💰(돈이 필요) → 빈 주머니 💨 → 😤 → 조작 카메라 복귀 (금화 고리 결계·튕김은 폐기됨 — STORY v2.2 #2) */
 const c01: CutDef = {
   id: 'c01_love',
   beat: 1,
@@ -13,24 +13,27 @@ const c01: CutDef = {
     actors: [
       {id: 'p', kind: 'player', pos: [0, 0, 0], yaw: UP},
       {id: 'apple', kind: 'apple', pos: A},
-      {id: 'ring', kind: 'ring', pos: A},
-      {id: 'gold', kind: 'coin', pos: [A[0] - 38, A[1] - 30, A[2] + 22]},
     ],
   },
   tracks: [
     {
       type: 'camera',
       kf: [
-        {t: 0, to: [0, 9, 44], look: A, fov: 70},
-        {t: 4.99, to: [0, 11, 22], look: A, fov: 45, ease: 'inOut'},
-        {t: 5, cut: true, to: [2.8, 5.2, 8], look: [10, 0, -92], fov: 55},
-        {t: 8.99, to: [2.8, 5.4, 8], look: [14, 4, -92], fov: 52},
+        // 0–5: 지형 능선 위로 사과가 온전히 보이도록 카메라를 높인다
+        {t: 0, to: [0, 22, 44], look: A, fov: 70},
+        {t: 4.99, to: [0, 26, 22], look: A, fov: 45, ease: 'inOut'},
+        // 5–9: 주인공 뒤통수(화면 우하) + 어깨 너머 사과(우상). 주인공이 프레임 안에 들어오도록 낮고 넓게
+        {t: 5, cut: true, to: [-1.8, 2.6, 6.5], look: [4, 10, -92], fov: 60},
+        {t: 8.99, to: [-1.8, 2.6, 6.5], look: [8, 12, -92], fov: 58},
+        // 9–11: 사과 클로즈업
         {t: 9, cut: true, to: [A[0] + 18, A[1] + 8, A[2] + 112], look: [A[0], A[1] - 2, A[2]], fov: 40},
         {t: 10.99, to: [A[0] + 10, A[1] + 5, A[2] + 88], look: [A[0], A[1] - 2, A[2]], fov: 40, ease: 'out'},
-        {t: 11, cut: true, to: [-4, 4, 7], look: [0, 7, -60], fov: 55},
-        {t: 12.49, to: [-4, 4, 7], look: [0, 7, -60], fov: 55},
-        {t: 12.5, cut: true, to: [22, 40, -146], look: [22, 44, -218], fov: 45},
-        {t: 13.99, to: [22, 40, -158], look: [22, 44, -218], fov: 45, ease: 'out'},
+        // 11–12.5: 주인공과 사과를 함께 — 사과 위 🔍❓
+        {t: 11, cut: true, to: [1.8, 2.2, 6.5], look: [20, 30, -120], fov: 62},
+        {t: 12.49, to: [1.8, 2.2, 6.5], look: [20, 30, -120], fov: 62},
+        // 12.5–14: 주인공 근접 — 머리 위 💰
+        {t: 12.5, cut: true, to: [4, 3.2, 9.5], look: [0, 3, 0], fov: 42},
+        {t: 13.99, to: [2.6, 3.2, 9], look: [0, 3, 0], fov: 42, ease: 'out'},
         {t: 14, cut: true, to: [0, 4, 9], look: [0, 3.6, 0], fov: 50},
         {t: 17, to: [0, 4, 9], look: [0, 3.6, 0], fov: 50},
         {t: 20, to: [0, 10, 17], look: [0, 3, 0], fov: 60, ease: 'inOut'},
@@ -41,8 +44,7 @@ const c01: CutDef = {
       id: 'p',
       kf: [
         {t: 0, anim: 'idle', yaw: UP},
-        {t: 11, anim: 'grab'},
-        {t: 12.5, anim: 'idle'},
+        {t: 13.99, yaw: UP}, // 14초 컷 직전까지 사과 쪽을 향한 채 유지(보간으로 서서히 돌아서지 않게)
         {t: 14, yaw: 0.25, anim: 'shock'},
         {t: 17, anim: 'idle'},
       ],
@@ -53,8 +55,8 @@ const c01: CutDef = {
         {t: 5.4, who: 'p', icons: ['love'], dur: 0.9, pop: 'pop'},
         {t: 6.4, who: 'p', icons: ['love'], dur: 0.9, pop: 'pop'},
         {t: 7.4, who: 'p', icons: ['love'], dur: 1.1, pop: 'pop'},
-        {t: 11.5, who: 'p', icons: ['rebuff'], dur: 1, pop: 'shake'},
-        {t: 12.6, who: 'gold', icons: ['money', 'wonder'], dur: 1.4, pop: 'pop'},
+        {t: 11.4, who: 'apple', icons: ['search', 'question'], dur: 1.1, pop: 'pulse'},
+        {t: 12.6, who: 'p', icons: ['money'], dur: 1.4, pop: 'pop'},
         {t: 14.4, who: 'p', icons: ['dust'], dur: 1.6, pop: 'shake'},
         {t: 16.3, who: 'p', icons: ['determined'], dur: 1.9, pop: 'pulse'},
       ],
@@ -64,8 +66,6 @@ const c01: CutDef = {
       kf: [
         {t: 0, kind: 'fade', amt: 1, dur: 0},
         {t: 0.1, kind: 'fade', amt: 0, dur: 1.8},
-        {t: 11.3, kind: 'flash', amt: 0.18},
-        {t: 11.3, kind: 'sparkle', at: 'ring'},
         {t: 16.2, kind: 'dim', amt: 0.18, dur: 0.4},
         {t: 17, kind: 'dim', amt: 0, dur: 1},
       ],
@@ -77,10 +77,9 @@ const c01: CutDef = {
         {t: 5.4, cue: 'heart'},
         {t: 6.4, cue: 'heart'},
         {t: 7.4, cue: 'heart'},
-        {t: 9.6, cue: 'coin'},
-        {t: 10.1, cue: 'coin'},
-        {t: 10.6, cue: 'coin'},
-        {t: 11.5, cue: 'ring_bounce'},
+        {t: 12.6, cue: 'coin'},
+        {t: 13.1, cue: 'coin'},
+        {t: 13.6, cue: 'coin'},
         {t: 16.3, cue: 'sting'},
         {t: 18.5, cue: 'bgm_explore'},
       ],

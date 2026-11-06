@@ -19,6 +19,8 @@ export const ICONS = I({
   sprout: ['🌱', 'round'],
   dust: ['💨', 'round'],
   sparkle: ['✨', 'round'],
+  search: ['🔍', 'round'],
+  question: ['❓', 'round'],
   ellipsis: ['⋯', 'round'],
   // 의뢰 (square)
   quest: ['❗', 'square'],
